@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prayer Times | أوقات الصلاة</title>
+<link rel="stylesheet" href="styles/app.css">
+</head>
+<body data-theme="islamic">
+
+<div class="toast" id="toast"></div>
+
+<div class="app">
+
+  <!-- ══ SIDEBAR ══ -->
+  <aside class="sb">
+    <div class="sb-logo">
+      <div class="sb-logo-title"><span class="lg">🕌</span><span class="t" id="sbTitle">Prayer Times</span></div>
+      <div class="sb-sub sb-logo-sub" id="sbSub">Islamic Companion</div>
+    </div>
+    <nav class="sb-nav">
+      <button class="nav-item active" data-page="prayers"><span class="ni">🕌</span><span class="t">Prayers</span></button>
+      <button class="nav-item" data-page="calendar"><span class="ni">📅</span><span class="t">Calendar</span></button>
+      <button class="nav-item" data-page="qibla"><span class="ni">🧭</span><span class="t">Qibla</span></button>
+      <button class="nav-item" data-page="quran"><span class="ni">📖</span><span class="t">Quran</span></button>
+      <button class="nav-item" data-page="names"><span class="ni">🌙</span><span class="t">99 Names</span></button>
+      <button class="nav-item" data-page="dhikr"><span class="ni">📿</span><span class="t">Dhikr</span></button>
+      <div style="flex:1"></div>
+      <button class="nav-item" data-page="settings"><span class="ni">⚙️</span><span class="t">Settings</span></button>
+    </nav>
+    <div class="sb-foot">
+      <div class="lbl">Theme</div>
+      <div class="swatches" id="sbSwatches"></div>
+    </div>
+  </aside>
+
+  <!-- ══ MAIN ══ -->
+  <div class="main">
+
+    <header class="topbar">
+      <div class="tb-loc" id="tbLoc">
+        <span>📍</span><span class="loc-name" id="locName">Detecting…</span><span style="font-size:11px">✏️</span>
+      </div>
+      <span class="tb-date" id="tbDate">—</span>
+      <span class="tb-spacer"></span>
+      <span class="badge-off" id="offBadge">Offline</span>
+      <button class="icon-btn" id="langBtn" title="Language / اللغة">🌐</button>
+      <button class="icon-btn nav-jump" data-page="settings" title="Settings">⚙️</button>
+    </header>
+
+    <main class="content" id="content">
+
+      <!-- ══════════ PRAYERS (dashboard) ══════════ -->
+      <section class="page active" id="page-prayers">
+        <div class="hero" id="heroCard">
+          <div class="hz">
+            <div class="hero-dates">
+              <span id="heroGreg">—</span>
+              <span class="hero-hijri" id="heroHijri">—</span>
+              <span class="hero-loc" id="heroLoc">📍 <span id="heroLocName">—</span></span>
+            </div>
+            <div class="hero-next-lbl" id="heroNextLbl">Next Prayer</div>
+            <div class="hero-name" id="heroName">—</div>
+            <div class="hero-time" id="heroTime">—</div>
+            <div class="hero-glass">
+              <div class="hero-cd" id="heroCd">--:--:--</div>
+              <div class="hero-cd-lbl" id="heroCdLbl">Starts in</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sec-lbl" id="lblToday">Today's Prayers</div>
+        <div class="prayer-cards" id="prayerCards"></div>
+
+        <div class="sec-lbl" style="margin-top:18px" id="lblSun">Sun & Night</div>
+        <div class="sun-grid" id="sunGrid"></div>
+
+        <div class="sec-lbl" style="margin-top:18px" id="lblGlance">Today at a Glance</div>
+        <div class="glance" id="glanceGrid"></div>
+      </section>
+
+      <!-- ══════════ CALENDAR ══════════ -->
+      <section class="page" id="page-calendar">
+        <div class="cal-head">
+          <div class="cal-title" id="calTitle">—</div>
+          <div class="cal-nav">
+            <button class="icon-btn" id="calPrev" title="Previous month">‹</button>
+            <button class="btn sm" id="calToday">Today</button>
+            <button class="icon-btn" id="calNext" title="Next month">›</button>
+            <button class="btn sm" id="calExport">⬇ CSV</button>
+          </div>
+        </div>
+        <div class="cal-grid" id="calDowRow"></div>
+        <div class="cal-grid" id="calGrid" style="margin-top:4px"></div>
+        <div class="card cal-day-panel" id="calDayPanel" style="display:none"></div>
+      </section>
+
+      <!-- ══════════ QIBLA ══════════ -->
+      <section class="page" id="page-qibla">
+        <div class="grid-2">
+          <div class="card">
+            <div class="qibla-wrap">
+              <div class="compass">
+                <div class="compass-in" id="compassIn">
+                  <span class="n-mark">N</span>
+                  <span class="kaaba" id="kaabaMark">🕋</span>
+                </div>
+              </div>
+              <div class="qibla-info">
+                <div class="qibla-deg" id="qDeg">—°</div>
+                <div class="qibla-sub" id="qSub">—</div>
+                <div class="qibla-dist" id="qDist"></div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="card" style="margin-bottom:14px">
+              <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px" id="lblYc">Your coordinates</div>
+              <div style="font-size:16px;font-weight:700" id="coordsDisp">—</div>
+              <div style="margin-top:12px;font-size:12px;color:var(--text-muted)" id="lblKc">Kaaba coordinates</div>
+              <div style="font-size:14.5px;font-weight:600">21.4225°N, 39.8262°E</div>
+            </div>
+            <div class="card">
+              <div style="font-weight:700;font-size:14px;display:flex;gap:7px;margin-bottom:6px">ℹ️ <span id="lblHtu">How to use</span></div>
+              <div style="font-size:13.5px;color:var(--text-muted);line-height:1.7" id="qHelp">—</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════ QURAN ══════════ -->
+      <section class="page" id="page-quran">
+        <input class="inp" id="qrSearch" type="text" style="margin-bottom:12px;max-width:420px" placeholder="Search surah…">
+        <div class="surah-list" id="surahList"></div>
+        <div class="player" id="player">
+          <div class="pnum" id="plNum">1</div>
+          <div class="pmeta">
+            <div class="par" id="plAr">—</div>
+            <div class="pen" id="plEn">—</div>
+          </div>
+          <div class="pctrl">
+            <button class="pcbtn" id="plPrev">⏮</button>
+            <button class="pplay" id="plPlay">▶</button>
+            <button class="pcbtn" id="plNext">⏭</button>
+          </div>
+          <div class="pmid">
+            <div class="pbar" id="plBar"><div class="pbar-fill" id="plFill"></div></div>
+            <div class="ptime"><span id="plElapsed">0:00</span><span id="plDur">—</span></div>
+          </div>
+          <div class="pvol">
+            <span style="font-size:14px">🔊</span>
+            <input type="range" id="plVol" min="0" max="1" step="0.05" value="1">
+          </div>
+          <button class="pcbtn" id="plStop" title="Stop">⏹</button>
+        </div>
+      </section>
+
+      <!-- ══════════ 99 NAMES ══════════ -->
+      <section class="page" id="page-names">
+        <div class="name-hero">
+          <span class="badge-day" id="nhBadge">Name of the Day</span>
+          <div class="nar" id="nhAr">—</div>
+          <div class="ntr" id="nhTr">—</div>
+          <div class="nen" id="nhEn">—</div>
+          <div class="ndh" id="nhDh">—</div>
+        </div>
+        <input class="inp" id="nmSearch" type="text" style="margin-bottom:12px;max-width:420px" placeholder="Search by name or meaning…">
+        <div class="names-grid" id="namesGrid"></div>
+      </section>
+
+      <!-- ══════════ DHIKR ══════════ -->
+      <section class="page" id="page-dhikr">
+        <div class="dhikr-chips" id="dhikrChips"></div>
+        <div class="card" style="display:flex;flex-direction:column;align-items:center">
+          <div class="dhikr-stage">
+            <div class="dhikr-ring" id="dhikrRing" title="Tap to count">
+              <svg viewBox="0 0 230 230" width="230" height="230">
+                <circle class="circle-bg" cx="115" cy="115" r="106"></circle>
+                <circle class="circle-fg" id="ringFg" cx="115" cy="115" r="106" stroke-dasharray="666" stroke-dashoffset="666"></circle>
+              </svg>
+              <div class="inner">
+                <div class="dhikr-count" id="dhikrCount">0</div>
+                <div class="dhikr-word" id="dhikrWord">—</div>
+                <div class="dhikr-target" id="dhikrTargetLbl">—</div>
+              </div>
+            </div>
+            <div class="stepper" style="margin-top:4px">
+              <button id="dhMinus">−</button>
+              <div class="val" id="dhVal">0</div>
+              <button id="dhPlus">+</button>
+            </div>
+            <div class="dhikr-stats">
+              <div class="stat-mini"><div class="v" id="dhDaily">0</div><div class="l" id="dhDailyLbl">Today</div></div>
+              <div class="stat-mini"><div class="v" id="dhTotal">0</div><div class="l" id="dhTotalLbl">All time</div></div>
+              <div class="stat-mini"><div class="v" id="dhRound">0/33</div><div class="l" id="dhRoundLbl">Target</div></div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="btn sm" id="dhResetBtn">↺ Reset</button>
+              <select class="select" id="dhTargetSel">
+                <option value="33">33</option>
+                <option value="100">100</option>
+                <option value="300">300</option>
+                <option value="custom">Custom…</option>
+              </select>
+              <input class="inp" id="dhCustom" type="number" min="10" max="10000" style="display:none;width:92px" placeholder="10–10000">
+            </div>
+            <div style="font-size:11.5px;color:var(--text-muted)" id="dhikrHint">Tap the counter or press Space</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════ SETTINGS ══════════ -->
+      <section class="page" id="page-settings">
+        <div class="set-grid">
+
+          <div class="card set-card">
+            <div class="card-h">🌐 <span id="shGeneral">General</span></div>
+            <div class="row"><span class="lbl" id="slLang">Language</span>
+              <select class="select" id="setLang"><option value="en">English</option><option value="ar">العربية</option></select></div>
+            <div class="row"><span class="lbl" id="slTheme">Theme</span>
+              <select class="select" id="setTheme"></select></div>
+            <div class="row"><span class="lbl" id="sl24">24-Hour Format</span>
+              <button class="toggle" id="tg24"></button></div>
+          </div>
+
+          <div class="card set-card">
+            <div class="card-h">🧮 <span id="shCalc">Prayer Calculation</span></div>
+            <div class="row"><span class="lbl" id="slMethod">Method</span>
+              <select class="select" id="setMethod"></select></div>
+            <div class="row"><div><span class="lbl" id="slMadhab">Asr school</span><div class="sub" id="slMadhabS">Used by ISNA and custom methods</div></div>
+              <select class="select" id="setMadhab"><option value="shafi">Shafi (standard)</option><option value="hanafi">Hanafi</option></select></div>
+            <div class="sub" style="margin-bottom:4px" id="slAdjust">Time Adjustments (min)</div>
+            <div id="offsetRows"></div>
+          </div>
+
+          <div class="card set-card">
+            <div class="card-h">📣 <span id="shNotif">Notifications</span></div>
+            <div class="row"><div><span class="lbl" id="slNotif">Prayer Alerts</span><div class="sub" id="slNotifS">Notify before each prayer</div></div>
+              <button class="toggle" id="tgNotif"></button></div>
+            <div class="row"><span class="lbl" id="slMinBefore">Minutes before</span>
+              <div class="stepper"><button id="nbMinus">−</button><div class="val" id="nbVal">10</div><button id="nbPlus">+</button></div></div>
+            <div class="row"><span class="lbl" id="slBeep">Pre-prayer beep</span>
+              <button class="toggle" id="tgBeep"></button></div>
+            <div class="row"><span class="lbl" id="slAdhan">Play adhan at prayer time</span>
+              <button class="toggle" id="tgAdhan"></button></div>
+          </div>
+
+          <div class="card set-card">
+            <div class="card-h">🕌 <span id="shAdhan">Adhan</span></div>
+            <div class="row"><span class="lbl" id="slReciter">Reciter</span>
+              <select class="select" id="setReciterSel"></select></div>
+            <div class="row"><span class="lbl" id="slAdhanStyle">Adhan style</span>
+              <select class="select" id="setAdhanType"></select></div>
+            <div class="row"><span class="lbl" id="slOverlay">Fullscreen Adhan overlay</span>
+              <button class="toggle" id="tgOverlay"></button></div>
+            <div class="row"><span class="lbl" id="slVol">Volume</span>
+              <input type="range" id="setVol" min="0" max="1" step="0.05" value="1" style="width:130px"></div>
+            <div class="sub" style="margin-bottom:4px" id="slPerPrayer">Per-prayer Adhan</div>
+            <div id="adhanPerRows"></div>
+            <div class="row" style="padding-top:10px">
+              <button class="btn sm" id="btnTestAdhan">▶ <span id="slTestAdhan">Test Adhan</span></button>
+            </div>
+          </div>
+
+          <div class="card set-card">
+            <div class="card-h">🖥️ <span id="shDesktop">Desktop</span></div>
+            <div class="row"><div><span class="lbl" id="slSww">Start with Windows</span><div class="sub" id="slSwwS">Launch automatically at login</div></div>
+              <button class="toggle" id="tgSww"></button></div>
+            <div class="row"><div><span class="lbl" id="slCtt">Close to Tray</span><div class="sub" id="slCttS">Keep running in the system tray when closed</div></div>
+              <button class="toggle" id="tgCtt"></button></div>
+            <div class="row"><span class="lbl" id="slTestNotif">Test Notification</span>
+              <button class="btn sm" id="btnTestNotif">🔔 Test</button></div>
+            <div class="note" id="dataNote">All data is stored locally on this device. No account, no analytics.</div>
+          </div>
+
+          <div class="card set-card">
+            <div class="card-h">📍 <span id="shLocation">Location</span></div>
+            <div style="font-size:15px;font-weight:700;margin-bottom:4px" id="setLocName">—</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px" id="setCoords">—</div>
+            <button class="btn" id="btnGps" style="width:100%;margin-bottom:9px">📍 <span id="slGps">Use GPS / Current Location</span></button>
+            <button class="btn" id="btnCitySearch" style="width:100%">🔍 <span id="slCitySearch">Search city</span></button>
+          </div>
+
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- ══ BOTTOM NAV (mobile) ══ -->
+<nav class="bnav">
+  <div class="bnav-inner">
+    <button class="bbtn active" data-page="prayers"><span class="bi">🕌</span><span class="t">Prayers</span></button>
+    <button class="bbtn" data-page="calendar"><span class="bi">📅</span><span class="t">Calendar</span></button>
+    <button class="bbtn" data-page="qibla"><span class="bi">🧭</span><span class="t">Qibla</span></button>
+    <button class="bbtn" data-page="quran"><span class="bi">📖</span><span class="t">Quran</span></button>
+    <button class="bbtn" data-page="names"><span class="bi">🌙</span><span class="t">Names</span></button>
+    <button class="bbtn" data-page="dhikr"><span class="bi">📿</span><span class="t">Dhikr</span></button>
+  </div>
+</nav>
+
+<!-- ══ LOCATION MODAL ══ -->
+<div class="overlay" id="locOverlay">
+  <div class="modal">
+    <h3 id="locTitle">Set Location</h3>
+    <button class="btn" id="btnGps2" style="width:100%;margin-bottom:11px">📍 <span id="locGpsLbl">Use GPS / Current Location</span></button>
+    <div class="fgrp"><label id="lblCity">City</label><input class="inp" id="cityInp" placeholder="e.g. Riyadh, Cairo, London…"></div>
+    <div class="fgrp"><label id="lblCountry">Country</label><input class="inp" id="cntryInp" placeholder="e.g. Saudi Arabia, Egypt…"></div>
+    <button class="btn primary" id="btnSetLoc" style="width:100%;margin-bottom:9px">🔍 <span id="locSearchLbl">Search & Set Location</span></button>
+    <button class="btn" id="btnCancelLoc" style="width:100%">Cancel</button>
+  </div>
+</div>
+
+<!-- ══ NAME DETAIL MODAL ══ -->
+<div class="overlay" id="nameOverlay">
+  <div class="modal" style="text-align:center">
+    <div id="nmNum" style="font-size:11.5px;color:var(--text-muted);font-weight:700"></div>
+    <div id="nmArabic" style="font-size:48px;font-weight:800;color:var(--primary);font-family:var(--font-ar);line-height:1.3;margin:6px 0 2px"></div>
+    <div id="nmTr" style="font-size:17px;font-weight:700;color:var(--gold)"></div>
+    <div id="nmEn" style="font-size:14.5px;margin:10px 0 4px;line-height:1.6"></div>
+    <div id="nmAr2" style="font-size:13.5px;color:var(--text-muted);line-height:1.6;font-family:var(--font-ar)"></div>
+    <div style="background:var(--primary-soft);border:1px solid var(--primary);border-radius:12px;padding:11px 15px;margin-top:14px">
+      <div style="font-size:9.5px;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);font-weight:700" id="nmDhikrLbl">Dhikr</div>
+      <div id="nmDhikr" style="font-size:19px;font-weight:700;color:var(--primary);font-family:var(--font-ar);margin-top:3px"></div>
+    </div>
+    <button class="btn" id="nmClose" style="margin-top:16px">Close</button>
+  </div>
+</div>
+
+<!-- ══ AUDIO ══ -->
+<audio id="adhanAudio" preload="none"></audio>
+<audio id="beepAudio" preload="none"></audio>
+
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+<script src="js/pages.js"></script>
+</body>
+</html>

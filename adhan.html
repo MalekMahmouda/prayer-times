@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Adhan</title>
+<style>
+  :root {
+    --gold: #f0cc70;
+    --on-primary: #fff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    background:
+      radial-gradient(ellipse at 50% 18%, rgba(240,204,112,.12) 0%, transparent 55%),
+      radial-gradient(circle at 30% 20%, #16306b 0%, #0d1640 55%, #060a1c 100%);
+    color: #fff;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    display: flex; align-items: center; justify-content: center;
+    user-select: none; cursor: default;
+  }
+  [dir="rtl"] body, .ar { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; }
+  .card { text-align: center; padding: 40px 60px; animation: rise .5s ease-out; }
+  @keyframes rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+
+  .kaaba {
+    font-size: 92px; line-height: 1; display: inline-block;
+    filter: drop-shadow(0 10px 34px rgba(0,0,0,.5));
+    animation: glow 2.6s ease-in-out infinite alternate;
+  }
+  @keyframes glow { from { transform: scale(1); } to { transform: scale(1.07); } }
+
+  .pulse {
+    width: 150px; height: 150px; margin: -120px auto 0; border-radius: 50%;
+    border: 1.5px solid rgba(240,204,112,.35);
+    animation: pulse 2.6s ease-out infinite;
+    pointer-events: none;
+  }
+  @keyframes pulse {
+    0% { transform: scale(.55); opacity: .9; }
+    70% { transform: scale(1.25); opacity: 0; }
+    100% { transform: scale(1.25); opacity: 0; }
+  }
+
+  .lbl { font-size: 11px; letter-spacing: 2.2px; text-transform: uppercase; color: rgba(255,255,255,.55); margin-top: 26px; }
+  .name-ar { font-size: 62px; font-weight: 800; margin-top: 8px; font-family: 'Segoe UI', Tahoma, sans-serif; }
+  .name-en { font-size: 24px; font-weight: 600; color: var(--gold); margin-top: 4px; letter-spacing: 1.5px; text-transform: uppercase; }
+  .time { font-size: 16px; color: rgba(255,255,255,.65); margin-top: 12px; font-variant-numeric: tabular-nums; }
+
+  .divider { width: 130px; height: 1px; background: linear-gradient(90deg, transparent, rgba(240,204,112,.6), transparent); margin: 24px auto; }
+
+  .row { display: flex; align-items: center; justify-content: center; gap: 14px; }
+  .vol { -webkit-appearance: none; width: 140px; height: 4px; border-radius: 2px; background: rgba(255,255,255,.28); outline: none; cursor: pointer; }
+  .vol::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--gold); cursor: pointer; }
+  .icon-btn {
+    width: 46px; height: 46px; border-radius: 50%; border: 1px solid rgba(255,255,255,.25);
+    background: rgba(255,255,255,.12); color: #fff; font-size: 17px; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; transition: background .2s, transform .15s;
+  }
+  .icon-btn:hover { background: rgba(255,255,255,.28); }
+  .icon-btn:active { transform: scale(.94); }
+
+  .stop-btn {
+    margin-top: 28px; padding: 13px 46px; font-size: 15px; font-weight: 700;
+    border-radius: 14px; border: 1px solid rgba(255,255,255,.25);
+    background: rgba(255,255,255,.95); color: #0d1640; cursor: pointer;
+    transition: transform .15s, background .2s; letter-spacing: .4px;
+  }
+  .stop-btn:hover { transform: translateY(-1px); background: #fff; }
+  .hint { margin-top: 14px; font-size: 11.5px; color: rgba(255,255,255,.38); letter-spacing: .5px; }
+  .esc { display: inline-block; border: 1px solid rgba(255,255,255,.25); border-radius: 5px; padding: 1px 7px; font-size: 10.5px; margin-inline-start: 6px; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="kaaba">🕋</div>
+    <div class="pulse"></div>
+    <div class="lbl" id="lbl">It is time for prayer</div>
+    <div class="name-ar ar" id="nameAr">الصلاة</div>
+    <div class="name-en" id="nameEn">PRAYER</div>
+    <div class="time" id="timeLine"></div>
+    <div class="divider"></div>
+    <div class="row">
+      <button class="icon-btn" id="playPause" title="Play / Pause">⏸</button>
+      <span style="font-size:16px;opacity:.8">🔊</span>
+      <input type="range" class="vol" id="vol" min="0" max="1" step="0.05" value="1">
+    </div>
+    <button class="stop-btn" id="stopBtn">Stop Adhan</button>
+    <div class="hint"><span id="hintTxt">Press</span><span class="esc">Esc</span><span id="hintTxt2">to dismiss</span></div>
+  </div>
+
+  <audio id="adhanAudio" preload="auto"></audio>
+
+<script>
+  const AR = { Fajr: 'الفجر', Dhuhr: 'الظهر', Asr: 'العصر', Maghrib: 'المغرب', Isha: 'العشاء' };
+  const ADHAN_SOUNDS = {
+    alafasy: 'https://cdn.aladhan.com/audio/adhans/a9.mp3',
+    nafees:  'https://cdn.aladhan.com/audio/adhans/a1.mp3',
+    dubai:   'https://cdn.aladhan.com/audio/adhans/a4.mp3',
+    zahrani: 'https://cdn.aladhan.com/audio/adhans/a11-mansour-al-zahrani.mp3',
+    turkey:  'https://cdn.aladhan.com/audio/adhans/a2.mp3',
+    classic: 'https://cdn.aladhan.com/audio/adhans/a7.mp3',
+  };
+
+  const audio = document.getElementById('adhanAudio');
+  const playPauseBtn = document.getElementById('playPause');
+  let playing = false;
+
+  function stopAndClose() {
+    try { audio.pause(); } catch (e) {}
+    if (window.ptOverlay) window.ptOverlay.dismiss();
+  }
+
+  function show(payload) {
+    const ar = payload && payload.lang === 'ar';
+    const prayer = (payload && payload.prayer) || 'Dhuhr';
+    document.getElementById('lbl').textContent = ar ? 'حان وقت الصلاة' : 'It is time for prayer';
+    document.getElementById('nameAr').textContent = AR[prayer] || prayer;
+    document.getElementById('nameEn').textContent = prayer;
+    document.getElementById('timeLine').textContent = payload && payload.time ? payload.time : '';
+    document.getElementById('stopBtn').textContent = ar ? 'إيقاف الأذان' : 'Stop Adhan';
+    document.getElementById('hintTxt').textContent = ar ? 'اضغط' : 'Press';
+    document.getElementById('hintTxt2').textContent = ar ? 'للإغلاق' : 'to dismiss';
+    const src = ADHAN_SOUNDS[(payload && payload.adhanType) || 'alafasy'] || ADHAN_SOUNDS.alafasy;
+    if (audio.src !== src) { audio.src = src; }
+    audio.volume = 1;
+    audio.play().catch(() => { /* autoplay may need a gesture; Stop button remains available */ });
+    playing = true;
+    playPauseBtn.textContent = '⏸';
+  }
+
+  document.getElementById('stopBtn').addEventListener('click', stopAndClose);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') stopAndClose(); });
+
+  playPauseBtn.addEventListener('click', () => {
+    if (playing) { audio.pause(); playing = false; playPauseBtn.textContent = '▶'; }
+    else { audio.play().catch(() => {}); playing = true; playPauseBtn.textContent = '⏸'; }
+  });
+
+  document.getElementById('vol').addEventListener('input', (e) => { audio.volume = parseFloat(e.target.value); });
+
+  audio.addEventListener('ended', stopAndClose);
+  audio.addEventListener('error', () => { /* network hiccup — user can Stop manually */ });
+
+  if (window.ptOverlay) window.ptOverlay.onShow(show);
+</script>
+</body>
+</html>

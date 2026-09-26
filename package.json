@@ -1,0 +1,23 @@
+{
+  "name": "prayer-times-v3",
+  "productName": "Prayer Times",
+  "version": "1.1.0",
+  "description": "Desktop prayer times companion: tray, notifications, adhan, Qibla, Quran, 99 Names",
+  "main": "main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "package": "electron-packager . PrayerTimes --platform=win32 --arch=x64 --icon=icon.ico --overwrite"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "adhan": "^4.4.3",
+    "electron": "^41.1.0"
+  },
+  "devDependencies": {
+    "electron-packager": "^17.1.2"
+  }
+}
