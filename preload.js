@@ -50,6 +50,9 @@ contextBridge.exposeInMainWorld('ptDesktop', {
   /** Today's computed times / next prayer from the main-process scheduler. */
   getInfo: () => ipcRenderer.invoke('pt:get-info'),
 
+  /** App version (package.json) for the Settings About line. */
+  getVersion: () => ipcRenderer.invoke('pt:get-version').catch(() => ''),
+
   /** Full timings + sun/night times for an arbitrary date (offline, main process). */
   getDay: (dateISO, overrides) => ipcRenderer.invoke('pt:get-day', dateISO, overrides),
 

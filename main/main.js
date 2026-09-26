@@ -16,6 +16,9 @@ const JsonStore = require('./json-store');
 
 const PRAYER_AR = { Fajr: 'الفجر', Dhuhr: 'الظهر', Asr: 'العصر', Maghrib: 'المغرب', Isha: 'العشاء' };
 
+// Branding icon (assets/icon.ico in both dev and packaged layouts).
+const APP_ICON = nativeImage.createFromPath(path.join(__dirname, '..', 'assets', 'icon.ico'));
+
 let win = null;          // main window
 let overlay = null;      // fullscreen adhan overlay
 let quitting = false;    // true once the user asked to really quit
@@ -52,7 +55,7 @@ if (!isPrimary) {
       minWidth: 480,
       minHeight: 520,
       show: false,
-      icon: nativeImage.createFromPath(path.join(__dirname, '..', 'icon.ico')),
+      icon: APP_ICON,
       backgroundColor: '#f0f5f1',
       webPreferences: {
         preload: path.join(__dirname, '..', 'preload.js'),
@@ -89,7 +92,7 @@ if (!isPrimary) {
     const n = new Notification({
       title,
       body,
-      icon: nativeImage.createFromPath(path.join(__dirname, '..', 'icon.ico')),
+      icon: APP_ICON,
     });
     if (onClick) n.on('click', onClick);
     n.show();
@@ -185,6 +188,12 @@ if (!isPrimary) {
     store.set('startWithWindows', !!enabled);
   }
 
+  // Self-heal after an upgrade/reinstall: re-register startup against the
+  // CURRENT executable path when the setting is enabled.
+  function refreshAutoLaunchPath() {
+    if (store.get('startWithWindows', false)) applyAutoLaunch(true);
+  }
+
   function updateTray(info) {
     if (!trayApi) return;
     trayApi.update({
@@ -226,6 +235,7 @@ if (!isPrimary) {
   });
 
   ipcMain.handle('pt:get-info', () => scheduler.getInfo());
+  ipcMain.handle('pt:get-version', () => app.getVersion());
   ipcMain.handle('pt:get-day', (e, dateISO, overrides) => {
     try { return scheduler.getDay(String(dateISO || '').slice(0, 10), overrides || {}); }
     catch (err) { return null; }
@@ -337,6 +347,7 @@ if (!isPrimary) {
     scheduler.tick();
 
     if (store.get('startWithWindows', false)) applyAutoLaunch(true);
+    refreshAutoLaunchPath();
 
     // Auto-started hidden: don't pop the main window.
     if (process.argv.includes('--hidden')) {

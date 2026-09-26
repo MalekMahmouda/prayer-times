@@ -19,7 +19,7 @@ const FALLBACK_PNG = Buffer.from(
 
 function icon() {
   try {
-    const img = nativeImage.createFromPath(path.join(__dirname, '..', 'icon.ico'));
+    const img = nativeImage.createFromPath(path.join(__dirname, '..', 'assets', 'icon.ico'));
     if (!img.isEmpty()) return img;
   } catch (e) { /* fall through */ }
   return nativeImage.createFromBuffer(FALLBACK_PNG);

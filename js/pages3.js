@@ -537,6 +537,14 @@ window.initPhase3 = function initPhase3() {
   $('importFile').onchange = (e) => { if (e.target.files[0]) window.handleImportFile(e.target.files[0]); e.target.value = ''; };
   renderThemeBuilder();
   renderKeysList();
+  // About line: version from the main process (stays in sync with package.json)
+  const about = $('aboutLine');
+  if (about) {
+    const fallback = 'Prayer Times';
+    if (window.ptDesktop && window.ptDesktop.getVersion) {
+      window.ptDesktop.getVersion().then((v) => { about.textContent = v ? `Prayer Times v${v} · data stored locally` : fallback; }).catch(() => { about.textContent = fallback; });
+    } else about.textContent = fallback;
+  }
 };
 
 // Scripts load synchronously at the end of <body>, so the DOM and app.js state
