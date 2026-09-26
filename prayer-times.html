@@ -25,6 +25,7 @@
       <button class="nav-item" data-page="quran"><span class="ni">📖</span><span class="t">Quran</span></button>
       <button class="nav-item" data-page="names"><span class="ni">🌙</span><span class="t">99 Names</span></button>
       <button class="nav-item" data-page="dhikr"><span class="ni">📿</span><span class="t">Dhikr</span></button>
+      <button class="nav-item" data-page="stats"><span class="ni">📊</span><span class="t">Stats</span></button>
       <div style="flex:1"></div>
       <button class="nav-item" data-page="settings"><span class="ni">⚙️</span><span class="t">Settings</span></button>
     </nav>
@@ -77,6 +78,27 @@
 
         <div class="sec-lbl" style="margin-top:18px" id="lblGlance">Today at a Glance</div>
         <div class="glance" id="glanceGrid"></div>
+
+        <!-- Ramadan card (visible only during Ramadan) -->
+        <div id="ramadanCard" style="display:none;margin-top:18px"></div>
+
+        <!-- Daily content card -->
+        <div id="dailyCard" style="margin-top:18px"></div>
+
+        <!-- Prayer history -->
+        <div class="sec-lbl" style="margin-top:18px" id="lblHist">Prayer Record</div>
+        <div class="card" id="histCard">
+          <div class="row" style="padding:0 0 10px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <button class="icon-btn" id="histPrev" title="Previous day">‹</button>
+              <input type="date" id="histDate" class="inp" style="width:160px;padding:6px 10px">
+              <button class="icon-btn" id="histNext" title="Next day">›</button>
+            </div>
+            <button class="btn sm" id="histTodayBtn">Today</button>
+          </div>
+          <div style="font-size:11.5px;color:var(--text-muted);margin-bottom:10px" id="histHint">Tap a prayer to cycle: Not recorded → Completed → Missed</div>
+          <div id="histChips" style="display:flex;gap:9px;flex-wrap:wrap"></div>
+        </div>
       </section>
 
       <!-- ══════════ CALENDAR ══════════ -->
@@ -130,28 +152,44 @@
 
       <!-- ══════════ QURAN ══════════ -->
       <section class="page" id="page-quran">
-        <input class="inp" id="qrSearch" type="text" style="margin-bottom:12px;max-width:420px" placeholder="Search surah…">
-        <div class="surah-list" id="surahList"></div>
-        <div class="player" id="player">
-          <div class="pnum" id="plNum">1</div>
-          <div class="pmeta">
-            <div class="par" id="plAr">—</div>
-            <div class="pen" id="plEn">—</div>
+        <div class="qtabs">
+          <button class="qtab active" data-qtab="list">📖 <span id="qtList">Surahs</span></button>
+          <button class="qtab" data-qtab="read">📜 <span id="qtRead">Read</span></button>
+          <button class="qtab" data-qtab="search">🔍 <span id="qtSearch">Search</span></button>
+          <button class="qtab" data-qtab="marks">🔖 <span id="qtMarks">Bookmarks</span></button>
+        </div>
+
+        <!-- List tab -->
+        <div id="qtab-list">
+          <input class="inp" id="qrSearch" type="text" style="margin-bottom:12px;max-width:420px" placeholder="Search surah…">
+          <div class="surah-list" id="surahList"></div>
+        </div>
+
+        <!-- Read tab -->
+        <div id="qtab-read" style="display:none">
+          <div class="card" id="readerBar" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;padding:10px 14px">
+            <button class="icon-btn" id="rdBack" title="Back to list" style="width:32px;height:32px;font-size:14px">←</button>
+            <div style="flex:1;min-width:0">
+              <div style="font-weight:800;font-size:15px" id="rdTitle">—</div>
+              <div style="font-size:11px;color:var(--text-muted)" id="rdMeta">—</div>
+            </div>
+            <button class="icon-btn" id="rdFontMinus" style="width:30px;height:30px;font-size:13px">A−</button>
+            <button class="icon-btn" id="rdFontPlus" style="width:30px;height:30px;font-size:13px">A+</button>
+            <button class="icon-btn" id="rdLine" style="width:30px;height:30px;font-size:13px" title="Line spacing">↕</button>
+            <button class="icon-btn" id="rdDark" style="width:30px;height:30px;font-size:13px" title="Reading light/dark">◑</button>
           </div>
-          <div class="pctrl">
-            <button class="pcbtn" id="plPrev">⏮</button>
-            <button class="pplay" id="plPlay">▶</button>
-            <button class="pcbtn" id="plNext">⏭</button>
-          </div>
-          <div class="pmid">
-            <div class="pbar" id="plBar"><div class="pbar-fill" id="plFill"></div></div>
-            <div class="ptime"><span id="plElapsed">0:00</span><span id="plDur">—</span></div>
-          </div>
-          <div class="pvol">
-            <span style="font-size:14px">🔊</span>
-            <input type="range" id="plVol" min="0" max="1" step="0.05" value="1">
-          </div>
-          <button class="pcbtn" id="plStop" title="Stop">⏹</button>
+          <div class="card reader" id="reader"></div>
+        </div>
+
+        <!-- Search tab -->
+        <div id="qtab-search" style="display:none">
+          <input class="inp" id="qsInput" type="text" style="margin-bottom:12px" placeholder="Search the Quran (Arabic or English)…">
+          <div id="qsResults"></div>
+        </div>
+
+        <!-- Bookmarks tab -->
+        <div id="qtab-marks" style="display:none">
+          <div id="bmList"></div>
         </div>
       </section>
 
@@ -168,9 +206,34 @@
         <div class="names-grid" id="namesGrid"></div>
       </section>
 
+      <!-- ══════════ STATS ══════════ -->
+      <section class="page" id="page-stats">
+        <div class="set-grid" style="margin-bottom:16px">
+          <div class="card set-card"><div class="card-h" id="stTodayH">Today</div><div id="stToday" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px"></div></div>
+          <div class="card set-card"><div class="card-h" id="stStreakH">Streaks</div><div id="stStreak" style="display:flex;gap:10px;margin-top:8px"></div></div>
+        </div>
+        <div class="set-grid" style="margin-bottom:16px">
+          <div class="card set-card"><div class="card-h" id="stWeekH">This Week</div><div id="stWeek" style="margin-top:8px"></div></div>
+          <div class="card set-card"><div class="card-h" id="stMonthH">This Month</div><div id="stMonth" style="margin-top:8px"></div></div>
+        </div>
+        <div class="sec-lbl" id="stChartH">Last 30 Days</div>
+        <div class="card" style="margin-bottom:16px"><div id="stChart"></div>
+          <div style="display:flex;gap:16px;margin-top:12px;font-size:11.5px;color:var(--text-muted)">
+            <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--success);vertical-align:-1px"></span> Completed</span>
+            <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--warning);vertical-align:-1px"></span> Partial</span>
+            <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--danger);vertical-align:-1px"></span> Missed</span>
+          </div>
+        </div>
+        <div class="sec-lbl" id="stPerPrayerH">By Prayer</div>
+        <div class="card"><div id="stByPrayer"></div></div>
+        <div class="note muted" style="font-size:11px;margin-top:12px" id="stNote">These statistics describe your records in this app only — never a judgment. Days count as “recorded” when at least one prayer is logged.</div>
+      </section>
+
       <!-- ══════════ DHIKR ══════════ -->
       <section class="page" id="page-dhikr">
         <div class="dhikr-chips" id="dhikrChips"></div>
+        <div class="dhikr-chips" id="dhikrLibChips" style="margin-bottom:12px"></div>
+        <div id="dhikrLibList" style="margin-bottom:18px"></div>
         <div class="card" style="display:flex;flex-direction:column;align-items:center">
           <div class="dhikr-stage">
             <div class="dhikr-ring" id="dhikrRing" title="Tap to count">
@@ -274,6 +337,41 @@
           </div>
 
           <div class="card set-card">
+            <div class="card-h">⭐ <span id="shLocs">Saved Locations</span></div>
+            <div id="locsList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px"></div>
+            <button class="btn sm" id="btnAddLoc" style="width:100%">＋ <span id="slAddLoc">Save current as location</span></button>
+          </div>
+
+          <div class="card set-card">
+            <div class="card-h">💾 <span id="shData">Data Management</span></div>
+            <button class="btn" id="btnExport" style="width:100%;margin-bottom:9px">⬇ <span id="slExport">Export backup (JSON)</span></button>
+            <button class="btn" id="btnImport" style="width:100%;margin-bottom:9px">⬆ <span id="slImport">Import backup</span></button>
+            <input type="file" id="importFile" accept=".json,application/json" style="display:none">
+            <div class="note" id="backupNote">Backup includes settings, locations, prayer record, dhikr data, bookmarks, and themes. Import shows a preview before replacing anything.</div>
+          </div>
+
+          <div class="card set-card">
+            <div class="card-h">🎨 <span id="shThemeBuilder">Theme Builder</span></div>
+            <div id="themeBuilderBody"></div>
+          </div>
+
+          <div class="card set-card">
+            <div class="card-h">⌨️ <span id="shKeys">Keyboard Shortcuts</span></div>
+            <div id="keysList" style="font-size:12.5px;line-height:2.1"></div>
+          </div>
+
+          <div class="card set-card">
+            <div class="card-h">🖥️ <span id="shWidget">Widget & Mini Mode</span></div>
+            <div class="row"><div><span class="lbl" id="slWidget">Desktop Mini Widget</span><div class="sub" id="slWidgetS">Compact always-on-top next-prayer card</div></div>
+              <button class="toggle" id="tgWidget"></button></div>
+            <div class="row"><div><span class="lbl" id="slMini">Mini Mode</span><div class="sub" id="slMiniS">Compact always-on-top window</div></div>
+              <button class="toggle" id="tgMini"></button></div>
+            <div class="row"><span class="lbl" id="slImsak">Imsak estimate offset</span>
+              <div class="stepper"><button id="imsakMinus">−</button><div class="val" id="imsakVal">10</div><button id="imsakPlus">+</button></div></div>
+            <div class="note" id="imsakNote">Imsak is shown as an estimate (Fajr minus this many minutes). Adjust to follow your local practice.</div>
+          </div>
+
+          <div class="card set-card">
             <div class="card-h">📍 <span id="shLocation">Location</span></div>
             <div style="font-size:15px;font-weight:700;margin-bottom:4px" id="setLocName">—</div>
             <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px" id="setCoords">—</div>
@@ -297,6 +395,7 @@
     <button class="bbtn" data-page="quran"><span class="bi">📖</span><span class="t">Quran</span></button>
     <button class="bbtn" data-page="names"><span class="bi">🌙</span><span class="t">Names</span></button>
     <button class="bbtn" data-page="dhikr"><span class="bi">📿</span><span class="t">Dhikr</span></button>
+    <button class="bbtn" data-page="stats"><span class="bi">📊</span><span class="t">Stats</span></button>
   </div>
 </nav>
 
@@ -328,12 +427,39 @@
   </div>
 </div>
 
+<!-- ══ GLOBAL QURAN PLAYER (persists across pages) ══ -->
+<div class="player" id="player">
+  <div class="pnum" id="plNum">1</div>
+  <div class="pmeta">
+    <div class="par" id="plAr">—</div>
+    <div class="pen" id="plEn">—</div>
+  </div>
+  <div class="pctrl">
+    <button class="pcbtn" id="plPrev">⏮</button>
+    <button class="pplay" id="plPlay">▶</button>
+    <button class="pcbtn" id="plNext">⏭</button>
+  </div>
+  <div class="pmid">
+    <div class="pbar" id="plBar"><div class="pbar-fill" id="plFill"></div></div>
+    <div class="ptime"><span id="plElapsed">0:00</span><span id="plDur">—</span></div>
+  </div>
+  <div class="pvol">
+    <span style="font-size:14px">🔊</span>
+    <input type="range" id="plVol" min="0" max="1" step="0.05" value="1">
+  </div>
+  <button class="pcbtn" id="plStop" title="Stop">⏹</button>
+</div>
+
 <!-- ══ AUDIO ══ -->
 <audio id="adhanAudio" preload="none"></audio>
 <audio id="beepAudio" preload="none"></audio>
 
 <script src="js/data.js"></script>
+<script src="js/store3.js"></script>
 <script src="js/app.js"></script>
 <script src="js/pages.js"></script>
+<script src="js/pages3.js"></script>
+<script src="js/reader.js"></script>
+<script src="js/stats.js"></script>
 </body>
 </html>

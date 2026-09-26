@@ -287,8 +287,10 @@ function dhikrCount() {
 
 /* ═══ SETTINGS ═══ */
 window.fillSettingsSelects = function fillSettingsSelects() {
-  // Themes
-  $('setTheme').innerHTML = THEMES.map((x) => `<option value="${x.id}">${S.lang === 'ar' ? x.ar : x.en}</option>`).join('');
+  // Themes (built-ins + saved custom themes)
+  const customs = (typeof DB3 !== 'undefined' && DB3) ? DB3.customThemes : [];
+  $('setTheme').innerHTML = THEMES.map((x) => `<option value="${x.id}">${S.lang === 'ar' ? x.ar : x.en}</option>`).join('')
+    + customs.map((c) => `<option value="${c.id}">★ ${escHtml(c.name)}</option>`).join('');
   $('setTheme').value = S.cfg.theme;
   // Methods
   $('setMethod').innerHTML = METHODS.map((m) => `<option value="${m.id}">${S.lang === 'ar' ? m.ar : m.en}</option>`).join('');
@@ -330,11 +332,20 @@ window.renderSettings = function renderSettings() {
     };
   });
 
-  // Per-prayer adhan
+  // Per-prayer adhan: enable + reciter profile + volume (additive profiles; adhanType stays default)
   $('adhanPerRows').innerHTML = PRAYERS.map((p) => {
     const on = S.cfg.adhanPerPrayer[p] !== false;
-    return `<div class="row"><span class="lbl">${S.lang === 'ar' ? AR_PRAYER[p] : p}</span>
-      <button class="toggle${on ? ' on' : ''}" data-adp="${p}"></button></div>`;
+    const prof = (S.cfg.adhanProfiles && S.cfg.adhanProfiles[p]) || {};
+    return `<div class="row" style="flex-wrap:wrap">
+      <span class="lbl" style="min-width:70px">${S.lang === 'ar' ? AR_PRAYER[p] : p}</span>
+      <button class="toggle${on ? ' on' : ''}" data-adp="${p}" title="Adhan enabled"></button>
+      <select class="select" data-prof-rec="${p}" style="max-width:150px;font-size:12px">
+        <option value="">${S.lang === 'ar' ? 'المؤذن الافتراضي' : 'Default muadhdhin'}</option>
+        ${Object.keys(ADHAN_SOUNDS).map((k) => `<option value="${k}" ${prof.reciter === k ? 'selected' : ''}>${k}</option>`).join('')}
+      </select>
+      <input type="range" data-prof-vol="${p}" min="0" max="1" step="0.05" value="${prof.vol != null ? prof.vol : 1}" style="width:80px" title="Volume">
+      <span style="font-size:11px;color:var(--text-muted);min-width:34px">${prof.vol != null ? Math.round(prof.vol * 100) + '%' : '—'}</span>
+    </div>`;
   }).join('');
   $('adhanPerRows').querySelectorAll('[data-adp]').forEach((b) => {
     b.onclick = () => {
@@ -343,6 +354,31 @@ window.renderSettings = function renderSettings() {
       saveCfg(); renderSettings();
     };
   });
+  $('adhanPerRows').querySelectorAll('[data-prof-rec]').forEach((sel) => {
+    sel.onchange = () => {
+      const p = sel.dataset.profRec;
+      S.cfg.adhanProfiles = S.cfg.adhanProfiles || {};
+      S.cfg.adhanProfiles[p] = S.cfg.adhanProfiles[p] || {};
+      if (sel.value) S.cfg.adhanProfiles[p].reciter = sel.value; else delete S.cfg.adhanProfiles[p].reciter;
+      if (!Object.keys(S.cfg.adhanProfiles[p]).length) delete S.cfg.adhanProfiles[p];
+      saveCfg();
+    };
+  });
+  $('adhanPerRows').querySelectorAll('[data-prof-vol]').forEach((inp) => {
+    inp.oninput = () => {
+      const p = inp.dataset.profVol;
+      S.cfg.adhanProfiles = S.cfg.adhanProfiles || {};
+      S.cfg.adhanProfiles[p] = S.cfg.adhanProfiles[p] || {};
+      S.cfg.adhanProfiles[p].vol = parseFloat(inp.value);
+      saveCfg(); renderSettings();
+    };
+  });
+
+  // Widget & mini toggles
+  $('tgWidget').classList.toggle('on', !!S.cfg.widget);
+  $('tgMini').classList.toggle('on', !!S.cfg.mini);
+  const im = (typeof DB3 !== 'undefined' && DB3 && DB3.prefs.ramadan) ? DB3.prefs.ramadan.imsakOffset : 10;
+  $('imsakVal').textContent = im;
 };
 
 /* ═══ SETTINGS EVENT WIRING (once) ═══ */
@@ -364,6 +400,10 @@ function wireSettings() {
   $('setAdhanType').onchange = (e) => { S.cfg.adhanType = e.target.value; saveCfg(); };
   $('setReciterSel').onchange = (e) => { S.cfg.reciter = e.target.value; saveCfg(); if (qrIdx >= 0) qrLoadAndPlay(qrIdx); };
   $('btnTestAdhan').onclick = testAdhan;
+  $('tgWidget').onclick = toggleWidgetSetting;
+  $('tgMini').onclick = toggleMiniMode;
+  $('imsakMinus').onclick = () => { DB3.prefs.ramadan = DB3.prefs.ramadan || { imsakMode: 'fajrOffset', imsakOffset: 10 }; DB3.prefs.ramadan.imsakOffset = Math.max(0, DB3.prefs.ramadan.imsakOffset - 1); save3(); renderSettings(); };
+  $('imsakPlus').onclick = () => { DB3.prefs.ramadan = DB3.prefs.ramadan || { imsakMode: 'fajrOffset', imsakOffset: 10 }; DB3.prefs.ramadan.imsakOffset = Math.min(30, DB3.prefs.ramadan.imsakOffset + 1); save3(); renderSettings(); };
   $('btnTestNotif').onclick = () => {
     if (PT) { PT.testAlert(); showToast('🔔 ' + t('toast.testIn3')); }
     else if ('Notification' in window) { Notification.requestPermission().then((p) => { if (p === 'granted') new Notification('Prayer Time 🕌', { body: 'Test notification' }); }); }
@@ -424,4 +464,7 @@ function wireSettings() {
   });
 }
 
-document.addEventListener('DOMContentLoaded', wireSettings);
+document.addEventListener('DOMContentLoaded', () => {
+  wireSettings();
+  if (window.wireQuranTabs) window.wireQuranTabs();   // Phase 3 reader/search/bookmarks
+});

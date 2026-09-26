@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Prayer Widget</title>
+<style>
+  :root { --wbg:#0e1526; --wfg:#e4ecff; --wmut:#7c90bd; --wac:#5b8aff; --wgold:#f0cc70; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { height:100%; overflow:hidden; }
+  body {
+    background: var(--wbg); color: var(--wfg);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    border-radius: 14px; user-select: none; cursor: default;
+    display:flex; flex-direction:column;
+    -webkit-app-region: drag; /* frameless: whole window drags */
+  }
+  .top { display:flex; align-items:center; gap:7px; padding:9px 12px 0; }
+  .badge { font-size:17px; }
+  .title { flex:1; font-size:10px; letter-spacing:1.4px; text-transform:uppercase; color:var(--wmut); font-weight:700; }
+  .btn { -webkit-app-region:no-drag; width:24px; height:24px; border-radius:8px; border:none; background:rgba(255,255,255,.08); color:var(--wfg); font-size:12px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; }
+  .btn:hover { background:rgba(255,255,255,.2); }
+  .card { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:6px 12px 12px; }
+  .lbl { font-size:9.5px; letter-spacing:1.6px; text-transform:uppercase; color:var(--wmut); font-weight:700; }
+  .prayer { font-size:30px; font-weight:800; line-height:1.2; }
+  .time { font-size:14px; color:var(--wgold); font-weight:650; font-variant-numeric:tabular-nums; }
+  .cd { font-size:24px; font-weight:800; font-variant-numeric:tabular-nums; letter-spacing:1px; margin-top:6px; }
+  .cdlbl { font-size:9px; color:var(--wmut); letter-spacing:1px; text-transform:uppercase; }
+  .times { display:none; gap:6px; padding:0 12px 12px; flex-wrap:wrap; justify-content:center; }
+  .mini .times { display:flex; }
+  .tchip { background:rgba(255,255,255,.07); border-radius:8px; padding:4px 9px; font-size:10.5px; font-variant-numeric:tabular-nums; }
+  .tchip b { color:var(--wgold); font-weight:750; }
+  body.light { --wbg:#f4f6fa; --wfg:#0a2540; --wmut:#51708c; --wac:#0a6aaa; --wgold:#b45309; }
+  body.light .btn, body.light .tchip { background:rgba(0,0,0,.06); }
+  @media (prefers-reduced-motion: reduce) { * { transition:none !important; animation:none !important; } }
+</style>
+</head>
+<body>
+  <div class="top">
+    <span class="badge">🕌</span>
+    <span class="title" id="wTitle">Next Prayer</span>
+    <button class="btn" id="wExpand" title="Expand">⤢</button>
+    <button class="btn" id="wClose" title="Close">✕</button>
+  </div>
+  <div class="card">
+    <div class="lbl" id="wLbl">Next Prayer</div>
+    <div class="prayer" id="wPrayer">—</div>
+    <div class="time" id="wTime">—</div>
+    <div class="cd" id="wCd">--:--:--</div>
+    <div class="cdlbl" id="wCdLbl">starts in</div>
+  </div>
+  <div class="times" id="wTimes"></div>
+
+<script>
+  const el = (id) => document.getElementById(id);
+  let mode = { mini: false };
+
+  function applyTheme(themeId) {
+    const dark = ['midnight', 'royal', 'oled'].includes(themeId);
+    document.body.classList.toggle('light', !dark);
+  }
+
+  function renderInfo(info) {
+    if (!info || !info.next) return;
+    const P = { Fajr:'الفجر', Dhuhr:'الظهر', Asr:'العصر', Maghrib:'المغرب', Isha:'العشاء' };
+    const ar = info.lang === 'ar';
+    el('wPrayer').textContent = ar ? P[info.next.prayer] : info.next.prayer;
+    el('wTime').textContent = info.next.hhmm || '';
+    el('wCd').textContent = info.next.countdown || '--:--:--';
+    el('wLbl').textContent = ar ? 'الصلاة القادمة' : 'Next Prayer';
+    el('wCdLbl').textContent = ar ? 'تبدأ بعد' : 'starts in';
+    el('wTitle').textContent = ar ? 'أوقات الصلاة' : 'Prayer Times';
+    if (mode.mini && Array.isArray(info.times)) {
+      el('wTimes').innerHTML = info.times.map((t) => `<span class=\"tchip\">${ar ? P[t.prayer] : t.prayer.slice(0,3)} <b>${t.time}</b></span>`).join('');
+    }
+  }
+
+  // Local 1s smoothing of the countdown between scheduler pushes (display only —
+  // all scheduling, alerts and adhan remain in the main process).
+  let lastInfo = null, cdTimer = null, baseSecs = null, lastStamp = 0;
+  function startCd() {
+    if (cdTimer) return;
+    cdTimer = setInterval(() => {
+      if (!lastInfo || !lastInfo.next) return;
+      const now = Date.now();
+      if (baseSecs == null) {
+        const [h, m, s] = (lastInfo.next.countdown || '0:0:0').split(':').map(Number);
+        baseSecs = h * 3600 + m * 60 + s; lastStamp = now;
+      }
+      const left = Math.max(0, baseSecs - Math.floor((now - lastStamp) / 1000));
+      el('wCd').textContent = [h0(left / 3600), h0((left % 3600) / 60), h0(left % 60)].map(Math.floor).map((v, i, a) => String(v).padStart(2, '0')).join(':');
+    }, 1000);
+  }
+  const h0 = (v) => Math.floor(v);
+
+  if (window.ptWidget) {
+    window.ptWidget.onMode((m) => { mode = m || {}; document.body.classList.toggle('mini', !!mode.mini); if (m && m.theme) applyTheme(m.theme); });
+    window.ptWidget.onInfo((info) => {
+      lastInfo = info; baseSecs = null; startCd(); renderInfo(info);
+    });
+    window.ptWidget.getTheme().then(applyTheme).catch(() => {});
+  }
+  el('wClose').addEventListener('click', () => window.close());
+  el('wExpand').addEventListener('click', () => { if (window.ptWidget) window.ptWidget.expand(); });
+</script>
+</body>
+</html>

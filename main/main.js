@@ -232,6 +232,76 @@ if (!isPrimary) {
   });
   ipcMain.on('overlay:dismiss', () => hideOverlay());
 
+  // ───────────── Phase 3: mini widget & mini mode ─────────────
+  // Both are pure consumers of the main scheduler — no timers, no
+  // calculation, no notification logic of their own.
+  let widgetWin = null;
+  let miniWin = null;
+  let widgetWanted = false;
+  let miniWanted = false;
+
+  function themeOf() { return store.get('lastTheme', 'islamic'); }
+
+  function sendInfo(consumer) {
+    if (consumer && !consumer.isDestroyed()) consumer.webContents.send('pt:info', scheduler.getInfo());
+  }
+
+  function broadcastInfo() {
+    sendInfo(widgetWin); sendInfo(miniWin); sendInfo(win);
+  }
+
+  function createConsumerWindow(kind) {
+    const isMini = kind === 'mini';
+    const w = new BrowserWindow({
+      width: isMini ? 300 : 240,
+      height: isMini ? 200 : 150,
+      frame: false,
+      alwaysOnTop: true,
+      resizable: true,
+      skipTaskbar: !isMini,
+      backgroundColor: '#0e1526',
+      webPreferences: {
+        preload: path.join(__dirname, '..', 'widget-preload.js'),
+        contextIsolation: true,
+        nodeIntegration: false,
+        sandbox: true,
+      },
+    });
+    w.loadFile(path.join(__dirname, '..', 'widget.html'));
+    w.once('ready-to-show', () => {
+      w.show();
+      w.webContents.send('pt:mode', { mini: isMini, theme: themeOf() });
+      sendInfo(w);
+    });
+    w.setAlwaysOnTop(true, 'screen-saver');
+    w.on('closed', () => { if (isMini) miniWin = null; else widgetWin = null; });
+    return w;
+  }
+
+  ipcMain.on('widget:toggle', (e, wanted) => {
+    widgetWanted = !!wanted;
+    store.set('widgetWanted', widgetWanted);
+    if (widgetWanted && !widgetWin) widgetWin = createConsumerWindow('widget');
+    else if (!widgetWanted && widgetWin) { widgetWin.close(); widgetWin = null; }
+  });
+
+  ipcMain.on('mini:toggle', (e, wanted) => {
+    miniWanted = !!wanted;
+    if (miniWanted && !miniWin) { miniWin = createConsumerWindow('mini'); if (win && !win.isDestroyed()) win.hide(); }
+    else if (!miniWanted && miniWin) { miniWin.close(); miniWin = null; showMainWindow(); }
+  });
+
+  ipcMain.handle('pt3:get-theme', () => themeOf());
+  ipcMain.on('widget:expand', () => {
+    // Mini mode expand → close mini, restore the full window (same app state).
+    miniWanted = false;
+    if (miniWin) { miniWin.close(); miniWin = null; }
+    showMainWindow();
+  });
+
+  // Persist the chosen theme so consumer windows can match it.
+  ipcMain.on('pt:set-theme', (e, id) => { if (typeof id === 'string' && id.length < 40) store.set('lastTheme', id); });
+
   // ───────────────────────── Lifecycle ────────────────────────
   app.on('second-instance', () => showMainWindow());
 
@@ -260,7 +330,7 @@ if (!isPrimary) {
     scheduler.bus.on('pre-alert', firePreAlert);
     scheduler.bus.on('prayer-time', firePrayerTime);
     scheduler.bus.on('adhan', fireAdhanEvent);
-    scheduler.bus.on('times-updated', updateTray);
+    scheduler.bus.on('times-updated', (info) => { updateTray(info); broadcastInfo(); });
 
     // 30 s fire loop — main-process timers, immune to renderer throttling.
     schedulerLoop = setInterval(() => scheduler.tick(), 30 * 1000);

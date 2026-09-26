@@ -56,6 +56,15 @@ function createScheduler() {
     return [h, m, ss].map((v) => String(v).padStart(2, '0')).join(':');
   };
 
+  // Display formatting in the ACTIVE LOCATION's IANA timezone when provided
+  // (firing logic always uses absolute instants and needs no conversion).
+  function fmtInTz(d, tz) {
+    if (!tz) return hhmm(d);
+    try {
+      return new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: tz }).format(d);
+    } catch (e) { return hhmm(d); }
+  }
+
   function paramsFor(cfg) {
     const m = Number(cfg.method);
     const factory = METHOD_MAP[m] || METHOD_MAP[3];
@@ -73,9 +82,10 @@ function createScheduler() {
     if (!Number.isFinite(cfg.lat) || !Number.isFinite(cfg.lon)) return null;
     const date = new Date(`${dateISO}T12:00:00`); // midday avoids DST edge cases
     if (isNaN(date.getTime())) return null;
+    const tz = cfg.tz || '';
+    const fmtT = (d) => fmtInTz(d, tz);
     const pt = new PrayerTimes(new Coordinates(cfg.lat, cfg.lon), date, paramsFor(cfg));
     const st = new SunnahTimes(pt);
-    const hhmm = (d) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
     const off = (p) => (cfg.offsets && cfg.offsets[p]) || 0;
     const sunset = pt.timeForPrayer(Prayer.Maghrib);
     const midnight = st.middleOfTheNight;
@@ -86,20 +96,20 @@ function createScheduler() {
     return {
       date: dateISO,
       timings: {
-        Fajr: hhmm(new Date(pt.fajr.getTime() + off('Fajr') * 60000)),
-        Sunrise: hhmm(pt.sunrise),
-        Dhuhr: hhmm(new Date(pt.dhuhr.getTime() + off('Dhuhr') * 60000)),
-        Asr: hhmm(new Date(pt.asr.getTime() + off('Asr') * 60000)),
-        Maghrib: hhmm(new Date(pt.maghrib.getTime() + off('Maghrib') * 60000)),
-        Isha: hhmm(new Date(pt.isha.getTime() + off('Isha') * 60000)),
+        Fajr: fmtT(new Date(pt.fajr.getTime() + off('Fajr') * 60000)),
+        Sunrise: fmtT(pt.sunrise),
+        Dhuhr: fmtT(new Date(pt.dhuhr.getTime() + off('Dhuhr') * 60000)),
+        Asr: fmtT(new Date(pt.asr.getTime() + off('Asr') * 60000)),
+        Maghrib: fmtT(new Date(pt.maghrib.getTime() + off('Maghrib') * 60000)),
+        Isha: fmtT(new Date(pt.isha.getTime() + off('Isha') * 60000)),
       },
       sun: {
-        sunrise: hhmm(pt.sunrise),
-        sunset: hhmm(pt.maghrib),
-        dhuhr: hhmm(pt.dhuhr),
-        midnight: hhmm(midnight),
-        firstThird: hhmm(firstThird),
-        lastThird: hhmm(st.lastThirdOfTheNight),
+        sunrise: fmtT(pt.sunrise),
+        sunset: fmtT(pt.maghrib),
+        dhuhr: fmtT(pt.dhuhr),
+        midnight: fmtT(midnight),
+        firstThird: fmtT(firstThird),
+        lastThird: fmtT(st.lastThirdOfTheNight),
       },
       hijriOffsetDays: 0,
     };
@@ -140,7 +150,9 @@ function createScheduler() {
 
   function buildInfo(pt, dayKey) {
     const cfg = state.cfg || {};
-    const sched = scheduleFor(pt).map((e) => ({ ...e, ms: e.at.getTime() }));
+    const tz = cfg.tz || '';
+    const fmtT = (d) => fmtInTz(d, tz);
+    const sched = scheduleFor(pt).map((e) => ({ ...e, ms: e.at.getTime(), hhmm: fmtT(e.at) }));
     const now = Date.now();
     let next = sched.find((e) => e.ms > now);
     let tomorrowFirst = null;
@@ -151,7 +163,7 @@ function createScheduler() {
       const pt2 = new PrayerTimes(new Coordinates(cfg.lat, cfg.lon), tomorrow, paramsFor(cfg));
       const fajrOff = (cfg.offsets && cfg.offsets.Fajr) || 0;
       const at = new Date(pt2.timeForPrayer(Prayer.Fajr).getTime() + fajrOff * 60000);
-      tomorrowFirst = { prayer: 'Fajr', at, hhmm: hhmm(at), ms: at.getTime() };
+      tomorrowFirst = { prayer: 'Fajr', at, hhmm: fmtT(at), ms: at.getTime() };
       next = tomorrowFirst;
     }
     return {
@@ -184,8 +196,8 @@ function createScheduler() {
     for (const { prayer, at } of sched) {
       const elapsedMs = now - at.getTime();
 
-      // Pre-prayer alert: exactly cfg.notifMin before, 25s grace window.
-      const preMin = Math.min(60, Math.max(1, cfg.notifMin || 10));
+      // Pre-prayer alert: per-prayer minutes (preMin) with notifMin fallback, 25s grace window.
+      const preMin = Math.min(60, Math.max(1, (cfg.preMin && Number.isFinite(+cfg.preMin[prayer]) && +cfg.preMin[prayer]) || cfg.notifMin || 10));
       const preAt = at.getTime() - preMin * 60000;
       const preKey = `${prayer}|${dayKey}|pre|${preMin}`;
       if (cfg.notif && elapsedMs < 0 && now >= preAt && now - preAt <= 25000 && !state.fired.has(preKey)) {
@@ -224,7 +236,7 @@ function createScheduler() {
       const prev = state.cfg;
       state.cfg = cfg;
       // (Re)compute whenever config or the day changed.
-      if (!prev || prev.lat !== cfg.lat || prev.lon !== cfg.lon || prev.method !== cfg.method
+      if (!prev || prev.lat !== cfg.lat || prev.lon !== cfg.lon || prev.method !== cfg.method || prev.tz !== cfg.tz
         || JSON.stringify(prev.offsets || {}) !== JSON.stringify(cfg.offsets || {})
         || !state.pt) {
         recompute();

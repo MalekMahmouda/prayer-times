@@ -342,6 +342,44 @@ const DHIKR_PRESETS = [
   { id: 'salawat',   ar: 'صَلَّى اللَّهُ عَلَيْهِ وَسَلَّمَ', en: 'Salawat',             arLabel: 'الصلاة على النبي' },
 ];
 
+// Widely-transmitted adhkar collections (texts as commonly published; counts = common practice).
+// No source citations are claimed. Transliteration only where standard.
+const DHIKR_LIBRARY = [
+  { id: 'morning', en: 'Morning', ar: 'الأذكار', items: [
+    { id: 'm1', ar: 'أَصْبَحْنَا وَأَصْبَحَ الْمُلْكُ لِلَّهِ', en: 'We have entered the morning and the dominion belongs to Allah', tr: 'Asbahna wa asbah al-mulk lillah', count: 1 },
+    { id: 'm2', ar: 'اللَّهُمَّ بِكَ أَصْبَحْنَا وَبِكَ أَمْسَيْنَا', en: 'O Allah, by You we enter the morning and the evening', tr: 'Allahumma bika asbahna wa bika amsayna', count: 1 },
+    { id: 'm3', ar: 'سُبْحَانَ اللَّهِ وَبِحَمْدِهِ', en: 'Glory be to Allah and praise Him', tr: 'SubhanAllahi wa bihamdih', count: 100 },
+    { id: 'm4', ar: 'بِسْمِ اللَّهِ الَّذِي لَا يَضُرُّ مَعَ اسْمِهِ شَيْءٌ', en: 'In the name of Allah, with whose name nothing can cause harm', tr: 'Bismillah illadhi la yadurru…', count: 3 },
+    { id: 'm5', ar: 'أَسْتَغْفِرُ اللَّهَ وَأَتُوبُ إِلَيْهِ', en: 'I seek Allah\'s forgiveness and turn to Him', tr: 'Astaghfirullah wa atubu ilayh', count: 100 },
+  ]},
+  { id: 'evening', en: 'Evening', ar: 'الأذكار', items: [
+    { id: 'e1', ar: 'أَمْسَيْنَا وَأَمْسَى الْمُلْكُ لِلَّهِ', en: 'We have entered the evening and the dominion belongs to Allah', tr: 'Amsayna wa amsa al-mulk lillah', count: 1 },
+    { id: 'e2', ar: 'اللَّهُمَّ إِنِّي أَسْأَلُكَ الْعَافِيَةَ', en: 'O Allah, I ask You for wellbeing', tr: 'Allahumma inni as\'aluka al-\'afiyah', count: 1 },
+    { id: 'e3', ar: 'أَعُوذُ بِكَلِمَاتِ اللَّهِ التَّامَّاتِ مِنْ شَرِّ مَا خَلَقَ', en: 'I seek refuge in the perfect words of Allah from the evil of what He created', tr: 'A\'udhu bikalimatillah at-tammat…', count: 3 },
+    { id: 'e4', ar: 'سُبْحَانَ اللَّهِ وَبِحَمْدِهِ', en: 'Glory be to Allah and praise Him', tr: 'SubhanAllahi wa bihamdih', count: 100 },
+  ]},
+  { id: 'afterprayer', en: 'After Prayer', ar: 'أذكار الصلاة', items: [
+    { id: 'a1', ar: 'أَسْتَغْفِرُ اللَّهَ', en: 'I seek Allah\'s forgiveness', tr: 'Astaghfirullah', count: 3 },
+    { id: 'a2', ar: 'اللَّهُمَّ أَنْتَ السَّلَامُ وَمِنْكَ السَّلَامُ', en: 'O Allah, You are Peace and from You comes peace', tr: 'Allahumma anta as-salam…', count: 1 },
+    { id: 'a3', ar: 'سُبْحَانَ اللَّهِ', en: 'Glory be to Allah', tr: 'SubhanAllah', count: 33 },
+    { id: 'a4', ar: 'الْحَمْدُ لِلَّهِ', en: 'All praise is for Allah', tr: 'Alhamdulillah', count: 33 },
+    { id: 'a5', ar: 'اللَّهُ أَكْبَر', en: 'Allah is the Greatest', tr: 'Allahu Akbar', count: 33 },
+    { id: 'a6', ar: 'لَا إِلَٰهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ', en: 'There is no god but Allah alone, without partner', tr: 'La ilaha illallahu wahdahu la sharika lah', count: 1 },
+  ]},
+  { id: 'sleep', en: 'Sleep', ar: 'أذكار النوم', items: [
+    { id: 's1', ar: 'بِاسْمِكَ اللَّهُمَّ أَمُوتُ وَأَحْيَا', en: 'In Your name, O Allah, I die and I live', tr: 'Bismika Allahumma amutu wa ahya', count: 1 },
+    { id: 's2', ar: 'اللَّهُمَّ أَسْلَمْتُ نَفْسِي إِلَيْكَ', en: 'O Allah, I submit myself to You', tr: 'Allahumma aslamtu nafsi ilayk', count: 1 },
+    { id: 's3', ar: 'قُلْ هُوَ اللَّهُ أَحَدٌ ۝ … (recite the three Quls)', en: 'Recite the three Quls (Al-Ikhlas, Al-Falaq, An-Nas)', tr: 'The three protective surahs', count: 3 },
+    { id: 's4', ar: 'سُبْحَانَ اللَّهِ ۝ الْحَمْدُ لِلَّهِ ۝ اللَّهُ أَكْبَرُ', en: '33× SubhanAllah, 33× Alhamdulillah, 34× Allahu Akbar', tr: 'Tasbih before sleep', count: 100 },
+  ]},
+  { id: 'general', en: 'General', ar: 'أذكار عامة', items: [
+    { id: 'g1', ar: 'سُبْحَانَ اللَّهِ وَالْحَمْدُ لِلَّهِ وَلَا إِلَٰهَ إِلَّا اللَّهُ وَاللَّهُ أَكْبَرُ', en: 'Glory be to Allah, praise be to Allah, there is no god but Allah, Allah is Greatest', tr: 'The four elevated phrases', count: 33 },
+    { id: 'g2', ar: 'لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللَّهِ', en: 'There is no power nor strength except by Allah', tr: 'La hawla wa la quwwata illa billah', count: 10 },
+    { id: 'g3', ar: 'حَسْبِيَ اللَّهُ وَنِعْمَ الْوَكِيلُ', en: 'Allah suffices me — what an excellent Trustee', tr: 'Hasbiyallahu wa ni\'ma al-wakil', count: 7 },
+    { id: 'g4', ar: 'رَبِّ زِدْنِي عِلْمًا', en: 'My Lord, increase me in knowledge', tr: 'Rabbi zidni \'ilma', count: 1 },
+  ]},
+];
+
 // AlAdhan calculation method ids (renderer + scheduler share these).
 const METHODS = [
   { id: '3',  en: 'Muslim World League', ar: 'رابطة العالم الإسلامي' },

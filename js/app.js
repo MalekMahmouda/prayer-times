@@ -21,6 +21,9 @@ const S = {
     adhanPerPrayer: { Fajr: true, Dhuhr: true, Asr: true, Maghrib: true, Isha: true },
     offsets: { Fajr: 0, Dhuhr: 0, Asr: 0, Maghrib: 0, Isha: 0 },
     desktop: { closeToTray: true, startWithWindows: false, overlay: true },
+    widget: false, mini: false,
+    preMin: { Fajr: 10, Dhuhr: 10, Asr: 10, Maghrib: 10, Isha: 10 },
+    adhanProfiles: {},   // { Fajr: {reciter, vol}, ... } — falls back to adhanType/adhanVol
     dhikr: { preset: 'subhan', target: 33, count: 0, daily: {}, totals: {} },
   },
 };
@@ -32,12 +35,16 @@ const IS_DESKTOP = !!PT;
 function pushCfg() {
   if (!PT) return;
   try {
+    // Active saved location's timezone (empty = system/unknown)
+    const actLoc = (typeof DB3 !== 'undefined' && DB3) ? DB3.locations.find((l) => l.id === DB3.prefs.activeLoc) : null;
     PT.updateConfig({
       lat: S.lat, lon: S.lon, method: S.cfg.method,
       madhab: S.cfg.madhab, offsets: S.cfg.offsets,
       notifMin: S.cfg.notifMin, notif: S.cfg.notif, beep: S.cfg.beep,
       adhan: S.cfg.adhan, adhanPerPrayer: S.cfg.adhanPerPrayer,
       adhanType: S.cfg.adhanType, lang: S.lang,
+      tz: actLoc ? actLoc.timezone : '',
+      preMin: S.cfg.preMin, adhanProfiles: S.cfg.adhanProfiles || {},
     });
     PT.setCloseToTray(S.cfg.desktop.closeToTray);
     PT.setOverlayEnabled(S.cfg.desktop.overlay);
@@ -45,7 +52,19 @@ function pushCfg() {
   } catch (e) { /* never break the UI */ }
 }
 
-if (PT) PT.onNavigate((page) => gotoPage(page));
+if (PT) {
+  PT.onNavigate((page) => gotoPage(page));
+  // Scheduler push (same data the widget/mini get): keeps the hero prayer time
+  // correct when the active saved location uses a non-system timezone.
+  PT.onInfo((info) => {
+    if (!info || !info.next || !S.times) return;
+    const actLoc = (typeof DB3 !== 'undefined' && DB3) ? DB3.locations.find((l) => l.id === DB3.prefs.activeLoc) : null;
+    if (actLoc && actLoc.timezone) {
+      const ht = $('heroTime');
+      if (ht) ht.textContent = info.next.hhmm;
+    }
+  });
+}
 
 /* ═══ I18N ═══ */
 function t(key) {
@@ -101,11 +120,16 @@ const saveTimes = () => localStorage.setItem('ptt', JSON.stringify({ times: S.ti
 
 /* ═══ THEME ═══ */
 function applyTheme(id) {
-  if (!THEMES.some((x) => x.id === id)) id = 'islamic';
+  if (!THEMES.some((x) => x.id === id)) {
+    // allow saved custom themes (pt3) — validated by store3
+    const custom = (typeof DB3 !== 'undefined' && DB3) ? DB3.customThemes.find((c) => c.id === id) : null;
+    if (!custom) id = 'islamic';
+  }
   S.cfg.theme = id;
   document.body.dataset.theme = id;
   document.querySelectorAll('.sw').forEach((el) => el.classList.toggle('active', el.dataset.theme === id));
   const sel = $('setTheme'); if (sel) sel.value = id;
+  if (PT) { PT.setTheme(id); if (S.cfg.widget) PT.widgetToggle(true); }
 }
 function buildSwatches() {
   const wrap = $('sbSwatches'); if (!wrap) return;
@@ -127,9 +151,12 @@ function gotoPage(name) {
   if (name === 'calendar' && window.renderCalendar) renderCalendar();
   if (name === 'quran' && window.renderSurahList) renderSurahList();
   if (name === 'names' && window.renderNames) renderNames();
-  if (name === 'dhikr' && window.renderDhikr) renderDhikr();
-  if (name === 'settings' && window.renderSettings) renderSettings();
+  if (name === 'dhikr' && window.renderDhikr) { renderDhikr(); }
+  if (name === 'dhikr' && window.renderDhikrLibrary) renderDhikrLibrary();
+  if (name === 'stats' && window.renderStats) renderStats();
+  if (name === 'settings' && window.renderSettings) { renderSettings(); if (window.renderLocations) renderLocations(); if (window.renderThemeBuilder) renderThemeBuilder(); }
   if (name === 'qibla' && window.renderQibla) renderQibla();
+  if (name === 'prayers') { if (window.renderHistory) renderHistory(); if (window.renderRamadan) renderRamadan(); if (window.renderDailyCard) renderDailyCard(); }
 }
 
 /* ═══ TOAST ═══ */
@@ -163,11 +190,38 @@ function fmtCountdown(ms) {
 function pad2(n) { return String(n).padStart(2, '0'); }
 
 /* ═══ API FETCH (display source of truth) ═══ */
+/* Network wrapper: single-flight per endpoint + exponential backoff +
+   navigator.onLine awareness. Local-only features never go through this. */
+const _netInflight = new Map();
+const _netBackoff = new Map();
+function netFetch(url) {
+  const key = url.split('?')[0];
+  if (!navigator.onLine) return Promise.reject(new Error('offline'));
+  if (_netInflight.has(key)) return _netInflight.get(key);
+  const delay = _netBackoff.get(key) || 0;
+  const p = (async () => {
+    if (delay) await new Promise((r) => setTimeout(r, delay));
+    try {
+      const r = await fetch(url);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      _netBackoff.delete(key);
+      return r;
+    } catch (e) {
+      _netBackoff.set(key, Math.min(60000, (delay || 1000) * 2));
+      throw e;
+    } finally {
+      _netInflight.delete(key);
+    }
+  })();
+  _netInflight.set(key, p);
+  return p;
+}
+
 async function fetchTimes(lat, lon) {
   const n = new Date();
   const url = `https://api.aladhan.com/v1/timings/${pad2(n.getDate())}-${pad2(n.getMonth() + 1)}-${n.getFullYear()}?latitude=${lat}&longitude=${lon}&method=${S.cfg.method}`;
   try {
-    const r = await fetch(url); if (!r.ok) throw new Error();
+    const r = await netFetch(url);
     const d = await r.json();
     S.times = d.data.timings; S.hijri = d.data.date.hijri;
     saveTimes();
@@ -184,7 +238,7 @@ async function fetchByCity(city, country) {
   const n = new Date();
   const url = `https://api.aladhan.com/v1/timingsByCity/${pad2(n.getDate())}-${pad2(n.getMonth() + 1)}-${n.getFullYear()}?city=${encodeURIComponent(city)}&country=${encodeURIComponent(country)}&method=${S.cfg.method}`;
   try {
-    const r = await fetch(url); const d = await r.json();
+    const r = await netFetch(url); const d = await r.json();
     if (d.code !== 200) throw new Error(d.status);
     S.times = d.data.timings; S.hijri = d.data.date.hijri;
     if (d.data.meta) { S.lat = d.data.meta.latitude; S.lon = d.data.meta.longitude; }
@@ -342,7 +396,7 @@ function useGPS() {
 }
 async function revGeo(lat, lon) {
   try {
-    const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
+    const r = await netFetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
     const d = await r.json();
     S.city = d.address.city || d.address.town || d.address.village || d.address.county || '';
     S.country = d.address.country || '';
@@ -520,6 +574,9 @@ function init() {
 
   refreshTodaySchedule();
   startCountdown();
+  if (window.initPhase3) initPhase3();   // Phase 3: history, dhikr library, locations, backup, theme builder
+  loadQuranDataset();                     // Phase 3: bundled Quran text (async, non-blocking)
+  wireKeyboardShortcuts();
 
   // Midnight rollover + hourly refresh
   scheduleMidnight();
@@ -533,6 +590,49 @@ function init() {
 function applyLangStatic() {
   // Lightweight first-pass labels so first paint isn't English-only in AR mode.
   applyLang();
+}
+
+/* ═══ PHASE 3: Quran dataset loader (bundled, verified; only selected surah rendered) ═══ */
+let QURAN_DATA = null;
+let quranLoadStarted = false;
+function loadQuranDataset() {
+  if (quranLoadStarted) return; quranLoadStarted = true;
+  fetch('data/quran.json')
+    .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then((d) => {
+      if (d && d.v === 1 && Array.isArray(d.surahs) && d.surahs.length === 114) {
+        QURAN_DATA = d;
+        if (window.renderReaderState) renderReaderState();
+      }
+    })
+    .catch(() => { /* offline/file:// — reader shows unavailable notice */ });
+}
+
+/* ═══ PHASE 3: keyboard shortcuts (ignored while typing) ═══ */
+function wireKeyboardShortcuts() {
+  document.addEventListener('keydown', (e) => {
+    const tag = (document.activeElement && document.activeElement.tagName) || '';
+    if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA' || document.activeElement.isContentEditable) return;
+    if (e.ctrlKey && !e.shiftKey && e.key >= '1' && e.key <= '7') {
+      e.preventDefault();
+      gotoPage(['prayers', 'calendar', 'qibla', 'quran', 'names', 'dhikr', 'settings'][+e.key - 1]);
+    } else if (e.ctrlKey && e.shiftKey && (e.key === 'P' || e.key === 'p')) {
+      e.preventDefault(); toggleWidgetSetting();
+    } else if (e.ctrlKey && e.shiftKey && (e.key === 'M' || e.key === 'm')) {
+      e.preventDefault(); toggleMiniMode();
+    }
+  });
+}
+
+function toggleWidgetSetting() {
+  S.cfg.widget = !S.cfg.widget; saveCfg(); renderSettings();
+  if (PT) PT.widgetToggle(S.cfg.widget);
+  showToast((S.cfg.widget ? '🪟 ' : '') + (S.lang === 'ar' ? (S.cfg.widget ? 'تم إظهار الأداة' : 'تم إخفاء الأداة') : (S.cfg.widget ? 'Widget shown' : 'Widget hidden')));
+}
+function toggleMiniMode() {
+  S.cfg.mini = !S.cfg.mini; saveCfg(); renderSettings();
+  if (PT) PT.miniToggle(S.cfg.mini);
+  showToast(S.lang === 'ar' ? (S.cfg.mini ? 'الوضع المصغر' : 'الوضع الكامل') : (S.cfg.mini ? 'Mini mode on' : 'Mini mode off'));
 }
 
 function makkahFallback() {

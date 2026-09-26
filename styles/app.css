@@ -291,6 +291,51 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:14px 0}
 .qibla-dist{margin-top:14px;font-size:13.5px;background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:9px 18px;display:inline-block}
 .qibla-dist b{font-size:19px;color:var(--text);font-variant-numeric:tabular-nums}
 
+/* ── Quran tabs / reader ── */
+.qtabs{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.qtab{padding:8px 16px;border-radius:12px;background:var(--surface);border:1.5px solid var(--border);font-size:13px;font-weight:650;transition:all var(--dur) var(--ease)}
+.qtab:hover{border-color:var(--primary)}
+.qtab.active{background:var(--grad);color:var(--on-primary);border-color:transparent}
+.reader{padding:22px 26px;max-width:860px}
+.reader-surah-hdr{text-align:center;padding-bottom:14px;margin-bottom:14px;border-bottom:2px double var(--gold);font-family:var(--font-ar)}
+.reader-surah-hdr .rsh-ar{font-size:26px;font-weight:800;color:var(--primary)}
+.reader-surah-hdr .rsh-en{font-size:12.5px;color:var(--text-muted);margin-top:3px}
+.ayah{display:flex;gap:14px;padding:10px 0;border-bottom:1px dashed var(--border)}
+.ayah:last-child{border-bottom:none}
+.ayah .anum{flex-shrink:0;width:34px;height:34px;border-radius:50%;border:1.5px solid var(--primary);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;margin-top:4px}
+.ayah .abody{flex:1;min-width:0}
+.ayah .aar{font-family:var(--font-ar);font-size:var(--rd-font,24px);line-height:var(--rd-line,2);dir:rtl;text-align:right}
+[dir="rtl"] .ayah .aar{text-align:right}
+.ayah .aen{font-size:calc(var(--rd-font,24px) * .58);color:var(--text-muted);line-height:1.75;margin-top:6px;font-style:normal}
+.ayah .abtns{display:flex;gap:6px;margin-top:7px;opacity:0;transition:opacity var(--dur)}
+.ayah:hover .abtns,.ayah:focus-within .abtns{opacity:1}
+.ayah .abtn{font-size:11px;padding:3px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text-muted)}
+.ayah .abtn:hover{border-color:var(--primary);color:var(--primary)}
+.ayah.marked .anum{background:var(--gold);color:#1a1a1a;border-color:var(--gold)}
+.reader-dark{--surface:#0d1117;--surface2:#161b22;--text:#e6edf3;--text-muted:#8b949e;--border:#30363d;color:var(--text);background:#0d1117}
+.reader-dark .ayah .aen{color:#9aa7b4}
+.qs-hit{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:12px 15px;margin-bottom:8px;cursor:pointer;transition:border-color var(--dur)}
+.qs-hit:hover{border-color:var(--primary)}
+.qs-hit .qsh-meta{font-size:11px;color:var(--primary);font-weight:750;margin-bottom:4px}
+.qs-hit .qsh-ar{font-family:var(--font-ar);font-size:17px;line-height:1.9}
+.qs-hit .qsh-en{font-size:12px;color:var(--text-muted);margin-top:4px;line-height:1.6}
+.bm-item{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:11px 14px;margin-bottom:8px}
+.bm-item .bmm{flex:1;min-width:0;cursor:pointer}
+.bm-item .bmm:hover .bm-meta{color:var(--primary)}
+.bm-item .bm-meta{font-size:12px;font-weight:750;transition:color var(--dur)}
+.bm-item .bm-txt{font-size:12px;color:var(--text-muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bm-item .bm-note{font-size:11px;color:var(--gold);font-style:italic;margin-top:2px}
+.hs-done{--hc:var(--success)}
+.hs-missed{--hc:var(--warning)}
+.hs-none{--hc:var(--text-muted)}
+.hchip{display:inline-flex;align-items:center;gap:8px;padding:8px 13px;border-radius:12px;border:1.5px solid var(--border);background:var(--surface);font-size:13px;cursor:pointer;transition:all var(--dur) var(--ease)}
+.hchip:hover{border-color:var(--hc,var(--primary));transform:translateY(-1px)}
+.hchip .hi{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--hc,var(--text-muted));color:var(--hc,var(--text-muted));display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800}
+.hchip.hs-on{border-color:var(--hc);box-shadow:0 0 0 3px color-mix(in srgb,var(--hc) 15%,transparent)}
+.hchip.hs-on .hi{background:var(--hc);color:var(--on-primary)}
+.hchip .hn{font-weight:650}
+.hchip .hs{font-size:10.5px;color:var(--text-muted)}
+
 /* ── Quran ── */
 .surah-list{display:flex;flex-direction:column;gap:8px}
 .surah-item{display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid var(--border);border-radius:15px;padding:12px 16px;cursor:pointer;transition:all var(--dur) var(--ease)}
@@ -307,7 +352,8 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:14px 0}
 .tag.mc{background:color-mix(in srgb,#d97706 12%,transparent);color:#b45309;border-color:transparent}
 .tag.md{background:color-mix(in srgb,#0284c7 12%,transparent);color:#0369a1;border-color:transparent}
 .surah-item .vs{font-size:11px;color:var(--text-muted)}
-.player{position:sticky;bottom:0;z-index:20;background:var(--grad);color:#fff;border-radius:18px;padding:13px 18px;display:none;align-items:center;gap:14px;box-shadow:var(--shadow-lg);margin-top:16px}
+.player{position:fixed;bottom:14px;inset-inline:26px;z-index:60;background:var(--grad);color:#fff;border-radius:18px;padding:13px 18px;display:none;align-items:center;gap:14px;box-shadow:var(--shadow-lg);max-width:1100px;margin:0 auto}
+@media(max-width:768px){.player{inset-inline:12px;bottom:76px}}
 .player.show{display:flex;animation:pageIn .3s var(--ease)}
 .player .pnum{width:38px;height:38px;border-radius:12px;background:rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0}
 .player .pmeta{min-width:0;width:175px}

@@ -35,6 +35,11 @@ contextBridge.exposeInMainWorld('ptDesktop', {
   setCloseToTray: (v) => ipcRenderer.send('pt:set-close-to-tray', !!v),
   setStartWithWindows: (v) => ipcRenderer.send('pt:set-start-with-windows', !!v),
   setOverlayEnabled: (v) => ipcRenderer.send('pt:set-overlay-enabled', !!v),
+  setTheme: (id) => { try { if (typeof id === 'string' && id.length < 40) ipcRenderer.send('pt:set-theme', id); } catch (e) {} },
+  widgetToggle: (wanted) => ipcRenderer.send('widget:toggle', !!wanted),
+  miniToggle: (wanted) => ipcRenderer.send('mini:toggle', !!wanted),
+  /** Push of scheduler info to the main renderer (dashboard refresh). */
+  onInfo: (cb) => ipcRenderer.on('pt:info', (e, payload) => cb(payload)),
 
   /** Fires a real notification after ~3 s so the user can preview alerts. */
   testAlert: () => ipcRenderer.send('pt:test-alert'),
