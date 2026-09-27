@@ -24,7 +24,7 @@ const PRAYER_AR = { Fajr: 'الفجر', Dhuhr: 'الظهر', Asr: 'العصر', 
 const METHOD_MAP = {
   3: () => CalculationMethod.MuslimWorldLeague(),
   4: () => CalculationMethod.UmmAlQura(),
-  2: () => CalculationMethod.Other(),
+  2: () => CalculationMethod.NorthAmerica(), // AlAdhan id 2 = ISNA (18°/18°)
   1: () => CalculationMethod.Karachi(),
   5: () => CalculationMethod.Egyptian(),
   8: () => CalculationMethod.Dubai(),
@@ -167,7 +167,11 @@ window.ptMobile = {
   times: null,
   setConfig(cfg) {
     window.ptMobile._cfg = cfg;
-    const sig = JSON.stringify([cfg.lat, cfg.lon, cfg.method, cfg.madhab, cfg.offsets, cfg.preMin, cfg.adhanPerPrayer, cfg.notif, cfg.lang]);
+    // Device timezone participates in the signature: a timezone/DST change
+    // while the app is open invalidates the schedule and reschedules.
+    let tz = '';
+    try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) { /* ignore */ }
+    const sig = JSON.stringify([cfg.lat, cfg.lon, cfg.method, cfg.madhab, cfg.offsets, cfg.preMin, cfg.adhanPerPrayer, cfg.notif, cfg.lang, tz]);
     if (sig === lastSig) return;
     lastSig = sig;
     reschedule(cfg);
@@ -176,3 +180,10 @@ window.ptMobile = {
     if (window.ptMobile._cfg) reschedule(window.ptMobile._cfg);
   },
 };
+
+// Exact-alarm capability (Android 12+): exposed for the settings UI / logs.
+// If revoked, alarms may be batched by the OS (inexact) — in-app times are
+// unaffected. Users can grant it in Android Settings → Apps → Special access.
+try {
+  LocalNotifications.checkExactNotificationSetting().then((s) => { window.ptMobile.exactAlarms = s.exact; }).catch(() => { window.ptMobile.exactAlarms = 'unknown'; });
+} catch (e) { window.ptMobile.exactAlarms = 'unsupported'; }

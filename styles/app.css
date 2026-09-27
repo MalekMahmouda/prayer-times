@@ -111,6 +111,11 @@
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden}
 body{font-family:var(--font);background:var(--bg);color:var(--text);transition:background var(--dur-slow),color var(--dur-slow);-webkit-font-smoothing:antialiased}
+/* Android cutouts / gesture bars: keep content clear of system UI */
+.app{padding-top:env(safe-area-inset-top,0)}
+.content{padding-bottom:calc(92px + env(safe-area-inset-bottom,0))}
+.bnav{padding-bottom:env(safe-area-inset-bottom,0)}
+.sb{padding-top:env(safe-area-inset-top,0)}
 [dir="rtl"] body,[dir="rtl"] input,[dir="rtl"] select,[dir="rtl"] button{font-family:var(--font-ar)}
 input,select,button,textarea{font-family:inherit;color:inherit}
 button{cursor:pointer;border:none;background:none}

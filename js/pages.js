@@ -71,13 +71,14 @@ async function showCalDay(date) {
     <div class="muted" style="font-size:12px;margin-top:6px">${t('cal.noTimes')}…</div>`;
   let timings = calDayCache[key];
   if (!timings) {
-    if (PT && S.lat != null) {
+    if (S.lat != null && window.Plat) {
       try {
-        const res = await PT.getDay(key, { lat: S.lat, lon: S.lon, method: S.cfg.method, madhab: S.cfg.madhab });
-        timings = res.timings; calDayCache[key] = timings;
+        const res = await window.Plat.getDay(key, { lat: S.lat, lon: S.lon, method: S.cfg.method, madhab: S.cfg.madhab });
+        timings = res && res.timings; if (timings) calDayCache[key] = timings;
       } catch (e) { /* fall through */ }
-    } else if (S.lat != null) {
-      try { // browser fallback: AlAdhan API for the specific date
+    }
+    if (!timings && S.lat != null && !window.Plat) {
+      try { // ancient fallback: AlAdhan API for the specific date
         const r = await fetch(`https://api.aladhan.com/v1/timings/${pad2(date.getDate())}-${pad2(date.getMonth() + 1)}-${date.getFullYear()}?latitude=${S.lat}&longitude=${S.lon}&method=${S.cfg.method}`);
         const d = await r.json();
         if (d.code === 200) { timings = d.data.timings; calDayCache[key] = timings; }
@@ -110,8 +111,8 @@ window.exportMonthCsv = async function exportMonthCsv() {
     const date = new Date(CAL.y, CAL.m, d);
     const key = date.toISOString().slice(0, 10);
     let timings = calDayCache[key];
-    if (!timings && PT && S.lat != null) {
-      try { timings = (await PT.getDay(key, { lat: S.lat, lon: S.lon, method: S.cfg.method, madhab: S.cfg.madhab })).timings; calDayCache[key] = timings; } catch (e) { continue; }
+    if (!timings && window.Plat && S.lat != null) {
+      try { timings = (await window.Plat.getDay(key, { lat: S.lat, lon: S.lon, method: S.cfg.method, madhab: S.cfg.madhab })).timings; calDayCache[key] = timings; } catch (e) { continue; }
     }
     if (!timings) continue;
     rows.push([key, hijriOf(date), timings.Fajr, timings.Sunrise, timings.Dhuhr, timings.Asr, timings.Maghrib, timings.Isha]);

@@ -23,7 +23,7 @@ const PRAYERS = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
 const METHOD_MAP = {
   3: () => CalculationMethod.MuslimWorldLeague(),
   4: () => CalculationMethod.UmmAlQura(),
-  2: () => CalculationMethod.Other(),
+  2: () => CalculationMethod.NorthAmerica(), // AlAdhan id 2 = ISNA (18°/18°)
   1: () => CalculationMethod.Karachi(),
   5: () => CalculationMethod.Egyptian(),
   8: () => CalculationMethod.Dubai(),

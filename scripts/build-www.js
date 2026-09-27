@@ -36,7 +36,7 @@ execSync(
 
 // ── 2. Copy static assets ──
 cp(path.join(ROOT, 'styles', 'app.css'), path.join(WWW, 'styles', 'app.css'));
-for (const f of ['app.js', 'pages.js', 'pages3.js', 'reader.js', 'store3.js', 'data.js']) {
+for (const f of ['app.js', 'pages.js', 'pages3.js', 'reader.js', 'store3.js', 'data.js', 'platform.js']) {
   cp(path.join(ROOT, 'js', f), path.join(WWW, 'js', f));
 }
 cp(path.join(ROOT, 'data', 'quran.json'), path.join(WWW, 'data', 'quran.json'));

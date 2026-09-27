@@ -2,7 +2,7 @@
 <html lang="en" dir="ltr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Prayer Times | أوقات الصلاة</title>
 <link rel="stylesheet" href="styles/app.css">
 </head>
@@ -318,6 +318,9 @@
               <button class="toggle" id="tgOverlay"></button></div>
             <div class="row"><span class="lbl" id="slVol">Volume</span>
               <input type="range" id="setVol" min="0" max="1" step="0.05" value="1" style="width:130px"></div>
+            <div class="row"><span class="lbl" id="slImsak">Imsak estimate offset</span>
+              <div class="stepper"><button id="imsakMinus">−</button><div class="val" id="imsakVal">10</div><button id="imsakPlus">+</button></div></div>
+            <div class="note" id="imsakNote">Imsak is shown as an estimate (Fajr minus this many minutes). Adjust to follow your local practice.</div>
             <div class="sub" style="margin-bottom:4px" id="slPerPrayer">Per-prayer Adhan</div>
             <div id="adhanPerRows"></div>
             <div class="row" style="padding-top:10px">
@@ -325,7 +328,7 @@
             </div>
           </div>
 
-          <div class="card set-card">
+          <div class="card set-card only-desktop">
             <div class="card-h">🖥️ <span id="shDesktop">Desktop</span></div>
             <div class="row"><div><span class="lbl" id="slSww">Start with Windows</span><div class="sub" id="slSwwS">Launch automatically at login</div></div>
               <button class="toggle" id="tgSww"></button></div>
@@ -361,15 +364,12 @@
             <div id="keysList" style="font-size:12.5px;line-height:2.1"></div>
           </div>
 
-          <div class="card set-card">
+          <div class="card set-card only-desktop">
             <div class="card-h">🖥️ <span id="shWidget">Widget & Mini Mode</span></div>
             <div class="row"><div><span class="lbl" id="slWidget">Desktop Mini Widget</span><div class="sub" id="slWidgetS">Compact always-on-top next-prayer card</div></div>
               <button class="toggle" id="tgWidget"></button></div>
             <div class="row"><div><span class="lbl" id="slMini">Mini Mode</span><div class="sub" id="slMiniS">Compact always-on-top window</div></div>
               <button class="toggle" id="tgMini"></button></div>
-            <div class="row"><span class="lbl" id="slImsak">Imsak estimate offset</span>
-              <div class="stepper"><button id="imsakMinus">−</button><div class="val" id="imsakVal">10</div><button id="imsakPlus">+</button></div></div>
-            <div class="note" id="imsakNote">Imsak is shown as an estimate (Fajr minus this many minutes). Adjust to follow your local practice.</div>
           </div>
 
           <div class="card set-card">
@@ -456,6 +456,7 @@
 <audio id="beepAudio" preload="none"></audio>
 
 <script src="js/data.js"></script>
+<script src="js/platform.js"></script>
 <script src="js/store3.js"></script>
 <script src="js/app.js"></script>
 <script src="js/pages.js"></script>

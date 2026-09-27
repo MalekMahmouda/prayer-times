@@ -37,5 +37,14 @@
 
     <!-- Permissions -->
 
+    <!-- Capacitor WebView content -->
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Location: one-shot fix for the "Automatic location" button only.
+         Manual city entry and saved locations never need it. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+
+    <!-- Added by @capacitor/local-notifications (see its plugin manifest):
+         POST_NOTIFICATIONS, SCHEDULE_EXACT_ALARM, RECEIVE_BOOT_COMPLETED, WAKE_LOCK -->
 </manifest>

@@ -65,6 +65,12 @@ function pushMobile() {
 }
 window.addEventListener('load', pushMobile);
 
+/* ═══ ANDROID: hide desktop-only settings once DOM is up ═══ */
+window.addEventListener('DOMContentLoaded', () => {
+  if (!(window.Capacitor && window.Capacitor.isNativePlatform())) return;
+  document.querySelectorAll('.only-desktop').forEach((el) => { el.style.display = 'none'; });
+});
+
 if (PT) {
   PT.onNavigate((page) => gotoPage(page));
   // Scheduler push (same data the widget/mini get): keeps the hero prayer time
@@ -143,6 +149,12 @@ function applyTheme(id) {
   document.querySelectorAll('.sw').forEach((el) => el.classList.toggle('active', el.dataset.theme === id));
   const sel = $('setTheme'); if (sel) sel.value = id;
   if (PT) { PT.setTheme(id); if (S.cfg.widget) PT.widgetToggle(true); }
+  // Android status bar icons follow the theme's luminance
+  if (typeof window.ptStatusBar === 'function') {
+    const th = THEMES.find((x) => x.id === id);
+    const dark = th ? (th.dark !== false) : false;
+    window.ptStatusBar(dark);
+  }
 }
 function buildSwatches() {
   const wrap = $('sbSwatches'); if (!wrap) return;
@@ -260,15 +272,15 @@ async function fetchByCity(city, country) {
   } catch (e) { showToast('❌ ' + t('toast.locFail')); }
 }
 
-/* ═══ OFFLINE SCHEDULE (main process, for dashboard sun section) ═══ */
+/* ═══ OFFLINE SCHEDULE (platform adapter: main process on desktop, adhan lib on mobile/browser) ═══ */
 async function refreshTodaySchedule() {
-  if (!PT || S.lat == null) return;
+  if (S.lat == null || !window.Plat) return;
   try {
-    S.todaySchedule = await PT.getDay(new Date().toISOString().slice(0, 10), {
+    S.todaySchedule = await window.Plat.getDay(new Date().toISOString().slice(0, 10), {
       lat: S.lat, lon: S.lon, method: S.cfg.method, madhab: S.cfg.madhab,
     });
     renderSunSection();
-  } catch (e) { /* offline without main process — hide sun section */ }
+  } catch (e) { /* no location / offline — hide sun section */ }
 }
 
 /* ═══ DASHBOARD ═══ */
@@ -342,8 +354,8 @@ function renderSunSection() {
   const el = $('sunGrid'); if (!el) return;
   const ts = S.todaySchedule && S.todaySchedule.sun;
   const rows = [
-    { i: '🌅', k: 'sunrise', lbl: t('sunrise'), v: S.times && S.times.Sunrise ? fmt(timeStrToDate(S.times.Sunrise)) : '—' },
-    { i: '🌇', k: 'sunset', lbl: t('sunset'), v: S.times && S.times.Sunset ? fmt(timeStrToDate(S.times.Sunset)) : '—' },
+    { i: '🌅', k: 'sunrise', lbl: t('sunrise'), v: (ts && ts.sunrise) || (S.times && S.times.Sunrise ? fmt(timeStrToDate(S.times.Sunrise)) : '—') },
+    { i: '🌇', k: 'sunset', lbl: t('sunset'), v: (ts && ts.sunset) || (S.times && S.times.Sunset ? fmt(timeStrToDate(S.times.Sunset)) : '—') },
     { i: '🌞', k: 'dhuhr', lbl: t('solarNoon'), v: (ts && ts.dhuhr) || (S.times && S.times.Dhuhr ? fmt(timeStrToDate(S.times.Dhuhr)) : '—') },
     { i: '🌙', k: 'midnight', lbl: t('midnight'), v: ts && ts.midnight ? ts.midnight : '—' },
     { i: '🌌', k: 'firstThird', lbl: t('firstThird'), v: ts && ts.firstThird ? ts.firstThird : '—' },
