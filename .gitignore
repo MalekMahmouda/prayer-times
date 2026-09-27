@@ -5,3 +5,4 @@ dist/
 release/
 *.log
 .freebuff/
+.githooks/
