@@ -34,8 +34,7 @@ const IS_DESKTOP = !!PT;
 
 function pushCfg() {
   if (!PT) return;
-  try {
-    // Active saved location's timezone (empty = system/unknown)
+  try {    // Active saved location's timezone (empty = system/unknown)
     const actLoc = (typeof DB3 !== 'undefined' && DB3) ? DB3.locations.find((l) => l.id === DB3.prefs.activeLoc) : null;
     PT.updateConfig({
       lat: S.lat, lon: S.lon, method: S.cfg.method,
@@ -50,7 +49,21 @@ function pushCfg() {
     PT.setOverlayEnabled(S.cfg.desktop.overlay);
     // startWithWindows is applied on toggle only (avoid re-registering each push)
   } catch (e) { /* never break the UI */ }
+  pushMobile();
 }
+
+/* ═══ MOBILE (Android/Capacitor): feed the local-notification scheduler ═══ */
+function pushMobile() {
+  if (typeof window === 'undefined' || !window.ptMobile) return;
+  try {
+    window.ptMobile.setConfig({
+      lat: S.lat, lon: S.lon, method: S.cfg.method, madhab: S.cfg.madhab,
+      offsets: S.cfg.offsets, preMin: S.cfg.preMin,
+      adhanPerPrayer: S.cfg.adhanPerPrayer, notif: S.cfg.notif, lang: S.lang,
+    });
+  } catch (e) { /* never break the UI */ }
+}
+window.addEventListener('load', pushMobile);
 
 if (PT) {
   PT.onNavigate((page) => gotoPage(page));
