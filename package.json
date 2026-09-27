@@ -14,7 +14,9 @@
     "package": "electron-builder",
     "package:dir": "electron-builder --dir",
     "package:installer": "electron-builder --win nsis",
-    "release": "node scripts/make-release.js"
+    "release": "node scripts/make-release.js",
+    "www": "node scripts/build-www.js",
+    "apk": "node scripts/build-www.js && npx cap sync android && cd android && gradlew.bat assembleRelease"
   },
   "build": {
     "appId": "com.malek.prayertimes",
@@ -44,7 +46,9 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ]
     },
@@ -62,11 +66,16 @@
     }
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/core": "^8.5.2",
+    "@capacitor/local-notifications": "^8.3.1",
     "adhan": "^4.4.3"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.5.2",
     "electron": "^41.1.0",
     "electron-builder": "^26.0.12",
+    "esbuild": "^0.28.2",
     "pngjs": "^7.0.0"
   }
 }

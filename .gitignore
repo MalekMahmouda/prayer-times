@@ -1,8 +1,17 @@
-node_modules/
-tmp/
-PrayerTimes-win32-x64/
-dist/
-release/
+
+# Android signing (never commit)
 *.log
 .freebuff/
 .githooks/
+PrayerTimes-win32-x64/
+android/.gradle/
+android/app/build/
+android/build/
+android/capacitor-cordova-android-plugins/build/
+android/local.properties
+dist/
+keystore/
+node_modules/
+release/
+tmp/
+www/
