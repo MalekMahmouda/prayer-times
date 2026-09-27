@@ -4,3 +4,4 @@ PrayerTimes-win32-x64/
 dist/
 release/
 *.log
+.freebuff/
