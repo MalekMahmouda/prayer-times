@@ -8,7 +8,7 @@
 
 const path = require('path');
 const {
-  app, BrowserWindow, ipcMain, Notification, nativeImage,
+  app, BrowserWindow, ipcMain, Notification, nativeImage, Menu,
 } = require('electron');
 const { createScheduler } = require('./scheduler');
 const { createTray } = require('./tray');
@@ -37,6 +37,11 @@ if (!isPrimary) {
     // Stable AppUserModelID so Windows toasts show the app name and group in the taskbar.
     app.setAppUserModelId('com.prayertimes.desktop');
   }
+
+  // No application menu: the window keeps its native title bar, and the default
+  // File/Edit/View/Window/Help menu (with its shortcut keys) is never shown.
+  Menu.setApplicationMenu(null);
+
 
   store = new JsonStore({
     dir: () => app.getPath('userData'),
