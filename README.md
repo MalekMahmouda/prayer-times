@@ -2,6 +2,8 @@
 
 A native Windows desktop & Android Islamic companion built with Electron — prayer times, Quran, Dhikr, Qibla, and more, with a fully offline-first core.
 
+> 🇸🇦 العربية: [README.ar.md](README.ar.md)
+
 🌐 **Web app:** https://malekmahmouda.github.io/prayer-times/ — installable PWA, works fully offline after the first visit.
 
 📥 **Downloads:** latest [releases](https://github.com/MalekMahmouda/prayer-times/releases) — Windows installer + signed Android APK.
