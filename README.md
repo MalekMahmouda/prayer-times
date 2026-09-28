@@ -1,8 +1,12 @@
 # Prayer Times · أوقات الصلاة
 
-A native Windows desktop Islamic companion built with Electron — prayer times, Quran, Dhikr, Qibla, and more, with a fully offline-first core.
+A native Windows desktop & Android Islamic companion built with Electron — prayer times, Quran, Dhikr, Qibla, and more, with a fully offline-first core.
 
-![Platform](https://img.shields.io/badge/platform-Windows-blue) ![Electron](https://img.shields.io/badge/Electron-41-47848F) ![Version](https://img.shields.io/badge/version-1.0.0-green)
+🌐 **Web app:** https://malekmahmouda.github.io/prayer-times/ — installable PWA, works fully offline after the first visit.
+
+📥 **Downloads:** latest [releases](https://github.com/MalekMahmouda/prayer-times/releases) — Windows installer + signed Android APK.
+
+![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Android%20%7C%20Web-blue) ![Electron](https://img.shields.io/badge/Electron-41-47848F) ![Version](https://img.shields.io/badge/version-1.1.0-green)
 
 ## Features
 
