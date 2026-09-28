@@ -65,11 +65,102 @@ function pushMobile() {
 }
 window.addEventListener('load', pushMobile);
 
-/* ═══ ANDROID: hide desktop-only settings once DOM is up ═══ */
+/* ═══ ANDROID: mobile UI + hide desktop-only settings once DOM is up ═══ */
 window.addEventListener('DOMContentLoaded', () => {
   if (!(window.Capacitor && window.Capacitor.isNativePlatform())) return;
-  document.querySelectorAll('.only-desktop').forEach((el) => { el.style.display = 'none'; });
+  initMobileUI();
 });
+
+/* ═══ MOBILE UI (Android / narrow viewport): dedicated home + 5-tab nav + More sheet ═══ */
+let mWired = false;
+function initMobileUI() {
+  const isAndroid = !!(window.Capacitor && window.Capacitor.isNativePlatform());
+  if (isAndroid) document.querySelectorAll('.only-desktop').forEach((el) => { el.style.display = 'none'; });
+  if (!mWired) {
+    mWired = true;
+    const wire = (id, fn) => { const el = $(id); if (el) el.onclick = fn; };
+    wire('mMoreTab', openMoreSheet);
+    wire('mHomeMore', openMoreSheet);
+    wire('mQiblaBtn', () => gotoPage('qibla'));
+    wire('mLocChip', openLocModal);
+    wire('mLoc', openLocModal);
+    wire('mLang', () => $('langBtn').click());
+    const sheet = $('mMoreSheet');
+    if (sheet) sheet.addEventListener('click', (e) => { if (e.target === sheet) closeMoreSheet(); });
+    document.querySelectorAll('#mMoreSheet [data-page]').forEach((b) => {
+      b.addEventListener('click', () => { closeMoreSheet(); gotoPage(b.dataset.page); });
+    });
+    buildMSwatches();
+  }
+}
+
+/* m-mode tracks the viewport live: on (Android) or ≤768px wide; off above.
+   Prevents an empty screen when a window is opened small then enlarged. */
+function applyMMode(on) {
+  const was = document.body.classList.contains('m-mode');
+  if (on === was) return;
+  document.body.classList.toggle('m-mode', on);
+  if (on) buildMSwatches();
+  gotoPage('prayers');
+}
+
+function moreSheetOpen() { const sh = $('mMoreSheet'); return !!(sh && sh.classList.contains('open')); }
+function openMoreSheet() {
+  const sh = $('mMoreSheet'); if (!sh) return;
+  buildMSwatches();
+  sh.classList.add('open');
+}
+function closeMoreSheet() { const sh = $('mMoreSheet'); if (sh) sh.classList.remove('open'); }
+
+function buildMSwatches() {
+  const wrap = $('mSwatches'); if (!wrap) return;
+  wrap.innerHTML = '';
+  THEMES.forEach((th) => {
+    const b = document.createElement('button');
+    b.className = 'sw' + (th.id === S.cfg.theme ? ' active' : '');
+    b.dataset.theme = th.id; b.style.background = th.color; b.title = S.lang === 'ar' ? th.ar : th.en;
+    b.onclick = () => { applyTheme(th.id); saveCfg(); buildSwatches(); buildMSwatches(); };
+    wrap.appendChild(b);
+  });
+}
+
+/* ── mHome renderers (dedicated mobile home screen) ── */
+function renderMHome() {
+  if (!S.times) return;
+  const info = nextPrayerInfo();
+  if (!info) return;
+  $('mLocName').textContent = S.city ? `${S.city}${S.country ? ', ' + S.country : ''}` : (S.lat != null ? `${S.lat.toFixed(2)}, ${S.lon.toFixed(2)}` : '—');
+  $('mHijri').textContent = S.hijri
+    ? `${S.hijri.day} ${(S.lang === 'ar' ? HMA : HME)[parseInt(S.hijri.month.number) - 1]} ${S.hijri.year} ${S.lang === 'ar' ? 'هـ' : 'AH'}`
+    : hijriOf(new Date());
+  $('mNextLbl').textContent = t('nextPrayer');
+  $('mName').textContent = S.lang === 'ar' ? AR_PRAYER[info.next.prayer] : info.next.prayer;
+  $('mTime').textContent = fmt(info.next.at) + (info.isTomorrow ? ` · ${t('tomorrow')}` : '');
+  $('mCdLbl').textContent = t('startsIn');
+  const now = new Date();
+  $('mStrip').innerHTML = PRAYERS.map((p, i) => {
+    const at = adjTime(p, S.times[p]);
+    const isNext = info.idx === i && !info.isTomorrow;
+    const isPast = at < now && !isNext;
+    return `<div class="pcard pt-${p.toLowerCase()}${isNext ? ' next' : ''}${isPast ? ' past' : ''}">
+      <div class="ic">${ICON_PRAYER[p]}</div>
+      <div class="nm">${S.lang === 'ar' ? AR_PRAYER[p] : p}</div>
+      <div class="tm">${fmt(at)}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderMHomeSun() {
+  const src = $('sunGrid'); if (!src) return;
+  const dst = $('sunGridM'); if (!dst) return;
+  dst.innerHTML = src.innerHTML;
+}
+
+function renderMHomeCards() {
+  if (window.renderRamadan) renderRamadan('ramadanCardM');
+  if (window.renderDailyCard) renderDailyCard('dailyCardM');
+  if (window.renderHistory) renderHistory('histChipsM');
+}
 
 if (PT) {
   PT.onNavigate((page) => gotoPage(page));
@@ -170,8 +261,10 @@ function buildSwatches() {
 
 /* ═══ NAVIGATION ═══ */
 function gotoPage(name) {
+  if (document.body.classList.contains('m-mode') && name === 'prayers') name = 'mhome';
   document.querySelectorAll('.page').forEach((p) => p.classList.remove('active'));
   const pg = $('page-' + name); if (pg) pg.classList.add('active');
+  if (name === 'mhome') renderMHomeCards();
   document.querySelectorAll('[data-page]').forEach((b) => b.classList.toggle('active', b.dataset.page === name));
   if (name === 'calendar' && window.renderCalendar) renderCalendar();
   if (name === 'quran' && window.renderSurahList) renderSurahList();
@@ -280,12 +373,14 @@ async function refreshTodaySchedule() {
       lat: S.lat, lon: S.lon, method: S.cfg.method, madhab: S.cfg.madhab,
     });
     renderSunSection();
+    renderMHomeSun();
   } catch (e) { /* no location / offline — hide sun section */ }
 }
 
 /* ═══ DASHBOARD ═══ */
 function renderAll() {
   renderDashboard();
+  renderMHomeCards();
   renderSunSection(); // API-backed rows in browser; full night times via ptGetDay on desktop
   if (window.renderQibla) renderQibla();
   if (window.renderCalendar && document.getElementById('page-calendar').classList.contains('active')) renderCalendar();
@@ -376,9 +471,11 @@ function tick() {
   if (!S.times) return;
   const info = nextPrayerInfo();
   if (!info) return;
-  $('heroCd').textContent = fmtCountdown(info.next.at - new Date());
+  const cdStr = fmtCountdown(info.next.at - new Date());
+  $('heroCd').textContent = cdStr;
+  const mCd = $('mCd'); if (mCd) mCd.textContent = cdStr;
   // Refresh card states (next/past) every 30s; full re-render keeps headers fresh.
-  if (++tickN % 30 === 0) renderDashboard();
+  if (++tickN % 30 === 0) { renderDashboard(); renderMHome(); }
 }
 
 /* ═══ QIBLA MATH (shared) ═══ */
@@ -477,6 +574,17 @@ function applyLang() {
     const el = b.querySelector('.t'); if (el && key) el.textContent = t(key);
   });
 
+  // Mobile home + More sheet labels
+  const mMore = $('mMoreTabLbl'); if (mMore) mMore.textContent = t('more');
+  const mMoreSheet = $('mMoreTitle'); if (mMoreSheet) mMoreSheet.textContent = t('more');
+  const mMoreHome = $('mHomeMoreLbl'); if (mMoreHome) mMoreHome.textContent = t('more');
+  const mQibla = $('mQiblaLbl'); if (mQibla) mQibla.textContent = t('nav.qibla');
+  const mLang = $('mLangLbl'); if (mLang) mLang.textContent = t('language');
+  const mLoc = $('mLocLbl'); if (mLoc) mLoc.textContent = t('location');
+  const mTheme = $('mThemeLbl'); if (mTheme) mTheme.textContent = t('set.theme');
+  const mHistHint = $('histHintM'); if (mHistHint) mHistHint.textContent = t('hist.hint');
+  const mHistLbl = $('lblHistM'); if (mHistLbl) mHistLbl.textContent = t('hist.title');
+
   // Topbar
   $('offBadge').textContent = t('offline');
   $('tbDate').textContent = fmtDate(new Date(), { weekday: 'short', day: 'numeric', month: 'short' });
@@ -484,6 +592,7 @@ function applyLang() {
   // Dashboard labels
   $('lblToday').textContent = S.lang === 'ar' ? 'صلوات اليوم' : "Today's Prayers";
   $('lblSun').textContent = t('sunNight');
+  const lblSunM = $('lblSunM'); if (lblSunM) lblSunM.textContent = t('sunNight');
   $('lblGlance').textContent = t('glance');
   $('heroNextLbl').textContent = t('nextPrayer');
   $('heroCdLbl').textContent = t('startsIn');
@@ -568,6 +677,14 @@ function init() {
   applyLangStatic();       // nav/labels before data renders
   buildSwatches();
 
+  // Narrow viewport (phone / small window): dedicated mobile UI — desktop unaffected
+  initMobileUI();
+  let mqTick = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(mqTick);
+    mqTick = setTimeout(() => applyMMode(window.innerWidth <= 768), 120);
+  });
+
   // Navigation wiring
   document.querySelectorAll('[data-page]').forEach((b) => b.addEventListener('click', () => gotoPage(b.dataset.page)));
   $('tbLoc').onclick = openLocModal;
@@ -628,6 +745,7 @@ function loadQuranDataset() {
       if (d && d.v === 1 && Array.isArray(d.surahs) && d.surahs.length === 114) {
         QURAN_DATA = d;
         if (window.renderReaderState) renderReaderState();
+        if (window.renderDailyCard && document.body.classList.contains('m-mode')) renderDailyCard('dailyCardM');
       }
     })
     .catch(() => { /* offline/file:// — reader shows unavailable notice */ });

@@ -19,11 +19,10 @@ const HIST_META = {
 };
 let histDate = dateKeyOf(new Date());
 
-window.renderHistory = function renderHistory() {
-  const chips = $('histChips'); if (!chips) return;
+window.renderHistory = function renderHistory(elId) {
+  const chips = $(elId || 'histChips'); if (!chips) return;
   const rec = Store3.historyGet(DB3, histDate);
   const d = new Date(histDate + 'T12:00:00');
-  $('histDate').value = histDate;
   chips.innerHTML = PRAYERS.map((p) => {
     const st = rec[p] || '';
     const m = HIST_META[st];
@@ -37,7 +36,7 @@ window.renderHistory = function renderHistory() {
   chips.querySelectorAll('.hchip').forEach((b) => {
     b.onclick = () => {
       Store3.historyCycle(DB3, histDate, b.dataset.p);
-      save3(); renderHistory(); renderStatsIfVisible();
+      save3(); renderHistory(elId); renderStatsIfVisible();
     };
   });
 };
@@ -267,8 +266,8 @@ const SHORT_AYAHS = [
   { s: 2, a: 286 }, { s: 3, a: 139 }, { s: 39, a: 53 }, { s: 94, a: 5 }, { s: 50, a: 16 },
   { s: 57, a: 4 }, { s: 2, a: 186 }, { s: 40, a: 60 }, { s: 29, a: 69 }, { s: 55, a: 13 },
 ];
-window.renderDailyCard = function renderDailyCard() {
-  const el = $('dailyCard'); if (!el) return;
+window.renderDailyCard = function renderDailyCard(elId) {
+  const el = $(elId || 'dailyCard'); if (!el) return;
   if (DB3.prefs.dailyContent === false) { el.style.display = 'none'; return; }
   el.style.display = 'block';
   const doy = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
@@ -305,8 +304,8 @@ function hijriMonthDay(date) {
     return { day: +get('day'), month: +get('month'), year: +get('year') };
   } catch (e) { return null; }
 }
-window.renderRamadan = function renderRamadan() {
-  const el = $('ramadanCard'); if (!el) return;
+window.renderRamadan = function renderRamadan(elId) {
+  const el = $(elId || 'ramadanCard'); if (!el) return;
   const hj = hijriMonthDay(new Date());
   if (!hj || hj.month !== 9) { el.style.display = 'none'; return; }
   el.style.display = 'block';

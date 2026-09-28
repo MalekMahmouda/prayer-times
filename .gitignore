@@ -15,4 +15,5 @@ node_modules/
 release/
 tmp/
 www/
+dist-web/
 release-apk/

@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Prayer Times | أوقات الصلاة</title>
 <link rel="stylesheet" href="styles/app.css">
+<link rel="stylesheet" href="styles/fonts.css">
 </head>
 <body data-theme="islamic">
 
@@ -50,6 +51,35 @@
     </header>
 
     <main class="content" id="content">
+
+      <!-- ══════════ MOBILE HOME (phones only — Android / ≤768px viewport) ══════════ -->
+      <section class="page mhome" id="page-mhome">
+        <div class="mhero">
+          <div class="mh-top">
+            <button class="mh-loc" id="mLocChip">📍 <span id="mLocName">—</span></button>
+            <span class="mh-hijri" id="mHijri">—</span>
+          </div>
+          <div class="mh-next-lbl" id="mNextLbl">Next Prayer</div>
+          <div class="mh-name" id="mName">—</div>
+          <div class="mh-time" id="mTime">—</div>
+          <div class="mh-cd" id="mCd">--:--:--</div>
+          <div class="mh-cd-lbl" id="mCdLbl">Starts in</div>
+        </div>
+        <div class="mstrip" id="mStrip"></div>
+        <div class="mquick">
+          <button class="mq" id="mQiblaBtn"><span>🧭</span><span id="mQiblaLbl">Qibla</span></button>
+          <button class="mq" id="mHomeMore"><span>⋯</span><span id="mHomeMoreLbl">More</span></button>
+        </div>
+        <div class="sec-lbl" id="lblSunM">Sun &amp; Night</div>
+        <div class="sun-grid" id="sunGridM"></div>
+        <div id="ramadanCardM" style="display:none;margin-top:16px"></div>
+        <div id="dailyCardM" style="margin-top:16px"></div>
+        <div class="sec-lbl" id="lblHistM">Prayer Record</div>
+        <div class="card">
+          <div style="font-size:11.5px;color:var(--text-muted);margin-bottom:10px" id="histHintM">Tap a prayer to cycle: Not recorded → Completed → Missed</div>
+          <div id="histChipsM" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+        </div>
+      </section>
 
       <!-- ══════════ PRAYERS (dashboard) ══════════ -->
       <section class="page active" id="page-prayers">
@@ -165,20 +195,31 @@
           <div class="surah-list" id="surahList"></div>
         </div>
 
-        <!-- Read tab -->
+        <!-- Read tab (mushaf) -->
         <div id="qtab-read" style="display:none">
-          <div class="card" id="readerBar" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;padding:10px 14px">
-            <button class="icon-btn" id="rdBack" title="Back to list" style="width:32px;height:32px;font-size:14px">←</button>
-            <div style="flex:1;min-width:0">
-              <div style="font-weight:800;font-size:15px" id="rdTitle">—</div>
-              <div style="font-size:11px;color:var(--text-muted)" id="rdMeta">—</div>
+          <div class="mushaf-ctl">
+            <button class="icon-btn" id="rdBack" title="Back to list">←</button>
+            <button class="icon-btn" id="rdPrev" title="Previous surah">‹</button>
+            <div style="flex:1;min-width:0;text-align:center">
+              <div style="font-weight:800;font-size:14px;font-family:var(--font-ar);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="rdTitle">—</div>
+              <div style="font-size:10.5px;color:var(--text-muted)" id="rdMeta">—</div>
             </div>
-            <button class="icon-btn" id="rdFontMinus" style="width:30px;height:30px;font-size:13px">A−</button>
-            <button class="icon-btn" id="rdFontPlus" style="width:30px;height:30px;font-size:13px">A+</button>
-            <button class="icon-btn" id="rdLine" style="width:30px;height:30px;font-size:13px" title="Line spacing">↕</button>
-            <button class="icon-btn" id="rdDark" style="width:30px;height:30px;font-size:13px" title="Reading light/dark">◑</button>
+            <button class="icon-btn" id="rdNext" title="Next surah">›</button>
+            <button class="icon-btn" id="rdFontMinus" title="Smaller text">A−</button>
+            <button class="icon-btn" id="rdFontPlus" title="Larger text">A+</button>
+            <button class="icon-btn" id="rdLine" title="Line spacing">↕</button>
+            <button class="icon-btn" id="rdTr" title="Translation">🌐</button>
+            <button class="icon-btn" id="rdDark" title="Night mode">◑</button>
           </div>
-          <div class="card reader" id="reader"></div>
+          <div class="mushaf-wrap">
+            <div class="mushaf">
+              <div class="mushaf-page">
+                <div class="mushaf-frame-t"></div>
+                <div id="reader"></div>
+                <div class="mushaf-frame-b"></div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Search tab -->
@@ -387,18 +428,38 @@
   </div>
 </div>
 
-<!-- ══ BOTTOM NAV (mobile) ══ -->
+<!-- ══ BOTTOM NAV (mobile: 5 tabs + More sheet) ══ -->
 <nav class="bnav">
   <div class="bnav-inner">
     <button class="bbtn active" data-page="prayers"><span class="bi">🕌</span><span class="t">Prayers</span></button>
-    <button class="bbtn" data-page="calendar"><span class="bi">📅</span><span class="t">Calendar</span></button>
-    <button class="bbtn" data-page="qibla"><span class="bi">🧭</span><span class="t">Qibla</span></button>
     <button class="bbtn" data-page="quran"><span class="bi">📖</span><span class="t">Quran</span></button>
-    <button class="bbtn" data-page="names"><span class="bi">🌙</span><span class="t">Names</span></button>
+    <button class="bbtn" data-page="qibla"><span class="bi">🧭</span><span class="t">Qibla</span></button>
     <button class="bbtn" data-page="dhikr"><span class="bi">📿</span><span class="t">Dhikr</span></button>
-    <button class="bbtn" data-page="stats"><span class="bi">📊</span><span class="t">Stats</span></button>
+    <button class="bbtn" id="mMoreTab"><span class="bi">⋯</span><span class="t" id="mMoreTabLbl">More</span></button>
   </div>
 </nav>
+
+<!-- ══ MOBILE MORE SHEET ══ -->
+<div class="overlay msheet-overlay" id="mMoreSheet">
+  <div class="msheet">
+    <div class="msheet-grab"></div>
+    <div class="msheet-title" id="mMoreTitle">More</div>
+    <div class="msheet-grid">
+      <button class="msq" data-page="calendar"><span class="msi">📅</span><span class="mst">Calendar</span></button>
+      <button class="msq" data-page="names"><span class="msi">🌙</span><span class="mst">Names</span></button>
+      <button class="msq" data-page="stats"><span class="msi">📊</span><span class="mst">Stats</span></button>
+      <button class="msq" data-page="settings"><span class="msi">⚙️</span><span class="mst">Settings</span></button>
+    </div>
+    <div class="msheet-row">
+      <button class="msq" id="mLang"><span class="msi">🌐</span><span class="mst" id="mLangLbl">Language</span></button>
+      <button class="msq" id="mLoc"><span class="msi">📍</span><span class="mst" id="mLocLbl">Location</span></button>
+    </div>
+    <div class="msheet-theme">
+      <div class="lbl" id="mThemeLbl">Theme</div>
+      <div class="swatches" id="mSwatches"></div>
+    </div>
+  </div>
+</div>
 
 <!-- ══ LOCATION MODAL ══ -->
 <div class="overlay" id="locOverlay">

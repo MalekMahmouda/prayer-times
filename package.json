@@ -18,7 +18,8 @@
     "www": "node scripts/build-www.js",
     "apk": "npm run www && npx cap sync android && cd android && gradlew.bat assembleRelease",
     "apk:debug": "npm run www && npx cap sync android && cd android && gradlew.bat assembleDebug",
-    "assets:android": "node scripts/gen-android-icons.js && node scripts/gen-android-splash.js"
+    "assets:android": "node scripts/gen-android-icons.js && node scripts/gen-android-splash.js",
+    "web": "node scripts/build-web.js"
   },
   "build": {
     "appId": "com.malek.prayertimes",

@@ -1,10 +1,13 @@
 'use strict';
 
 /* ════════════════════════════════════════════════════════════
-   reader — Quran Reading Mode (Phase 3).
+   reader — Quran Mushaf Reading Mode.
    Data: bundled verified data/quran.json (Tanzil texts; never modified).
-   Renders ONLY the selected surah into the DOM. Search is offline.
-   Depends on: $, S, t(), DB3, save3, escHtml (pages3), showToast.
+   Renders ONLY the selected surah into the DOM, as a mushaf page:
+   continuous justified Arabic flow, ornamental ayah medallions,
+   bismillah line, ornate surah header. Search is offline.
+   Depends on: $, S, t(), DB3, save3, escHtml (pages3), showToast,
+   SURAHS, RECITERS (data.js), qrLoadAndPlay (pages.js).
    ════════════════════════════════════════════════════════════ */
 
 let rdSurah = 1;
@@ -12,8 +15,8 @@ let rdSurah = 1;
 function rdPrefs() {
   const p = DB3.prefs;
   return {
-    font: p.readerFont || 24,
-    line: p.readerLine || 2,
+    font: p.readerFont || 26,
+    line: p.readerLine || 2.05,
     dark: p.readerDark === true,
     tr: p.readerTr !== false, // default on
   };
@@ -25,6 +28,67 @@ window.renderReaderState = function renderReaderState() {
   if (p.lastSurah) rdSurah = p.lastSurah;
 };
 
+/* Arabic-Indic digits for the medallions */
+function arNum(n) {
+  return String(n).replace(/\d/g, (d) => '٠١٢٣٤٥٦٧٨٩'[d]);
+}
+
+/* ═══ POPOVER (per-verse actions: bookmark / note / copy) ═══ */
+let vpopEl = null;
+function closeVpop() {
+  if (vpopEl) { vpopEl.remove(); vpopEl = null; }
+}
+document.addEventListener('click', (e) => {
+  if (vpopEl && !vpopEl.contains(e.target)) closeVpop();
+});
+function openVpop(surahN, ayahN, x, y) {
+  closeVpop();
+  const marked = DB3.bookmarks.some((b) => b.surah === surahN && b.ayah === ayahN);
+  vpopEl = document.createElement('div');
+  vpopEl.className = 'vpop';
+  const L = S.lang === 'ar';
+  vpopEl.innerHTML = `
+    <button data-act="bm">${marked ? '🔖' : '📑'} ${marked ? (L ? 'محفوظة — إزالة' : 'Marked — remove') : (L ? 'حفظ' : 'Bookmark')}</button>
+    <button data-act="note">✎ ${L ? 'ملاحظة' : 'Note'}</button>
+    <button data-act="copy">⧉ ${L ? 'نسخ' : 'Copy'}</button>`;
+  document.body.appendChild(vpopEl);
+  const r = vpopEl.getBoundingClientRect();
+  vpopEl.style.left = Math.min(Math.max(8, x - r.width / 2), window.innerWidth - r.width - 8) + 'px';
+  vpopEl.style.top = Math.min(Math.max(8, y - r.height - 12), window.innerHeight - r.height - 8) + 'px';
+
+  vpopEl.querySelectorAll('button').forEach((b) => {
+    b.onclick = (ev) => {
+      ev.stopPropagation();
+      const act = b.dataset.act;
+      if (act === 'bm') {
+        const i = DB3.bookmarks.findIndex((x2) => x2.surah === surahN && x2.ayah === ayahN);
+        if (i >= 0) DB3.bookmarks.splice(i, 1); else DB3.bookmarks.push({ surah: surahN, ayah: ayahN, ts: Date.now(), note: '' });
+        save3();
+        const el = document.getElementById(`ayah-${surahN}-${ayahN}`);
+        if (el) el.classList.toggle('marked', i < 0);
+        if (window.renderBookmarks) renderBookmarks();
+        closeVpop();
+      } else if (act === 'note') {
+        const ex = DB3.bookmarks.find((x2) => x2.surah === surahN && x2.ayah === ayahN);
+        const note = prompt((S.lang === 'ar' ? 'ملاحظة:' : 'Note:'), ex ? ex.note : '');
+        if (note === null) { closeVpop(); return; }
+        if (ex) ex.note = note.slice(0, 300);
+        else DB3.bookmarks.push({ surah: surahN, ayah: ayahN, ts: Date.now(), note: note.slice(0, 300) });
+        save3(); closeVpop();
+        showToast('📝 ' + (S.lang === 'ar' ? 'تم حفظ الملاحظة' : 'Note saved'));
+      } else if (act === 'copy') {
+        const sur = QURAN_DATA && QURAN_DATA.surahs[surahN - 1];
+        const ay = sur && sur.ayahs[ayahN - 1];
+        if (ay) {
+          navigator.clipboard.writeText(`${ay.ar}\n${ay.en}\n— ${sur.en} ${surahN}:${ay.n}`).then(() => showToast('⧉ ' + (S.lang === 'ar' ? 'تم النسخ' : 'Copied')));
+        }
+        closeVpop();
+      }
+    };
+  });
+}
+
+/* ═══ RENDER: whole mushaf page for one surah ═══ */
 window.quranOpenReader = function quranOpenReader(surahN, ayahN) {
   if (!QURAN_DATA) { showToast('⚠️ ' + (S.lang === 'ar' ? 'جاري تحميل نص القرآن…' : 'Quran text still loading…')); return; }
   const sur = QURAN_DATA.surahs[surahN - 1];
@@ -37,59 +101,62 @@ window.quranOpenReader = function quranOpenReader(surahN, ayahN) {
   const rd = $('reader');
   const prefs = rdPrefs();
   const bookmarks = new Set(DB3.bookmarks.filter((b) => b.surah === surahN).map((b) => b.ayah));
+  const L = S.lang === 'ar';
 
-  $('rdTitle').textContent = S.lang === 'ar' ? `${sur.n}. ${sur.ar}` : `${sur.n}. ${sur.en}`;
-  $('rdMeta').textContent = `${sur.tr} · ${sur.ayahs.length} ${t('quran.verses')} · ${S.lang === 'ar' ? 'مكية/مدنية' : (SURAHS[surahN - 1].t === 'M' ? 'Meccan' : 'Medinan')}`;
+  $('rdTitle').textContent = L ? `${sur.n}. ${sur.ar}` : `${sur.n}. ${sur.en}`;
+  $('rdMeta').textContent = `${sur.tr} · ${sur.ayahs.length} ${t('quran.verses')} · ${L ? 'مكية/مدنية' : (SURAHS[surahN - 1].t === 'M' ? 'Meccan' : 'Medinan')}`;
 
-  // Header + only this surah's ayahs
-  rd.className = 'card reader' + (prefs.dark ? ' reader-dark' : '');
+  // Mushaf page container + night mode + font vars
+  const mushaf = rd.closest('.mushaf') || rd.parentElement;
+  if (mushaf) mushaf.classList.toggle('mnight', prefs.dark);
+  rd.className = 'mushaf-page-inner';
   rd.style.setProperty('--rd-font', prefs.font + 'px');
   rd.style.setProperty('--rd-line', String(prefs.line));
-  let html = `<div class="reader-surah-hdr">
-    <div class="rsh-ar" dir="rtl">${sur.ar}</div>
-    <div class="rsh-en">${sur.en} · ${sur.tr}</div>
-  </div>`;
-  html += sur.ayahs.map((ay) => `
-    <div class="ayah${bookmarks.has(ay.n) ? ' marked' : ''}" id="ayah-${sur.n}-${ay.n}">
-      <div class="anum">${ay.n}</div>
-      <div class="abody">
-        <div class="aar" dir="rtl">${ay.ar}</div>
-        ${prefs.tr ? `<div class="aen">${escHtml(ay.en)}</div>` : ''}
-        <div class="abtns">
-          <button class="abtn" data-bm="${ay.n}">${bookmarks.has(ay.n) ? '🔖 ' + (S.lang === 'ar' ? 'محفوظة' : 'Marked') : '🔖 ' + (S.lang === 'ar' ? 'حفظ' : 'Bookmark')}</button>
-          <button class="abtn" data-note="${ay.n}">✎ ${S.lang === 'ar' ? 'ملاحظة' : 'Note'}</button>
-          <button class="abtn" data-copy="${ay.n}">⧉ ${S.lang === 'ar' ? 'نسخ' : 'Copy'}</button>
-        </div>
+
+  let html = `
+    <div class="mushaf-surah-hdr">
+      <div class="msh-ar" dir="rtl">${sur.ar}</div>
+      <div class="msh-sub">
+        <span>${sur.en} · ${sur.tr}</span>
+        <span>${sur.ayahs.length} ${t('quran.verses')}</span>
+        <button class="msh-play" id="mshPlay">▶ ${L ? 'استماع' : 'Listen'}</button>
       </div>
-    </div>`).join('');
+    </div>`;
+
+  // Bismillah before every surah except Al-Fatiha (1) and At-Tawbah (9)
+  if (surahN !== 1 && surahN !== 9) {
+    html += `<div class="mushaf-bismillah" dir="rtl">بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</div>`;
+  }
+
+  // Continuous flow: inline ayahs, each ending in a medallion
+  html += `<div class="mushaf-flow" dir="rtl">`;
+  html += sur.ayahs.map((ay) => `
+    <span class="ayah-inline${bookmarks.has(ay.n) ? ' marked' : ''}" id="ayah-${sur.n}-${ay.n}" data-s="${sur.n}" data-a="${ay.n}">${ay.ar}<span class="ayah-medal" aria-label="${ay.n}">${arNum(ay.n)}</span></span>${prefs.tr ? '' : ' '}`).join('');
+  html += `</div>`;
+
+  // Translation blocks (optional, inserted after the flow)
+  if (prefs.tr) {
+    html += `<div class="mushaf-trs">` + sur.ayahs.map((ay) => `
+      <div class="mushaf-tr"><span class="mtr-n">${sur.n}:${ay.n}</span> ${escHtml(ay.en)}</div>`).join('') + `</div>`;
+  }
+
   rd.innerHTML = html;
 
-  // wire ayah buttons
-  rd.querySelectorAll('[data-bm]').forEach((b) => {
-    b.onclick = () => {
-      const n = +b.dataset.bm;
-      const i = DB3.bookmarks.findIndex((x) => x.surah === surahN && x.ayah === n);
-      if (i >= 0) DB3.bookmarks.splice(i, 1); else DB3.bookmarks.push({ surah: surahN, ayah: n, ts: Date.now(), note: '' });
-      save3(); quranOpenReader(surahN, n);
-    };
+  // Listen button → existing per-surah player
+  const play = $('mshPlay');
+  if (play) play.onclick = () => { if (window.qrLoadAndPlay) qrLoadAndPlay(surahN - 1); };
+
+  // Tap any verse → popover with actions
+  rd.querySelectorAll('.ayah-inline').forEach((el) => {
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openVpop(+el.dataset.s, +el.dataset.a, e.clientX, e.clientY);
+    });
   });
-  rd.querySelectorAll('[data-note]').forEach((b) => {
-    b.onclick = () => {
-      const n = +b.dataset.note;
-      const ex = DB3.bookmarks.find((x) => x.surah === surahN && x.ayah === n);
-      const note = prompt((S.lang === 'ar' ? 'ملاحظة:' : 'Note:'), ex ? ex.note : '');
-      if (note === null) return;
-      if (ex) ex.note = note.slice(0, 300);
-      else DB3.bookmarks.push({ surah: surahN, ayah: n, ts: Date.now(), note: note.slice(0, 300) });
-      save3(); quranOpenReader(surahN, n);
-    };
-  });
-  rd.querySelectorAll('[data-copy]').forEach((b) => {
-    b.onclick = () => {
-      const ay = sur.ayahs.find((x) => x.n === +b.dataset.copy);
-      navigator.clipboard.writeText(`${ay.ar}\n${ay.en}\n— ${sur.en} ${surahN}:${ay.n}`).then(() => showToast('⧉ ' + (S.lang === 'ar' ? 'تم النسخ' : 'Copied')));
-    };
-  });
+
+  // Reflect translation toggle state on the pill
+  const trBtn = $('rdTr');
+  if (trBtn) trBtn.classList.toggle('active', prefs.tr);
 
   // Switch to the Read tab only after the reader has content, so the tab's
   // "auto-open if empty" logic can't recurse back into this function.
@@ -141,10 +208,14 @@ let qsTimer = null;
 window.wireQuranTabs = function wireQuranTabs() {
   document.querySelectorAll('.qtab').forEach((b) => (b.onclick = () => switchQTab(b.dataset.qtab)));
   $('rdBack').onclick = () => switchQTab('list');
+  $('rdPrev').onclick = () => { if (rdSurah > 1) window.quranOpenReader(rdSurah - 1); };
+  $('rdNext').onclick = () => { if (rdSurah < 114) window.quranOpenReader(rdSurah + 1); };
   $('rdFontPlus').onclick = () => { DB3.prefs.readerFont = Math.min(48, rdPrefs().font + 2); save3(); window.quranOpenReader(rdSurah, DB3.prefs.lastAyah); };
   $('rdFontMinus').onclick = () => { DB3.prefs.readerFont = Math.max(16, rdPrefs().font - 2); save3(); window.quranOpenReader(rdSurah, DB3.prefs.lastAyah); };
   $('rdLine').onclick = () => { const cur = rdPrefs().line; DB3.prefs.readerLine = cur >= 2.4 ? 1.4 : Math.round((cur + 0.2) * 10) / 10; save3(); window.quranOpenReader(rdSurah, DB3.prefs.lastAyah); };
   $('rdDark').onclick = () => { DB3.prefs.readerDark = !rdPrefs().dark; save3(); window.quranOpenReader(rdSurah, DB3.prefs.lastAyah); };
+  const trBtn = $('rdTr');
+  if (trBtn) trBtn.onclick = () => { DB3.prefs.readerTr = !rdPrefs().tr; save3(); window.quranOpenReader(rdSurah, DB3.prefs.lastAyah); };
   $('qsInput').oninput = () => {
     clearTimeout(qsTimer);
     qsTimer = setTimeout(quranSearch, 250);
