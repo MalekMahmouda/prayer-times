@@ -1,0 +1,21 @@
+{
+  "name": "Prayer Times — Islamic Companion",
+  "short_name": "Prayer Times",
+  "description": "Prayer times, Quran, Qibla, Dhikr and more — offline, private, no account.",
+  "lang": "en",
+  "dir": "ltr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f4f1e8",
+  "theme_color": "#0e6b43",
+  "icons": [
+    {
+      "src": "icons/icon-256.png",
+      "sizes": "256x256",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

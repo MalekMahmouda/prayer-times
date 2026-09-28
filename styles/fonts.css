@@ -1,0 +1,20 @@
+/* ── Mushaf Quran fonts (offline-first; CDN fallback if local file missing) ── */
+/* Amiri Quran: SIL OFL 1.1 — https://github.com/aliftype/amiri */
+
+@font-face {
+  font-family: 'Amiri Quran';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../fonts/amiri-quran-regular.woff2') format('woff2'),
+       url('https://cdn.jsdelivr.net/fontsource/fonts/amiri-quran@latest/arabic-400-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Amiri';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('../fonts/amiri-bold.woff2') format('woff2'),
+       url('https://cdn.jsdelivr.net/fontsource/fonts/amiri@latest/arabic-700-normal.woff2') format('woff2');
+}
