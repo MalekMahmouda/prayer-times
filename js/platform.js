@@ -31,18 +31,7 @@
     return Promise.resolve(null); // caller falls back to its own label
   }
 
-  /* ── Offline prayer-day computation (mirrors main/scheduler.js getDay) ── */
-
-  const ADHAN_MAP = {
-    3: (CM) => CM.MuslimWorldLeague(),
-    4: (CM) => CM.UmmAlQura(),
-    2: (CM) => CM.NorthAmerica(), // AlAdhan id 2 = ISNA (18°/18°)
-    1: (CM) => CM.Karachi(),
-    5: (CM) => CM.Egyptian(),
-    8: (CM) => CM.Dubai(),
-    9: (CM) => CM.Kuwait(),
-    10: (CM) => CM.Qatar(),
-  };
+  /* ── Offline prayer-day computation (delegates to the shared contract) ── */
 
   const hhmm = (d) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 
@@ -53,53 +42,37 @@
     } catch (e) { return hhmm(d); }
   }
 
+  /* Shared contract (shared/pt-engine.js, classic script before app.js) +
+     the adhan lib bundled in adhan-bundle.js (window.__ptAdhan). Desktop has
+     neither — getDay() uses the main-process scheduler there. The engine is
+     the SAME file the desktop scheduler uses, so results cannot drift. */
   function computeDayOffline(dateISO, cfg) {
+    const E = window.PT_ENGINE;
     const deps = window.__ptAdhan;
     cfg = cfg || {};
-    if (!deps || !Number.isFinite(cfg.lat) || !Number.isFinite(cfg.lon)) return null;
-    const { Coordinates, CalculationMethod, PrayerTimes, SunnahTimes, Madhab } = deps;
-
-    const date = new Date(`${dateISO}T12:00:00`);
-    if (isNaN(date.getTime())) return null;
-
-    const m = Number(cfg.method);
-    const factory = ADHAN_MAP[m] || ADHAN_MAP[3];
-    const params = factory(deps.CalculationMethod);
-    // Universal: the user's Asr school applies to ALL methods. On desktop the
-    // main-process scheduler does the same — both sources stay identical.
-    params.madhab = cfg.madhab === 'hanafi' ? Madhab.Hanafi : Madhab.Shafi;
-
-    const pt = new PrayerTimes(new Coordinates(cfg.lat, cfg.lon), date, params);
-    const st = new SunnahTimes(pt);
-    // Tomorrow's Fajr bounds the night (sunset → fajrNext) for first-third.
-    const tomorrow = new Date(date); tomorrow.setDate(tomorrow.getDate() + 1);
-    const fajrNext = new PrayerTimes(new Coordinates(cfg.lat, cfg.lon), tomorrow, params).fajr;
+    if (!E || !deps || !Number.isFinite(Number(cfg.lat)) || !Number.isFinite(Number(cfg.lon))) return null;
+    const md = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(dateISO || ''));
+    if (!md) return null;
+    const day = E.computeDayInstant(cfg, Number(md[1]), Number(md[2]), Number(md[3]), deps);
+    if (!day) return null;
     const tz = cfg.tz || '';
-    const f = (d) => fmtInTz(d, tz);
-    const off = (p) => (cfg.offsets && cfg.offsets[p]) || 0;
-    const shift = (d, p) => new Date(d.getTime() + off(p) * 60000);
-
+    const f = (ms) => fmtInTz(new Date(ms), tz);
+    const timings = {};
+    for (const p of E.ALL_DAYS) timings[p] = f(day.instants[p]);
     return {
       date: dateISO,
-      timings: {
-        Fajr: f(shift(pt.fajr, 'Fajr')),
-        Sunrise: f(pt.sunrise),
-        Dhuhr: f(shift(pt.dhuhr, 'Dhuhr')),
-        Asr: f(shift(pt.asr, 'Asr')),
-        Maghrib: f(shift(pt.maghrib, 'Maghrib')),
-        Isha: f(shift(pt.isha, 'Isha')),
-      },
+      timings,
       sun: {
-        sunrise: f(pt.sunrise),
-        sunset: f(pt.maghrib),
-        dhuhr: f(pt.dhuhr),
-        midnight: f(st.middleOfTheNight),
-        // First third = sunset + (nextFajr − sunset)/3 — the same formula the
-        // main-process scheduler uses (NOT a midpoint between the middle and
-        // last thirds).
-        firstThird: f(new Date(pt.maghrib.getTime() + (fajrNext.getTime() - pt.maghrib.getTime()) / 3)),
-        lastThird: f(st.lastThirdOfTheNight),
+        sunrise: f(day.sun.sunrise),
+        sunset: f(day.sun.sunset),
+        dhuhr: f(day.sun.dhuhr),
+        midnight: f(day.sun.midnight),
+        firstThird: f(day.sun.firstThird),
+        lastThird: f(day.sun.lastThird),
       },
+      // Absolute instants (ms) — logic layers (countdown, past/next) compare
+      // these; the HH:MM strings above are display-only.
+      instants: { ...day.instants },
     };
   }
 

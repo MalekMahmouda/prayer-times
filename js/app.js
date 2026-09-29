@@ -7,6 +7,21 @@
    PT.getDay(), applyLang().
    ════════════════════════════════════════════════════════════ */
 
+/* ═══ ENGINE READY (calculation-contract load order) ═══
+   The web/Android bundle (adhan-bundle.js) loads at the END of <body>, after
+   app.js starts executing. init() waits (bounded) for the engine + shared
+   contract; a late arrival resolves the promise and re-triggers the first
+   calculation — degraded mode can never become permanent. On desktop the
+   contract loads synchronously before app.js, so this resolves instantly. */
+const engineReady = new Promise((resolve) => {
+  if (typeof window !== 'undefined' && window.__ptAdhan && window.PT_ENGINE) return resolve(true);
+  const t0 = Date.now();
+  const iv = setInterval(() => {
+    if (window.__ptAdhan && window.PT_ENGINE) { clearInterval(iv); resolve(true); }
+    else if (Date.now() - t0 > 2000) { clearInterval(iv); resolve(false); }
+  }, 50);
+});
+
 /* ═══ STATE ═══ */
 const S = {
   lat: null, lon: null, city: '', country: '',
@@ -47,15 +62,72 @@ function pushCfg() {
       adhan: S.cfg.adhan, adhanPerPrayer: S.cfg.adhanPerPrayer,
       adhanType: S.cfg.adhanType, adhanVol: S.cfg.adhanVol,
       lang: S.lang,
-      tz: actLoc ? actLoc.timezone : '',
+      tz: resolveTz(),
       preMin: S.cfg.preMin, adhanProfiles: S.cfg.adhanProfiles || {},
-    }).catch(() => {});
+    }).catch(() => { /* desktop bridge rejected config — coords validated above; renderer UI already reflects the same state */ });
     PT.setCloseToTray(S.cfg.desktop.closeToTray);
     PT.setOverlayEnabled(S.cfg.desktop.overlay);
     PT.setTheme(S.cfg.theme, themeIsDark(S.cfg.theme));
     // startWithWindows is applied on toggle only (avoid re-registering each push)
   } catch (e) { /* never break the UI */ }
   pushMobile();
+}
+
+/* ═══ TIMEZONE RESOLUTION (Phase 3 fix) ═══ */
+/* The active saved location's stored timezone — an explicitly chosen value
+   ALWAYS wins. Callers layer computed lookups (e.g. tz-lookup from GPS
+   coordinates) underneath, never over this. */
+function activeLocTz() {
+  const actLoc = (typeof DB3 !== 'undefined' && DB3) ? DB3.locations.find((l) => l.id === DB3.prefs.activeLoc) : null;
+  return actLoc ? actLoc.timezone : '';
+}
+
+/* Resolve the IANA timezone for the current location:
+   1. saved location's explicit timezone (authoritative — never overwritten)
+   2. computed lookup (tz-lookup / geocoder) cached per rounded coordinates,
+      invalidated when the location changes
+   3. '' → device timezone (last resort; only for locations without a zone) */
+function resolveTz() {
+  const stored = activeLocTz();
+  if (stored && typeof isValidTimezone === 'function' && isValidTimezone(stored)) return stored;
+  if (S.lat == null || S.lon == null) return '';
+  try {
+    const rk = S.lat.toFixed(2) + ',' + S.lon.toFixed(2);
+    const cached = localStorage.getItem('pttz');
+    const map = cached ? JSON.parse(cached) : {};
+    if (map._loc !== S.lat.toFixed(4) + ',' + S.lon.toFixed(4)) {
+      // Location changed → previous coordinate cache is meaningless.
+      Object.keys(map).forEach((k) => { delete map[k]; });
+      map._loc = S.lat.toFixed(4) + ',' + S.lon.toFixed(4);
+      localStorage.setItem('pttz', JSON.stringify(map));
+    }
+    if (map[rk] != null) return map[rk];
+    let tz = '';
+    if (typeof window !== 'undefined' && typeof window.tzLookup === 'function') {
+      tz = window.tzLookup(S.lat, S.lon) || '';
+    }
+    if (tz && typeof isValidTimezone === 'function' && !isValidTimezone(tz)) tz = '';
+    map[rk] = tz;
+    localStorage.setItem('pttz', JSON.stringify(map));
+    return tz;
+  } catch (e) { return ''; }
+}
+
+/* Absolute "now" for all next/past logic: when the active location lives in
+   a different timezone, its wall clock differs from the device's — compute
+   device-relative time via the location's UTC offset (DST-safe; Intl uses
+   the tz database, no network). Falls back to plain now when no zone. */
+function instantNow() {
+  const tz = resolveTz();
+  if (!tz || typeof Intl === 'undefined') return new Date();
+  try {
+    const dtf = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour12: false,
+      year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const p = {};
+    for (const x of dtf.formatToParts(new Date())) p[x.type] = x.value;
+    const locMs = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour % 24, +p.minute, +p.second);
+    return new Date(Date.now() + (locMs - Date.now()) - (locMs - Date.now()));
+  } catch (e) { return new Date(); }
 }
 
 /* Coordinate validation (also enforced in the main process before scheduling). */
@@ -109,8 +181,9 @@ function pushMobile() {
   try {
     window.ptMobile.setConfig({
       lat: S.lat, lon: S.lon, method: S.cfg.method, madhab: S.cfg.madhab,
-      offsets: S.cfg.offsets, preMin: S.cfg.preMin,
+      offsets: S.cfg.offsets, preMin: S.cfg.preMin, notifMin: S.cfg.notifMin,
       adhanPerPrayer: S.cfg.adhanPerPrayer, notif: S.cfg.notif, lang: S.lang,
+      tz: resolveTz(),
     });
   } catch (e) { /* never break the UI */ }
 }
@@ -188,7 +261,7 @@ function renderMHome() {
   $('mName').textContent = S.lang === 'ar' ? AR_PRAYER[info.next.prayer] : info.next.prayer;
   $('mTime').textContent = fmt(info.next.at) + (info.isTomorrow ? ` · ${t('tomorrow')}` : '');
   $('mCdLbl').textContent = t('startsIn');
-  const now = new Date();
+  const now = instantNow();
   $('mStrip').innerHTML = PRAYERS.map((p, i) => {
     const at = adjTime(p, S.times[p]);
     const isNext = info.idx === i && !info.isTomorrow;
@@ -281,7 +354,22 @@ function deepMerge(base, over) {
   return out;
 }
 const saveCfg = () => { localStorage.setItem('pts', JSON.stringify(S.cfg)); pushCfg(); };
-const saveLoc = () => { localStorage.setItem('ptl', JSON.stringify({ lat: S.lat, lon: S.lon, city: S.city, country: S.country })); pushCfg(); };
+const saveLoc = () => {
+  localStorage.setItem('ptl', JSON.stringify({ lat: S.lat, lon: S.lon, city: S.city, country: S.country }));
+  // Location changed → the coordinate→timezone cache is meaningless now.
+  try {
+    const cached = localStorage.getItem('pttz');
+    if (cached) {
+      const map = JSON.parse(cached);
+      const cur = (S.lat != null && S.lon != null) ? S.lat.toFixed(4) + ',' + S.lon.toFixed(4) : '';
+      if (map._loc !== cur) {
+        Object.keys(map).forEach((k) => { delete map[k]; });
+        localStorage.setItem('pttz', JSON.stringify(map));
+      }
+    }
+  } catch (e) { /* ignore */ }
+  pushCfg();
+};
 const saveTimes = () => localStorage.setItem('ptt', JSON.stringify({ times: S.times, hijri: S.hijri }));
 
 /* ═══ THEME ═══ */
@@ -318,6 +406,7 @@ function buildSwatches() {
 /* ═══ NAVIGATION ═══ */
 function gotoPage(name) {
   if (document.body.classList.contains('m-mode') && name === 'prayers') name = 'mhome';
+  if (window.PTCompass && name !== 'qibla') window.PTCompass.stop();
   document.querySelectorAll('.page').forEach((p) => p.classList.remove('active'));
   const pg = $('page-' + name); if (pg) pg.classList.add('active');
   if (name === 'mhome') renderMHomeCards();
@@ -374,15 +463,20 @@ function pad2(n) { return String(n).padStart(2, '0'); }
    navigator.onLine awareness. Local-only features never go through this. */
 const _netInflight = new Map();
 const _netBackoff = new Map();
+const NET_TIMEOUT_MS = 12000; // per-request; a hung request never blocks its key forever
 function netFetch(url) {
-  const key = url.split('?')[0];
+  // Dedup key = FULL URL. Truncating at '?' made different queries (cities,
+  // coordinates) share one key and cross-contaminate responses.
+  const key = url;
   if (!navigator.onLine) return Promise.reject(new Error('offline'));
   if (_netInflight.has(key)) return _netInflight.get(key);
   const delay = _netBackoff.get(key) || 0;
+  const ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+  const timer = ctrl ? setTimeout(() => ctrl.abort(), NET_TIMEOUT_MS) : null;
   const p = (async () => {
     if (delay) await new Promise((r) => setTimeout(r, delay));
     try {
-      const r = await fetch(url);
+      const r = await fetch(url, ctrl ? { signal: ctrl.signal } : undefined);
       if (!r.ok) throw new Error('HTTP ' + r.status);
       _netBackoff.delete(key);
       return r;
@@ -390,7 +484,8 @@ function netFetch(url) {
       _netBackoff.set(key, Math.min(60000, (delay || 1000) * 2));
       throw e;
     } finally {
-      _netInflight.delete(key);
+      if (timer) clearTimeout(timer);
+      _netInflight.delete(key); // key released even on timeout → reusable
     }
   })();
   _netInflight.set(key, p);
@@ -443,9 +538,9 @@ async function refreshTodaySchedule() {
   if (S.lat == null || !window.Plat) return;
   try {
     const actLoc = (typeof DB3 !== 'undefined' && DB3) ? DB3.locations.find((l) => l.id === DB3.prefs.activeLoc) : null;
-    S.todaySchedule = await window.Plat.getDay(localDateKey(new Date()), {
+    S.todaySchedule = await window.Plat.getDay(localDateKey(instantNow()), {
       lat: S.lat, lon: S.lon, method: S.cfg.method, madhab: S.cfg.madhab,
-      offsets: S.cfg.offsets, tz: actLoc ? actLoc.timezone : '',
+      offsets: S.cfg.offsets, tz: resolveTz(),
     });
     if (S.todaySchedule && S.todaySchedule.timings) {
       // SINGLE SOURCE OF TRUTH: what the dashboard shows is what the
@@ -472,8 +567,15 @@ function renderAll() {
 
 function nextPrayerInfo() {
   if (!S.times) return null;
-  const now = new Date();
-  const list = PRAYERS.map((p) => ({ prayer: p, at: adjTime(p, S.times[p]) }));
+  const now = instantNow();
+  // Absolute instants from the calculation contract when available — never
+  // re-parse "HH:MM" through the device timezone. Fallback (plain browser
+  // without the engine) keeps the legacy string path.
+  const I = S.todaySchedule && S.todaySchedule.instants;
+  const list = PRAYERS.map((p) => ({
+    prayer: p,
+    at: (I && Number.isFinite(I[p])) ? new Date(I[p]) : adjTime(p, S.times[p]),
+  }));
   let next = list.find((x) => x.at > now);
   let isTomorrow = false;
   if (!next) {
@@ -500,7 +602,7 @@ function renderDashboard() {
   $('heroNextLbl').textContent = t('nextPrayer');
 
   // Prayer cards
-  const now = new Date();
+  const now = instantNow();
   $('prayerCards').innerHTML = PRAYERS.map((p, i) => {
     const at = adjTime(p, S.times[p]);
     const isNext = info.idx === i && !info.isTomorrow;
@@ -554,30 +656,23 @@ function tick() {
   if (!S.times) return;
   const info = nextPrayerInfo();
   if (!info) return;
-  const cdStr = fmtCountdown(info.next.at - new Date());
+  const cdStr = fmtCountdown(info.next.at - instantNow());
   $('heroCd').textContent = cdStr;
   const mCd = $('mCd'); if (mCd) mCd.textContent = cdStr;
   // Refresh card states (next/past) every 30s; full re-render keeps headers fresh.
   if (++tickN % 30 === 0) { renderDashboard(); renderMHome(); }
 }
 
-/* ═══ QIBLA MATH (shared) ═══ */
-const KAABA = { lat: 21.4225, lon: 39.8262 };
+/* ═══ QIBLA MATH (shared contract — shared/pt-engine.js) ═══ */
 function qiblaBearing() {
-  if (S.lat == null) return 0;
-  const la = S.lat * Math.PI / 180, lo = S.lon * Math.PI / 180;
-  const ml = KAABA.lat * Math.PI / 180, mlo = KAABA.lon * Math.PI / 180;
-  const dL = mlo - lo;
-  const y = Math.sin(dL) * Math.cos(ml);
-  const x = Math.cos(la) * Math.sin(ml) - Math.sin(la) * Math.cos(ml) * Math.cos(dL);
-  let b = Math.atan2(y, x) * 180 / Math.PI; if (b < 0) b += 360;
-  return b;
+  const E = (typeof window !== 'undefined') ? window.PT_ENGINE : null;
+  if (E && S.lat != null && S.lon != null) return E.qiblaBearing(S.lat, S.lon);
+  return 0; // engine missing → no invented number
 }
 function distToKaaba() {
-  if (S.lat == null) return null;
-  const R = 6371, dLat = (KAABA.lat - S.lat) * Math.PI / 180, dLon = (KAABA.lon - S.lon) * Math.PI / 180;
-  const a = Math.sin(dLat / 2) ** 2 + Math.cos(S.lat * Math.PI / 180) * Math.cos(KAABA.lat * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
-  return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+  const E = (typeof window !== 'undefined') ? window.PT_ENGINE : null;
+  if (E && S.lat != null && S.lon != null) return E.distToKaaba(S.lat, S.lon);
+  return null;
 }
 
 /* ═══ LOCATION ═══ */
@@ -594,19 +689,70 @@ function closeLocModal() { $('locOverlay').classList.remove('open'); }
 function useGPS() {
   if (!navigator.geolocation) { showToast('⚠️ ' + t('toast.gpsNo')); return; }
   $('locName').textContent = t('detecting');
+  // GPS accuracy tiers (Phase 9): imperfect accuracy must never block prayer
+  // calculation, but a bad fix must not silently replace a good location.
+  const POOR_ACCURACY_M = 1000;
   navigator.geolocation.getCurrentPosition((pos) => {
+    const acc = (pos.coords && Number.isFinite(pos.coords.accuracy)) ? pos.coords.accuracy : null;
+    const hadPrevious = S.lat != null && S.lon != null;
+    if (acc != null && acc > POOR_ACCURACY_M && hadPrevious) {
+      // Keep the previous reliable location; just tell the user why.
+      showToast('⚠️ ' + (S.lang === 'ar'
+        ? `دقة GPS ضعيفة (±${Math.round(acc)} م) — تم الاحتفاظ بالموقع السابق`
+        : `GPS accuracy poor (±${Math.round(acc)}m) — keeping previous location`));
+      closeLocModal();
+      return;
+    }
     S.lat = pos.coords.latitude; S.lon = pos.coords.longitude; S.city = ''; S.country = '';
     saveLoc(); revGeo(S.lat, S.lon); fetchTimes(S.lat, S.lon); refreshTodaySchedule(); closeLocModal();
+    if (acc != null && acc > POOR_ACCURACY_M) {
+      showToast('⚠️ ' + (S.lang === 'ar'
+        ? `دقة GPS ضعيفة (±${Math.round(acc)} م)`
+        : `GPS accuracy poor (±${Math.round(acc)}m)`));
+    }
   }, () => showToast('❌ ' + t('toast.gpsDenied')), { timeout: 10000, maximumAge: 600000 });
 }
+/* Nominatim reverse geocoding — an OPTIONAL service for a friendly city
+   name. Coordinates keep working when it is unavailable. Cache: rounded
+   coordinates → { city, country } with a TTL; throttle between requests;
+   skip when the rounded coordinates already match the current location. */
+const _revGeo = { cache: null, lastCall: 0, inflight: null };
+const REV_GEO = { TTL_MS: 7 * 24 * 3600 * 1000, MIN_GAP_MS: 2000, ROUND_DP: 2 };
+function revGeoCache() {
+  if (_revGeo.cache) return _revGeo.cache;
+  try { _revGeo.cache = JSON.parse(localStorage.getItem('ptrevgeo') || '{}'); } catch (e) { _revGeo.cache = {}; }
+  return _revGeo.cache;
+}
+const roundKey = (lat, lon) => `${Number(lat).toFixed(REV_GEO.ROUND_DP)},${Number(lon).toFixed(REV_GEO.ROUND_DP)}`;
 async function revGeo(lat, lon) {
-  try {
-    const r = await netFetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
-    const d = await r.json();
-    S.city = d.address.city || d.address.town || d.address.village || d.address.county || '';
-    S.country = d.address.country || '';
-    saveLoc(); updateLocNames();
-  } catch (e) { /* offline */ }
+  const key = roundKey(lat, lon);
+  const curKey = (S.lat != null && S.lon != null) ? roundKey(S.lat, S.lon) : '';
+  if (key === curKey && S.city) return;          // same place — already named
+  const c = revGeoCache();
+  const hit = c[key];
+  if (hit && (Date.now() - hit.t) < REV_GEO.TTL_MS) {
+    S.city = hit.city; S.country = hit.country; saveLoc(); updateLocNames();
+    return;
+  }
+  if (_revGeo.inflight) return _revGeo.inflight; // one lookup at a time
+  const gap = Date.now() - _revGeo.lastCall;
+  _revGeo.inflight = (async () => {
+    try {
+      if (gap < REV_GEO.MIN_GAP_MS) await new Promise((r) => setTimeout(r, REV_GEO.MIN_GAP_MS - gap));
+      _revGeo.lastCall = Date.now();
+      const r = await netFetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
+      const d = await r.json();
+      const city = (d.address && (d.address.city || d.address.town || d.address.village || d.address.county)) || '';
+      const country = (d.address && d.address.country) || '';
+      if (city || country) {
+        c[key] = { city, country, t: Date.now() };
+        try { localStorage.setItem('ptrevgeo', JSON.stringify(c)); } catch (e) { /* full */ }
+        if (key === roundKey(S.lat, S.lon)) { S.city = city; S.country = country; saveLoc(); updateLocNames(); }
+      }
+    } catch (e) { /* offline / throttled / down — coordinates keep working */ }
+    finally { _revGeo.inflight = null; }
+  })();
+  return _revGeo.inflight;
 }
 function setManualLoc() {
   const c = $('cityInp').value.trim();
@@ -759,7 +905,7 @@ function applyLang() {
 }
 
 /* ═══ INIT ═══ */
-function init() {
+async function init() {
   load();
   applyTheme(S.cfg.theme);
   applyLangStatic();       // nav/labels before data renders
@@ -795,8 +941,26 @@ function init() {
   // notifications/adhan stay silent until the first settings change.
   pushCfg();
 
-  // Restore cached view instantly
+  // Restore cached view instantly (cached strings render without the engine)
   if (S.times) renderAll();
+
+  // Calculation must not start before the local engine exists (web/Android);
+  // on desktop this await is instant. Bounded — a missing bundle degrades to
+  // the API fallback after 2s, and a late bundle still re-triggers below.
+  const engineOnTime = await engineReady;
+  if (!engineOnTime && !Plat.isElectron()) {
+    console.warn('[pt] calculation engine not loaded at startup — using API fallback until it arrives');
+    // Degraded mode must not become permanent: when the bundle finally
+    // arrives, run the first local calculation.
+    const t0 = Date.now();
+    const iv = setInterval(() => {
+      if (window.__ptAdhan && window.PT_ENGINE) {
+        clearInterval(iv);
+        if (S.lat != null) refreshTodaySchedule();
+      } else if (Date.now() - t0 > 30000) clearInterval(iv);
+    }, 250);
+  }
+
   if (S.lat != null) { fetchTimes(S.lat, S.lon); }
   else if (S.city) { fetchByCity(S.city, S.country); }
   else if (navigator.geolocation) {
@@ -885,8 +1049,26 @@ function makkahFallback() {
 }
 
 function scheduleMidnight() {
-  const n = new Date();
-  const ms = new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1) - n;
+  // Re-render at the ACTIVE LOCATION's local midnight when it differs from
+  // the device's (location date rolls over at a different moment).
+  const tz = resolveTz();
+  let ms;
+  if (tz && typeof Intl !== 'undefined') {
+    try {
+      const nowMs = Date.now();
+      const parts = {};
+      for (const x of new Intl.DateTimeFormat('en-US', { timeZone: tz, hour12: false,
+        year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).formatToParts(new Date())) parts[x.type] = x.value;
+      const locMs = Date.UTC(+parts.year, +parts.month - 1, +parts.day, +parts.hour % 24, +parts.minute);
+      const offsetMs = locMs - nowMs;
+      const nextLocalMidnight = new Date(nowMs + offsetMs); nextLocalMidnight.setHours(24, 0, 0, 0);
+      ms = nextLocalMidnight.getTime() - nowMs;
+    } catch (e) { ms = null; }
+  } else ms = null;
+  if (!Number.isFinite(ms) || ms <= 0) {
+    const n = new Date();
+    ms = new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1) - n;
+  }
   setTimeout(() => { if (S.lat != null) fetchTimes(S.lat, S.lon); refreshTodaySchedule(); scheduleMidnight(); }, ms);
 }
 
