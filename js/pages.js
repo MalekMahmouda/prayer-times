@@ -65,7 +65,7 @@ let calDayCache = {};
 async function showCalDay(date) {
   const panel = $('calDayPanel');
   panel.style.display = 'block';
-  const key = date.toISOString().slice(0, 10);
+  const key = localDateKey(date);
   panel.innerHTML = `<b>${fmtDate(date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</b>
     <div class="muted" style="font-size:12px">${hijriOf(date)}</div>
     <div class="muted" style="font-size:12px;margin-top:6px">${t('cal.noTimes')}…</div>`;
@@ -109,7 +109,7 @@ window.exportMonthCsv = async function exportMonthCsv() {
   const rows = [['Date', 'Hijri', 'Fajr', 'Sunrise', 'Dhuhr', 'Asr', 'Maghrib', 'Isha']];
   for (let d = 1; d <= days; d++) {
     const date = new Date(CAL.y, CAL.m, d);
-    const key = date.toISOString().slice(0, 10);
+    const key = localDateKey(date);
     let timings = calDayCache[key];
     if (!timings && window.Plat && S.lat != null) {
       try { timings = (await window.Plat.getDay(key, { lat: S.lat, lon: S.lon, method: S.cfg.method, madhab: S.cfg.madhab })).timings; calDayCache[key] = timings; } catch (e) { continue; }
@@ -265,7 +265,7 @@ window.renderDhikr = function renderDhikr() {
   $('dhTargetSel').value = [33, 100, 300].includes(+dh.target) ? String(dh.target) : 'custom';
   $('dhCustom').style.display = [33, 100, 300].includes(+dh.target) ? 'none' : 'inline-block';
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDateKey();
   $('dhDaily').textContent = (dh.daily[today] || {}).all || 0;
   $('dhTotal').textContent = Object.values(dh.totals).reduce((a, b) => a + (b.all || 0), 0);
   $('dhRound').textContent = `${dh.count % dh.target === 0 && dh.count > 0 ? dh.target : dh.count % dh.target}/${dh.target}`;
@@ -277,7 +277,7 @@ window.renderDhikr = function renderDhikr() {
 function dhikrCount() {
   const dh = S.cfg.dhikr;
   dh.count++;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDateKey();
   dh.daily[today] = dh.daily[today] || { all: 0 };
   dh.daily[today].all++;
   dh.totals[dh.preset] = dh.totals[dh.preset] || { all: 0 };
@@ -395,8 +395,9 @@ function wireSettings() {
   $('tgOverlay').onclick = () => { S.cfg.desktop.overlay = !S.cfg.desktop.overlay; if (PT) PT.setOverlayEnabled(S.cfg.desktop.overlay); saveCfg(); renderSettings(); };
   $('tgSww').onclick = () => { S.cfg.desktop.startWithWindows = !S.cfg.desktop.startWithWindows; if (PT) PT.setStartWithWindows(S.cfg.desktop.startWithWindows); saveCfg(); renderSettings(); };
   $('tgCtt').onclick = () => { S.cfg.desktop.closeToTray = !S.cfg.desktop.closeToTray; if (PT) PT.setCloseToTray(S.cfg.desktop.closeToTray); saveCfg(); renderSettings(); };
-  $('nbMinus').onclick = () => { S.cfg.notifMin = Math.max(1, S.cfg.notifMin - 5); saveCfg(); renderSettings(); };
-  $('nbPlus').onclick = () => { S.cfg.notifMin = Math.min(60, S.cfg.notifMin + 5); saveCfg(); renderSettings(); };
+  // notifMin = 0 is VALID (alert exactly at prayer time) — stepper range 0…60.
+  $('nbMinus').onclick = () => { S.cfg.notifMin = Math.max(0, (parseInt(S.cfg.notifMin, 10) || 0) - 5); saveCfg(); renderSettings(); };
+  $('nbPlus').onclick = () => { S.cfg.notifMin = Math.min(60, (parseInt(S.cfg.notifMin, 10) || 0) + 5); saveCfg(); renderSettings(); };
   $('setVol').oninput = (e) => { S.cfg.adhanVol = parseFloat(e.target.value); saveCfg(); };
   $('setAdhanType').onchange = (e) => { S.cfg.adhanType = e.target.value; saveCfg(); };
   $('setReciterSel').onchange = (e) => { S.cfg.reciter = e.target.value; saveCfg(); if (qrIdx >= 0) qrLoadAndPlay(qrIdx); };

@@ -57,8 +57,9 @@ function validateLocations(list) {
     latitude: l.latitude, longitude: l.longitude,
     city: isStr(l.city, 80) ? l.city : '',
     country: isStr(l.country, 80) ? l.country : '',
-    // IANA timezone only when it looks like one; empty string = "system/unknown"
-    timezone: isStr(l.timezone, 60) && /^[A-Za-z_]+\/[A-Za-z_+\-0-9]+$|^UTC$/.test(l.timezone) ? l.timezone : '',
+    // IANA timezone only when it VALIDATES (Intl.DateTimeFormat — accepts
+    // multi-path zones like America/Argentina/Buenos_Aires); '' = system
+    timezone: isStr(l.timezone, 60) && isValidTimezone(l.timezone) ? l.timezone.trim() : '',
   }));
 }
 
@@ -143,9 +144,17 @@ function pt3Load() {
     const raw = localStorage.getItem(PT3_KEY);
     if (!raw) return sanitize({});
     const parsed = JSON.parse(raw);
-    // version gate: only version 1 supported; unknown future versions rejected (kept untouched)
+    // Version gate: supported version → sanitize as usual. Anything else is
+    // MIGRATED safely: back up the raw old data under a versioned key FIRST,
+    // then start fresh. Idempotent (an existing backup is never overwritten).
     if (parsed && typeof parsed === 'object' && parsed.version !== PT3_VERSION) {
-      console.warn('[pt3] unsupported version', parsed.version, '— starting fresh (your old key is preserved)');
+      const backupKey = `pt3-backup-v${parsed.version != null ? parsed.version : 'unknown'}`;
+      if (!localStorage.getItem(backupKey)) {
+        localStorage.setItem(backupKey, raw);
+        console.warn(`[pt3] migration: old v${parsed.version} data backed up under '${backupKey}' (${raw.length} chars) — initializing v${PT3_VERSION}`);
+      } else {
+        console.warn(`[pt3] migration: backup '${backupKey}' already exists — old data left untouched`);
+      }
       return sanitize({});
     }
     return sanitize(parsed);
@@ -205,7 +214,7 @@ function statsForRange(db, fromKey, toKey) {
 /** Streak = consecutive days (ending today or yesterday) with ≥1 recorded prayer. */
 function streaks(db) {
   const dayHasRecord = (d) => {
-    const rec = db.history[d.toISOString().slice(0, 10)];
+    const rec = db.history[localDateKey(d)]; // LOCAL day, never UTC
     return rec && P3.Prayer.some((p) => rec[p] === 'done' || rec[p] === 'missed');
   };
   // current: walk back from today

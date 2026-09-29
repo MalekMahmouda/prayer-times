@@ -36,20 +36,71 @@ function pushCfg() {
   if (!PT) return;
   try {    // Active saved location's timezone (empty = system/unknown)
     const actLoc = (typeof DB3 !== 'undefined' && DB3) ? DB3.locations.find((l) => l.id === DB3.prefs.activeLoc) : null;
+    if ((S.lat != null && !isFiniteLat(S.lat)) || (S.lon != null && !isFiniteLon(S.lon))) {
+      showToast('⚠️ ' + (S.lang === 'ar' ? 'إحداثيات غير صالحة — تحقق من الموقع' : 'Invalid coordinates — check your location'));
+      return;
+    }
     PT.updateConfig({
       lat: S.lat, lon: S.lon, method: S.cfg.method,
       madhab: S.cfg.madhab, offsets: S.cfg.offsets,
       notifMin: S.cfg.notifMin, notif: S.cfg.notif, beep: S.cfg.beep,
       adhan: S.cfg.adhan, adhanPerPrayer: S.cfg.adhanPerPrayer,
-      adhanType: S.cfg.adhanType, lang: S.lang,
+      adhanType: S.cfg.adhanType, adhanVol: S.cfg.adhanVol,
+      lang: S.lang,
       tz: actLoc ? actLoc.timezone : '',
       preMin: S.cfg.preMin, adhanProfiles: S.cfg.adhanProfiles || {},
-    });
+    }).catch(() => {});
     PT.setCloseToTray(S.cfg.desktop.closeToTray);
     PT.setOverlayEnabled(S.cfg.desktop.overlay);
+    PT.setTheme(S.cfg.theme, themeIsDark(S.cfg.theme));
     // startWithWindows is applied on toggle only (avoid re-registering each push)
   } catch (e) { /* never break the UI */ }
   pushMobile();
+}
+
+/* Coordinate validation (also enforced in the main process before scheduling). */
+function isFiniteLat(v) { const n = Number(v); return Number.isFinite(n) && Math.abs(n) <= 90; }
+function isFiniteLon(v) { const n = Number(v); return Number.isFinite(n) && Math.abs(n) <= 180; }
+
+/* Dark flag for ANY theme (built-ins by .dark; customs by token luminance). */
+function themeIsDark(id) {
+  const th = THEMES.find((x) => x.id === id);
+  if (th) return th.dark !== false;
+  const custom = (typeof DB3 !== 'undefined' && DB3) ? DB3.customThemes.find((c) => c.id === id) : null;
+  if (custom && custom.tokens) {
+    const hex = (custom.tokens.bg || '#000').replace('#', '');
+    const full = hex.length === 3 ? hex.split('').map((c) => c + c).join('') : hex;
+    const r = parseInt(full.slice(0, 2), 16) || 0, g = parseInt(full.slice(2, 4), 16) || 0, b = parseInt(full.slice(4, 6), 16) || 0;
+    return (0.299 * r + 0.587 * g + 0.114 * b) < 140; // relative luminance
+  }
+  return true;
+}
+
+/* Reusable in-app text-input modal — replaces window.prompt(), which is a
+   silent no-op in packaged Electron. Usage: openTextModal({title, label,
+   initial, ok, onOK}). Cancel/Esc/overlay-click → onOK never called. */
+function openTextModal({ title, label, initial = '', ok, onOK }) {
+  const ov = $('txtModal'), inp = $('txtModalInput');
+  if (!ov || !inp) return;
+  $('txtModalTitle').textContent = title || '';
+  $('txtModalLabel').textContent = label || '';
+  $('txtModalOk').textContent = ok || (S.lang === 'ar' ? 'موافق' : 'OK');
+  inp.value = initial || '';
+  ov.classList.add('open');
+  const done = (val) => {
+    ov.classList.remove('open');
+    inp.onkeydown = null; $('txtModalOk').onclick = null; $('txtModalCancel').onclick = null;
+    ov.onclick = null;
+    document.removeEventListener('keydown', esc, true);
+    if (val != null && onOK) onOK(val);
+  };
+  const esc = (e) => { if (e.key === 'Escape') { e.stopPropagation(); done(null); } };
+  $('txtModalOk').onclick = () => done(inp.value);
+  $('txtModalCancel').onclick = () => done(null);
+  ov.onclick = (e) => { if (e.target === ov) done(null); };
+  inp.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); done(inp.value); } };
+  document.addEventListener('keydown', esc, true);
+  setTimeout(() => { inp.focus(); inp.select(); }, 30);
 }
 
 /* ═══ MOBILE (Android/Capacitor): feed the local-notification scheduler ═══ */
@@ -163,7 +214,7 @@ function renderMHomeCards() {
 }
 
 if (PT) {
-  PT.onNavigate((page) => gotoPage(page));
+  PT.onNavigate((page) => gotoPage(page === 'prayers' && document.body.classList.contains('m-mode') ? 'mhome' : page));
   // Scheduler push (same data the widget/mini get): keeps the hero prayer time
   // correct when the active saved location uses a non-system timezone.
   PT.onInfo((info) => {
@@ -207,6 +258,11 @@ function load() {
     const l = localStorage.getItem('ptl'); if (l) { const d = JSON.parse(l); S.lat = d.lat; S.lon = d.lon; S.city = d.city; S.country = d.country; }
     const c = localStorage.getItem('ptt'); if (c) { const d = JSON.parse(c); S.times = d.times; S.hijri = d.hijri; }
     const lg = localStorage.getItem('ptlg'); if (lg) S.lang = lg;
+    // Normalize numeric settings (old saves may hold 0 that was mis-stored, or junk)
+    const nm = Number(S.cfg.notifMin);
+    S.cfg.notifMin = Number.isFinite(nm) ? Math.min(120, Math.max(0, Math.round(nm))) : 10;
+    const av = Number(S.cfg.adhanVol);
+    S.cfg.adhanVol = Number.isFinite(av) ? Math.min(1, Math.max(0, av)) : 1;
   } catch (e) { /* fresh start */ }
 }
 function defaultCfg() {
@@ -239,7 +295,7 @@ function applyTheme(id) {
   document.body.dataset.theme = id;
   document.querySelectorAll('.sw').forEach((el) => el.classList.toggle('active', el.dataset.theme === id));
   const sel = $('setTheme'); if (sel) sel.value = id;
-  if (PT) { PT.setTheme(id); if (S.cfg.widget) PT.widgetToggle(true); }
+  if (PT) { PT.setTheme(id, themeIsDark(id)); if (S.cfg.widget) PT.widgetToggle(true); }
   // Android status bar icons follow the theme's luminance
   if (typeof window.ptStatusBar === 'function') {
     const th = THEMES.find((x) => x.id === id);
@@ -286,14 +342,20 @@ function showToast(msg, ms = 3000) {
 }
 
 /* ═══ TIME HELPERS ═══ */
+/* Parse a time string robustly: local engine gives clean "HH:MM", but the
+   browser API fallback may append timezone suffixes like "05:27 (EET)". */
+function parseHM(str) {
+  const m = String(str).match(/(\d{1,2}):(\d{2})/);
+  return m ? [parseInt(m[1], 10), parseInt(m[2], 10)] : [0, 0];
+}
 function timeStrToDate(str, base = new Date()) {
-  const [h, m] = String(str).split(':').map(Number);
+  const [h, m] = parseHM(str);
   const d = new Date(base); d.setHours(h, m, 0, 0);
   return d;
 }
 function adjTime(name, str) {
   const off = (S.cfg.offsets[name] || 0);
-  const [h, m] = String(str).split(':').map(Number);
+  const [h, m] = parseHM(str);
   const d = new Date(); d.setHours(h, m + off, 0, 0);
   return d;
 }
@@ -336,6 +398,13 @@ function netFetch(url) {
 }
 
 async function fetchTimes(lat, lon) {
+  // Any platform with the local engine: it is the single display source — no
+  // AlAdhan API timings may overwrite them, so what you see is what fires.
+  // The API path remains a fallback for plain browsers without the engine.
+  if (window.Plat && (Plat.isElectron() || Plat.isAndroid() || window.__ptAdhan)) {
+    await refreshTodaySchedule();
+    return;
+  }
   const n = new Date();
   const url = `https://api.aladhan.com/v1/timings/${pad2(n.getDate())}-${pad2(n.getMonth() + 1)}-${n.getFullYear()}?latitude=${lat}&longitude=${lon}&method=${S.cfg.method}`;
   try {
@@ -353,14 +422,18 @@ async function fetchTimes(lat, lon) {
 }
 
 async function fetchByCity(city, country) {
-  const n = new Date();
-  const url = `https://api.aladhan.com/v1/timingsByCity/${pad2(n.getDate())}-${pad2(n.getMonth() + 1)}-${n.getFullYear()}?city=${encodeURIComponent(city)}&country=${encodeURIComponent(country)}&method=${S.cfg.method}`;
+  // Geocoding only (lat/lon) — timings are ALWAYS computed by the local engine
+  // so there is exactly one source of prayer times.
+  const url = `https://api.aladhan.com/v1/addressInfo?address=${encodeURIComponent(city + (country ? ',' + country : ''))}`;
   try {
     const r = await netFetch(url); const d = await r.json();
-    if (d.code !== 200) throw new Error(d.status);
-    S.times = d.data.timings; S.hijri = d.data.date.hijri;
-    if (d.data.meta) { S.lat = d.data.meta.latitude; S.lon = d.data.meta.longitude; }
-    S.city = city; S.country = country; saveLoc(); saveTimes();
+    if (d.code !== 200 || !d.data || !Number.isFinite(Number(d.data.latitude)) || !Number.isFinite(Number(d.data.longitude))) throw new Error('geocode');
+    S.lat = Number(d.data.latitude); S.lon = Number(d.data.longitude);
+    S.city = city; S.country = country;
+    saveLoc();
+    S.times = null; S.hijri = null;            // drop any stale API cache
+    localStorage.removeItem('ptt');
+    await refreshTodaySchedule();
     renderAll(); closeLocModal(); showToast('✅ ' + t('toast.locSet'));
   } catch (e) { showToast('❌ ' + t('toast.locFail')); }
 }
@@ -369,11 +442,21 @@ async function fetchByCity(city, country) {
 async function refreshTodaySchedule() {
   if (S.lat == null || !window.Plat) return;
   try {
-    S.todaySchedule = await window.Plat.getDay(new Date().toISOString().slice(0, 10), {
+    const actLoc = (typeof DB3 !== 'undefined' && DB3) ? DB3.locations.find((l) => l.id === DB3.prefs.activeLoc) : null;
+    S.todaySchedule = await window.Plat.getDay(localDateKey(new Date()), {
       lat: S.lat, lon: S.lon, method: S.cfg.method, madhab: S.cfg.madhab,
+      offsets: S.cfg.offsets, tz: actLoc ? actLoc.timezone : '',
     });
+    if (S.todaySchedule && S.todaySchedule.timings) {
+      // SINGLE SOURCE OF TRUTH: what the dashboard shows is what the
+      // scheduler fires (offsets already applied by the same engine).
+      S.times = S.todaySchedule.timings;
+      S.hijri = null;
+      saveTimes();
+    }
     renderSunSection();
     renderMHomeSun();
+    renderAll();
   } catch (e) { /* no location / offline — hide sun section */ }
 }
 
@@ -567,8 +650,7 @@ function applyLang() {
 
   // Sidebar + bottom nav
   document.getElementById('sbTitle').textContent = t('appName');
-  document.getElementById('sbSub').textContent = t('sub');
-  const navMap = { prayers: 'nav.prayers', calendar: 'nav.calendar', qibla: 'nav.qibla', quran: 'nav.quran', names: 'nav.names', dhikr: 'nav.dhikr', settings: 'nav.settings' };
+  document.getElementById('sbSub').textContent = t('sub');    const navMap = { prayers: 'nav.prayers', calendar: 'nav.calendar', qibla: 'nav.qibla', quran: 'nav.quran', names: 'nav.names', dhikr: 'nav.dhikr', stats: 'nav.stats', settings: 'nav.settings' };
   document.querySelectorAll('[data-page]').forEach((b) => {
     const key = navMap[b.dataset.page];
     const el = b.querySelector('.t'); if (el && key) el.textContent = t(key);
@@ -658,6 +740,12 @@ function applyLang() {
   $('locSearchLbl').textContent = t('set.setLoc');
   $('btnCancelLoc').textContent = t('set.cancel');
 
+  $('setTheme') && ($('setTheme').value = S.cfg.theme);
+
+  // Text modal
+  const tmOk = $('txtModalOk'); if (tmOk) tmOk.textContent = S.lang === 'ar' ? 'موافق' : 'OK';
+  const tmCancel = $('txtModalCancel'); if (tmCancel) tmCancel.textContent = S.lang === 'ar' ? 'إلغاء' : 'Cancel';
+
   // Swatch titles + settings selects
   buildSwatches();
   if (window.fillSettingsSelects) fillSettingsSelects();
@@ -703,6 +791,10 @@ function init() {
   $('btnCancelLoc').onclick = closeLocModal;
   $('locOverlay').addEventListener('click', (e) => { if (e.target === $('locOverlay')) closeLocModal(); });
 
+  // Push the loaded config to the main scheduler immediately — without this,
+  // notifications/adhan stay silent until the first settings change.
+  pushCfg();
+
   // Restore cached view instantly
   if (S.times) renderAll();
   if (S.lat != null) { fetchTimes(S.lat, S.lon); }
@@ -722,6 +814,15 @@ function init() {
 
   // Midnight rollover + hourly refresh
   scheduleMidnight();
+  // One-second after local midnight: re-render everything on the NEW day
+  // (history chips, streaks, daily dhikr, calendar all key off localDateKey).
+  setTimeout(() => {
+    renderAll();
+    if (window.renderHistory) renderHistory();
+    if (window.renderStats) renderStatsIfVisible();
+    if (window.renderRamadan) renderRamadan();
+    if (window.renderDailyCard) renderDailyCard();
+  }, 1000);
   setInterval(() => { if (S.lat != null) fetchTimes(S.lat, S.lon); refreshTodaySchedule(); }, 3600000);
 
   // online/offline badges
