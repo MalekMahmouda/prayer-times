@@ -277,7 +277,15 @@ if (!isPrimary) {
   ipcMain.handle('pt:get-info', () => scheduler.getInfo());
   ipcMain.handle('pt:get-version', () => app.getVersion());
   ipcMain.handle('pt:get-day', (e, dateISO, overrides) => {
-    try { return scheduler.getDay(String(dateISO || '').slice(0, 10), overrides || {}); }
+    try {
+      const ov = overrides || {};
+      // Coordinates without a zone (GPS/manual locations): resolve via the
+      // offline coordinate→IANA lookup — same source as the renderer.
+      if (!ov.tz && Number.isFinite(Number(ov.lat)) && Number.isFinite(Number(ov.lon))) {
+        try { ov.tz = require('tz-lookup')(Number(ov.lat), Number(ov.lon)) || ''; } catch (err) { /* out of range */ }
+      }
+      return scheduler.getDay(String(dateISO || '').slice(0, 10), ov);
+    }
     catch (err) { return null; }
   });
   ipcMain.on('overlay:dismiss', () => hideOverlay());

@@ -41,9 +41,11 @@ fs.mkdirSync(path.join(WWW, 'fonts'), { recursive: true });
 for (const f of fs.readdirSync(path.join(ROOT, 'fonts'))) {
   if (f.endsWith('.woff2')) cp(path.join(ROOT, 'fonts', f), path.join(WWW, 'fonts', f));
 }
-for (const f of ['app.js', 'pages.js', 'pages3.js', 'reader.js', 'store3.js', 'data.js', 'platform.js', 'overlay.js', 'widget.js']) {
+for (const f of ['app.js', 'pages.js', 'pages3.js', 'reader.js', 'store3.js', 'data.js', 'platform.js', 'overlay.js', 'widget.js', 'compass.js']) {
   cp(path.join(ROOT, 'js', f), path.join(WWW, 'js', f));
 }
+// Shared calculation contract — same file the desktop scheduler requires.
+cp(path.join(ROOT, 'shared', 'pt-engine.js'), path.join(WWW, 'js', 'pt-engine.js'));
 cp(path.join(ROOT, 'data', 'quran.json'), path.join(WWW, 'data', 'quran.json'));
 for (const icon of fs.readdirSync(path.join(ROOT, 'assets'))) {
   if (icon.startsWith('icon-')) cp(path.join(ROOT, 'assets', icon), path.join(WWW, 'icons', icon));
@@ -55,7 +57,15 @@ let html = fs.readFileSync(path.join(ROOT, 'prayer-times.html'), 'utf8');
 // 3a. remove desktop-only preload bridges
 html = html.replace(/<script src="preload\.js"><\/script>\s*/g, '');
 
-// 3b. inject the mobile scheduler bundle just before </body>
+// 3b. the desktop HTML loads the shared contract from shared/; on the web it
+//     is a bundled classic script loaded FIRST (before data.js/platform.js),
+//     so the calculation contract exists before any consumer runs.
+html = html.replace(
+  '<script src="shared/pt-engine.js"></script>',
+  '<script src="js/pt-engine.js"></script>'
+);
+
+// 3c. inject the mobile scheduler bundle just before </body>
 html = html.replace(
   '</body>',
   '  <script src="js/adhan-bundle.js"></script>\n</body>'

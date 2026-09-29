@@ -13,9 +13,15 @@ window.renderQibla = function renderQibla() {
   if (S.lat == null) return;
   const b = qiblaBearing();
   $('qDeg').textContent = `${Math.round(b)}°`;
+  // Deliberate source (Phase 13): the ACTIVE location — never silently mixed
+  // with device GPS. The location modal's GPS button is the explicit way to
+  // make coordinates current.
   $('qSub').textContent = `${t('qibla.from')} ${S.city || `${S.lat.toFixed(2)}, ${S.lon.toFixed(2)}`}`;
   $('compassIn').style.transform = `rotate(${b}deg)`;
   $('kaabaMark').style.transform = `rotate(${-b}deg)`; // keep Kaaba upright
+  // Live heading (Android/web sensors) rotates the dial relative to the
+  // device; desktop keeps the static bearing, honestly labeled.
+  if (window.PTCompass) window.PTCompass.start();
   const d = distToKaaba();
   $('qDist').innerHTML = d != null
     ? `<span class="muted">${t('qibla.distance')}:</span> <b>${d.toLocaleString()}</b> ${t('qibla.km')}`
@@ -73,7 +79,7 @@ async function showCalDay(date) {
   if (!timings) {
     if (S.lat != null && window.Plat) {
       try {
-        const res = await window.Plat.getDay(key, { lat: S.lat, lon: S.lon, method: S.cfg.method, madhab: S.cfg.madhab });
+        const res = await window.Plat.getDay(key, { lat: S.lat, lon: S.lon, method: S.cfg.method, madhab: S.cfg.madhab, offsets: S.cfg.offsets, tz: (typeof resolveTz === 'function' ? resolveTz() : '') });
         timings = res && res.timings; if (timings) calDayCache[key] = timings;
       } catch (e) { /* fall through */ }
     }
@@ -112,7 +118,7 @@ window.exportMonthCsv = async function exportMonthCsv() {
     const key = localDateKey(date);
     let timings = calDayCache[key];
     if (!timings && window.Plat && S.lat != null) {
-      try { timings = (await window.Plat.getDay(key, { lat: S.lat, lon: S.lon, method: S.cfg.method, madhab: S.cfg.madhab })).timings; calDayCache[key] = timings; } catch (e) { continue; }
+      try { timings = (await window.Plat.getDay(key, { lat: S.lat, lon: S.lon, method: S.cfg.method, madhab: S.cfg.madhab, offsets: S.cfg.offsets, tz: (typeof resolveTz === 'function' ? resolveTz() : '') })).timings; calDayCache[key] = timings; } catch (e) { continue; }
     }
     if (!timings) continue;
     rows.push([key, hijriOf(date), timings.Fajr, timings.Sunrise, timings.Dhuhr, timings.Asr, timings.Maghrib, timings.Isha]);
@@ -169,6 +175,8 @@ function qrLoadAndPlay(idx) {
   $('plEn').textContent = `${s.en} · ${RECITERS.find((r) => r.id === S.cfg.reciter)?.en || RECITERS[0].en}`;
   qrAudio.src = qrUrl(s.n, S.cfg.reciter);
   qrAudio.load();
+  // Autoplay policy may reject the first play(); the play/pause button state
+  // stays consistent and the next user tap retries.
   qrAudio.play().catch(() => {});
 }
 window.qrToggle = function () {
@@ -305,6 +313,36 @@ window.fillSettingsSelects = function fillSettingsSelects() {
   $('setReciterSel').value = S.cfg.reciter;
 };
 
+/* Android 12+ honesty (Phase 17): show the REAL notification + exact-alarm
+   state from the plugin instead of claiming exact timing. Desktop/other:
+   nothing rendered. */
+function updateAndroidNotifStatus() {
+  const tg = $('tgNotif'); if (!tg) return;
+  const isAndroid = !!(window.Capacitor && window.Capacitor.isNativePlatform());
+  let el = $('andNotifStatus');
+  if (!isAndroid) { if (el) el.remove(); return; }
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'andNotifStatus';
+    el.className = 'muted';
+    el.style.cssText = 'font-size:11px;margin-top:6px';
+    (tg.closest('.row') || tg.parentElement).insertAdjacentElement('afterend', el);
+  }
+  el.textContent = '…';
+  if (window.ptMobile && window.ptMobile.notifStatus) {
+    window.ptMobile.notifStatus().then((s) => {
+      const L = S.lang === 'ar';
+      const disp = s.display === 'granted' ? (L ? 'الإشعارات: مسموحة' : 'Notifications: allowed')
+        : s.display === 'denied' ? (L ? 'الإشعارات: مرفوضة — فعّلها من إعدادات النظام' : 'Notifications: denied — enable them in system settings')
+        : (L ? 'الإشعارات: غير محددة' : 'Notifications: not determined');
+      const exact = s.exact === true ? (L ? 'التنبيهات الدقيقة: مفعّلة' : 'Exact alarms: enabled')
+        : s.exact === false ? (L ? 'التنبيهات الدقيقة: غير مفعّلة — قد تتأخر الإشعارات' : 'Exact alarms: off — alarms may be delayed by the system')
+        : (L ? 'التنبيهات الدقيقة: غير معروفة' : 'Exact alarms: unknown');
+      el.textContent = disp + ' · ' + exact;
+    }).catch(() => { el.textContent = ''; });
+  }
+}
+
 window.renderSettings = function renderSettings() {
   window.fillSettingsSelects();
   $('setLang').value = S.lang;
@@ -312,6 +350,7 @@ window.renderSettings = function renderSettings() {
   $('setVol').value = S.cfg.adhanVol != null ? S.cfg.adhanVol : 1;
   $('tg24').classList.toggle('on', S.cfg.h24);
   $('tgNotif').classList.toggle('on', S.cfg.notif);
+  updateAndroidNotifStatus();
   $('tgBeep').classList.toggle('on', S.cfg.beep);
   $('tgAdhan').classList.toggle('on', S.cfg.adhan);
   $('tgOverlay').classList.toggle('on', S.cfg.desktop.overlay);

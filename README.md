@@ -8,7 +8,7 @@ A native Windows desktop & Android Islamic companion built with Electron — pra
 
 📥 **Downloads:** latest [releases](https://github.com/MalekMahmouda/prayer-times/releases) — Windows installer + signed Android APK.
 
-![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Android%20%7C%20Web-blue) ![Electron](https://img.shields.io/badge/Electron-41-47848F) ![Version](https://img.shields.io/badge/version-1.2.0-green)
+![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Android%20%7C%20Web-blue) ![Electron](https://img.shields.io/badge/Electron-41-47848F) ![Version](https://img.shields.io/badge/version-1.3.0-green)
 
 ## Features
 
@@ -53,7 +53,7 @@ npm start
 ### Build the Windows installer
 
 ```bash
-npm run package:installer   # → dist/Prayer-Times-Setup-1.2.0.exe
+npm run package:installer   # → dist/Prayer-Times-Setup-1.3.0.exe
 npm run release             # → release/ folder with SHA-256 checksums
 ```
 

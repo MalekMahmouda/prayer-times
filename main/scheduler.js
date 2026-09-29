@@ -30,6 +30,9 @@
 const { Coordinates, CalculationMethod, PrayerTimes, Prayer, Madhab, SunnahTimes } = require('adhan');
 const { EventEmitter } = require('events');
 const { clampVolume } = require('./adhan-files');
+// Shared calculation contract — the SAME METHOD_MAP / madhab / date convention
+// used by the Android scheduler and the web platform adapter.
+const Engine = require('../shared/pt-engine.js');
 
 const PRAYERS = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
 
@@ -37,17 +40,11 @@ const PRAYERS = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
 // A tick arriving 5 min late (sleep) still owns a prayer that fell 5 min ago.
 const GRACE_MS = 5 * 60 * 1000;
 
-// AlAdhan method IDs (used by the renderer UI) → adhan-package methods
-const METHOD_MAP = {
-  3: () => CalculationMethod.MuslimWorldLeague(),
-  4: () => CalculationMethod.UmmAlQura(),
-  2: () => CalculationMethod.NorthAmerica(), // AlAdhan id 2 = ISNA (18°/18°)
-  1: () => CalculationMethod.Karachi(),
-  5: () => CalculationMethod.Egyptian(),
-  8: () => CalculationMethod.Dubai(),
-  9: () => CalculationMethod.Kuwait(),
-  10: () => CalculationMethod.Qatar(),
-};
+// Method/madhab resolution lives in the shared contract (single copy for
+// desktop, Android and web — universal madhab included).
+function paramsFor(cfg) {
+  return Engine.paramsFor(cfg, { CalculationMethod, Madhab });
+}
 
 function createScheduler() {
   // Events: 'pre-alert', 'prayer-time', 'adhan', 'times-updated'
@@ -117,51 +114,37 @@ function createScheduler() {
     return i;
   }
 
-  function paramsFor(cfg) {
-    const m = Number(cfg.method);
-    const factory = METHOD_MAP[m] || METHOD_MAP[3];
-    const params = factory();
-    // Universal: the user's Asr school applies to ALL methods (platform.js
-    // does the same) — Hanafi changes displayed AND scheduled Asr everywhere.
-    params.madhab = cfg.madhab === 'hanafi' ? Madhab.Hanafi : Madhab.Shafi;
-    return params;
-  }
+  // paramsFor(cfg) — defined once at module level, delegating to the shared
+  // contract (Engine.paramsFor) so desktop, Android and web stay identical.
 
   // Full day info for an arbitrary ISO date — used by the calendar & sun section.
+  // Delegates to the shared contract; identical math on Android and web.
   function getDay(dateISO, overrides) {
     const cfg = { ...(state.cfg || {}), ...(overrides || {}) };
-    if (!Number.isFinite(cfg.lat) || !Number.isFinite(cfg.lon)) return null;
-    const date = new Date(`${dateISO}T12:00:00`); // midday avoids DST edge cases
-    if (isNaN(date.getTime())) return null;
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(dateISO || ''));
+    if (!m) return null;
+    const day = Engine.computeDayInstant(
+      cfg, Number(m[1]), Number(m[2]), Number(m[3]),
+      { Coordinates, CalculationMethod, PrayerTimes, SunnahTimes, Madhab },
+    );
+    if (!day) return null;
     const tz = cfg.tz || '';
-    const fmtT = (d) => fmtInTz(d, tz);
-    const pt = new PrayerTimes(new Coordinates(cfg.lat, cfg.lon), date, paramsFor(cfg));
-    const st = new SunnahTimes(pt);
-    const off = (p) => (cfg.offsets && cfg.offsets[p]) || 0;
-    const sunset = pt.timeForPrayer(Prayer.Maghrib);
-    const midnight = st.middleOfTheNight;
-    // First third = sunset + one third of the full night (sunset → tomorrow's Fajr)
-    const tomorrow = new Date(date); tomorrow.setDate(tomorrow.getDate() + 1);
-    const fajrNext = new PrayerTimes(new Coordinates(cfg.lat, cfg.lon), tomorrow, paramsFor(cfg)).fajr;
-    const firstThird = new Date(sunset.getTime() + (fajrNext.getTime() - sunset.getTime()) / 3);
+    const fmtT = (ms) => fmtInTz(new Date(ms), tz);
+    const timings = {};
+    for (const p of Engine.ALL_DAYS) timings[p] = fmtT(day.instants[p]);
     return {
       date: dateISO,
-      timings: {
-        Fajr: fmtT(new Date(pt.fajr.getTime() + off('Fajr') * 60000)),
-        Sunrise: fmtT(pt.sunrise),
-        Dhuhr: fmtT(new Date(pt.dhuhr.getTime() + off('Dhuhr') * 60000)),
-        Asr: fmtT(new Date(pt.asr.getTime() + off('Asr') * 60000)),
-        Maghrib: fmtT(new Date(pt.maghrib.getTime() + off('Maghrib') * 60000)),
-        Isha: fmtT(new Date(pt.isha.getTime() + off('Isha') * 60000)),
-      },
+      timings,
       sun: {
-        sunrise: fmtT(pt.sunrise),
-        sunset: fmtT(pt.maghrib),
-        dhuhr: fmtT(pt.dhuhr),
-        midnight: fmtT(midnight),
-        firstThird: fmtT(firstThird),
-        lastThird: fmtT(st.lastThirdOfTheNight),
+        sunrise: fmtT(day.sun.sunrise),
+        sunset: fmtT(day.sun.sunset),
+        dhuhr: fmtT(day.sun.dhuhr),
+        midnight: fmtT(day.sun.midnight),
+        firstThird: fmtT(day.sun.firstThird),
+        lastThird: fmtT(day.sun.lastThird),
       },
+      // Absolute instants (ms) — display layers format; logic layers compare.
+      instants: { ...day.instants },
       hijriOffsetDays: 0,
     };
   }
@@ -179,12 +162,13 @@ function createScheduler() {
   }
 
   // True fire datetimes for today, with per-prayer minute offsets applied.
+  // `ms` is the absolute instant used by ALL firing logic (strings are display-only).
   function scheduleFor(pt) {
     return PRAYERS.map((p) => {
       const base = pt.timeForPrayer(Prayer[p]);
       const off = (state.cfg && state.cfg.offsets && state.cfg.offsets[p]) || 0;
       const t = new Date(base.getTime() + off * 60000);
-      return { prayer: p, at: t, hhmm: hhmm(t) };
+      return { prayer: p, at: t, ms: t.getTime(), hhmm: hhmm(t) };
     });
   }
 
@@ -193,7 +177,7 @@ function createScheduler() {
     const tz = cfg.tz || '';
     const fmtT = (d) => fmtInTz(d, tz);
     const now = state.clock();
-    const sched = scheduleFor(pt).map((e) => ({ ...e, ms: e.at.getTime(), hhmm: fmtT(e.at) }));
+    const sched = scheduleFor(pt).map((e) => ({ ...e, hhmm: fmtT(e.at) }));
     let next = sched.find((e) => e.ms > now);
     if (!next) {
       // All of today's prayers passed — compute tomorrow's Fajr.

@@ -8,6 +8,10 @@
 
 const { contextBridge, ipcRenderer } = require('electron');
 
+// Offline coordinate→IANA-timezone lookup (shared with main process).
+// Injected into the renderer world; tz-lookup is a tiny pure-data package.
+try { contextBridge.exposeInMainWorld('tzLookup', require('tz-lookup')); } catch (e) { /* optional */ }
+
 // Canonical page ids (match gotoPage() in app.js and the tray contract).
 const VALID_PAGES = new Set(['prayers', 'calendar', 'qibla', 'quran', 'names', 'dhikr', 'stats', 'settings']);
 

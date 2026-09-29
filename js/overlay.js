@@ -20,8 +20,7 @@ let closeTimer = null;
 // overlay must not stay up forever. Prayer notifications already went out.
 const MAX_DURATION_MS = 6 * 60 * 1000;
 
-function stopAndClose() {
-  try { audio.pause(); } catch (e) {}
+function stopAndClose() {    try { audio.pause(); } catch (e) { /* already paused/unavailable — closing the overlay is the user-visible outcome */ }
   if (closeTimer) { clearTimeout(closeTimer); closeTimer = null; }
   if (window.ptOverlay) window.ptOverlay.dismiss();
 }
