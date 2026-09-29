@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' cdn.jsdelivr.net; connect-src 'self' api.aladhan.com nominatim.openstreetmap.org; media-src 'self' cdn.islamic.network cdn.aladhan.com; object-src 'none'">
 <title>Prayer Times | أوقات الصلاة</title>
 <link rel="stylesheet" href="styles/app.css">
 <link rel="stylesheet" href="styles/fonts.css">
@@ -512,6 +514,20 @@
   <button class="pcbtn" id="plStop" title="Stop">⏹</button>
 </div>
 
+<!-- ══ TEXT INPUT MODAL (replaces window.prompt, unsupported in Electron) ══ -->
+<div class="overlay" id="txtModal">
+  <div class="modal" style="max-width:420px;width:min(92vw,420px)">
+    <div id="txtModalTitle" style="font-size:15.5px;font-weight:750;margin-bottom:10px"></div>
+    <label id="txtModalLabel" for="txtModalInput" style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:6px;white-space:pre-line"></label>
+    <input class="inp" id="txtModalInput" autocomplete="off" spellcheck="false"
+           style="width:100%;margin-bottom:14px">
+    <div style="display:flex;gap:9px;justify-content:flex-end">
+      <button class="btn" id="txtModalCancel">Cancel</button>
+      <button class="btn primary" id="txtModalOk">OK</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ AUDIO ══ -->
 <audio id="adhanAudio" preload="none"></audio>
 <audio id="beepAudio" preload="none"></audio>
@@ -524,5 +540,6 @@
 <script src="js/pages3.js"></script>
 <script src="js/reader.js"></script>
 <script src="js/stats.js"></script>
+<!-- overlay/widget pages load their own scripts: js/overlay.js, js/widget.js -->
 </body>
 </html>

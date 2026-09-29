@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'">
 <title>Prayer Widget</title>
 <style>
   :root { --wbg:#0e1526; --wfg:#e4ecff; --wmut:#7c90bd; --wac:#5b8aff; --wgold:#f0cc70; }
@@ -50,57 +52,6 @@
   </div>
   <div class="times" id="wTimes"></div>
 
-<script>
-  const el = (id) => document.getElementById(id);
-  let mode = { mini: false };
-
-  function applyTheme(themeId) {
-    const dark = ['midnight', 'royal', 'oled'].includes(themeId);
-    document.body.classList.toggle('light', !dark);
-  }
-
-  function renderInfo(info) {
-    if (!info || !info.next) return;
-    const P = { Fajr:'الفجر', Dhuhr:'الظهر', Asr:'العصر', Maghrib:'المغرب', Isha:'العشاء' };
-    const ar = info.lang === 'ar';
-    el('wPrayer').textContent = ar ? P[info.next.prayer] : info.next.prayer;
-    el('wTime').textContent = info.next.hhmm || '';
-    el('wCd').textContent = info.next.countdown || '--:--:--';
-    el('wLbl').textContent = ar ? 'الصلاة القادمة' : 'Next Prayer';
-    el('wCdLbl').textContent = ar ? 'تبدأ بعد' : 'starts in';
-    el('wTitle').textContent = ar ? 'أوقات الصلاة' : 'Prayer Times';
-    if (mode.mini && Array.isArray(info.times)) {
-      el('wTimes').innerHTML = info.times.map((t) => `<span class=\"tchip\">${ar ? P[t.prayer] : t.prayer.slice(0,3)} <b>${t.time}</b></span>`).join('');
-    }
-  }
-
-  // Local 1s smoothing of the countdown between scheduler pushes (display only —
-  // all scheduling, alerts and adhan remain in the main process).
-  let lastInfo = null, cdTimer = null, baseSecs = null, lastStamp = 0;
-  function startCd() {
-    if (cdTimer) return;
-    cdTimer = setInterval(() => {
-      if (!lastInfo || !lastInfo.next) return;
-      const now = Date.now();
-      if (baseSecs == null) {
-        const [h, m, s] = (lastInfo.next.countdown || '0:0:0').split(':').map(Number);
-        baseSecs = h * 3600 + m * 60 + s; lastStamp = now;
-      }
-      const left = Math.max(0, baseSecs - Math.floor((now - lastStamp) / 1000));
-      el('wCd').textContent = [h0(left / 3600), h0((left % 3600) / 60), h0(left % 60)].map(Math.floor).map((v, i, a) => String(v).padStart(2, '0')).join(':');
-    }, 1000);
-  }
-  const h0 = (v) => Math.floor(v);
-
-  if (window.ptWidget) {
-    window.ptWidget.onMode((m) => { mode = m || {}; document.body.classList.toggle('mini', !!mode.mini); if (m && m.theme) applyTheme(m.theme); });
-    window.ptWidget.onInfo((info) => {
-      lastInfo = info; baseSecs = null; startCd(); renderInfo(info);
-    });
-    window.ptWidget.getTheme().then(applyTheme).catch(() => {});
-  }
-  el('wClose').addEventListener('click', () => window.close());
-  el('wExpand').addEventListener('click', () => { if (window.ptWidget) window.ptWidget.expand(); });
-</script>
+<script src="js/widget.js"></script>
 </body>
 </html>

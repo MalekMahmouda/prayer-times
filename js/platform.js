@@ -65,10 +65,15 @@
     const m = Number(cfg.method);
     const factory = ADHAN_MAP[m] || ADHAN_MAP[3];
     const params = factory(deps.CalculationMethod);
-    if (m === 2 || m === 15) params.madhab = cfg.madhab === 'hanafi' ? Madhab.Hanafi : Madhab.Shafi;
+    // Universal: the user's Asr school applies to ALL methods. On desktop the
+    // main-process scheduler does the same — both sources stay identical.
+    params.madhab = cfg.madhab === 'hanafi' ? Madhab.Hanafi : Madhab.Shafi;
 
     const pt = new PrayerTimes(new Coordinates(cfg.lat, cfg.lon), date, params);
     const st = new SunnahTimes(pt);
+    // Tomorrow's Fajr bounds the night (sunset → fajrNext) for first-third.
+    const tomorrow = new Date(date); tomorrow.setDate(tomorrow.getDate() + 1);
+    const fajrNext = new PrayerTimes(new Coordinates(cfg.lat, cfg.lon), tomorrow, params).fajr;
     const tz = cfg.tz || '';
     const f = (d) => fmtInTz(d, tz);
     const off = (p) => (cfg.offsets && cfg.offsets[p]) || 0;
@@ -89,7 +94,10 @@
         sunset: f(pt.maghrib),
         dhuhr: f(pt.dhuhr),
         midnight: f(st.middleOfTheNight),
-        firstThird: f(new Date(st.middleOfTheNight.getTime() + (st.lastThirdOfTheNight.getTime() - st.middleOfTheNight.getTime()) / 2)),
+        // First third = sunset + (nextFajr − sunset)/3 — the same formula the
+        // main-process scheduler uses (NOT a midpoint between the middle and
+        // last thirds).
+        firstThird: f(new Date(pt.maghrib.getTime() + (fajrNext.getTime() - pt.maghrib.getTime()) / 3)),
         lastThird: f(st.lastThirdOfTheNight),
       },
     };

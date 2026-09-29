@@ -41,7 +41,7 @@ fs.mkdirSync(path.join(WWW, 'fonts'), { recursive: true });
 for (const f of fs.readdirSync(path.join(ROOT, 'fonts'))) {
   if (f.endsWith('.woff2')) cp(path.join(ROOT, 'fonts', f), path.join(WWW, 'fonts', f));
 }
-for (const f of ['app.js', 'pages.js', 'pages3.js', 'reader.js', 'store3.js', 'data.js', 'platform.js']) {
+for (const f of ['app.js', 'pages.js', 'pages3.js', 'reader.js', 'store3.js', 'data.js', 'platform.js', 'overlay.js', 'widget.js']) {
   cp(path.join(ROOT, 'js', f), path.join(WWW, 'js', f));
 }
 cp(path.join(ROOT, 'data', 'quran.json'), path.join(WWW, 'data', 'quran.json'));

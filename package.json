@@ -1,7 +1,7 @@
 {
   "name": "prayertimes",
   "productName": "Prayer Times",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Islamic desktop companion with prayer times, Quran, Dhikr and Qibla.",
   "main": "main/main.js",
   "author": "Malek",
@@ -35,13 +35,16 @@
       "styles/**/*",
       "data/**/*",
       "assets/**/*",
+      "fonts/**/*",
       "prayer-times.html",
       "adhan.html",
       "widget.html",
       "preload.js",
       "widget-preload.js",
-      "main/overlay-preload.js",
       "package.json"
+    ],
+    "asarUnpack": [
+      "assets/adhans/**"
     ],
     "win": {
       "icon": "assets/icon.ico",

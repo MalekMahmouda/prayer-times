@@ -144,37 +144,58 @@ function activateLocation(id) {
 
 function editLocation(id) {
   const loc = DB3.locations.find((l) => l.id === id); if (!loc) return;
-  const name = prompt((S.lang === 'ar' ? 'الاسم:' : 'Name:'), loc.name);
-  if (name === null) return;
-  const tzs = COMMON_TIMEZONES;
-  const tz = prompt((S.lang === 'ar' ? 'المنطقة الزمنية IANA (اتركها فارغة للنظام):\nأمثلة: ' : 'IANA timezone (leave empty for system):\nExamples: ') + tzs.slice(0, 4).join(', '), loc.timezone || '');
-  if (tz === null) return;
-  loc.name = name.trim().slice(0, 60) || loc.name;
-  loc.timezone = tz.trim();
-  const probe = DB3.locations.find((l) => l.id === id);
-  if (probe && probe.timezone) { try { new Intl.DateTimeFormat('en', { timeZone: probe.timezone }); } catch (e) { probe.timezone = ''; showToast('⚠️ Invalid timezone — cleared'); } }
-  save3(); renderLocations();
+  const L = S.lang === 'ar';
+  openTextModal({
+    title: L ? 'تعديل الموقع' : 'Edit location',
+    label: L ? 'الاسم:' : 'Name:',
+    initial: loc.name,
+    onOK: (name) => {
+      openTextModal({
+        title: L ? 'تعديل الموقع' : 'Edit location',
+        label: (L ? 'المنطقة الزمنية IANA (اتركها فارغة للنظام):' : 'IANA timezone (leave empty for system):') + '\n' + COMMON_TIMEZONES.slice(0, 4).join(', '),
+        initial: loc.timezone || '',
+        onOK: (tz) => {
+          loc.name = name.trim().slice(0, 60) || loc.name;
+          loc.timezone = tz.trim();
+          if (loc.timezone && !isValidTimezone(loc.timezone)) {
+            loc.timezone = '';
+            showToast('⚠️ ' + (L ? 'منطقة زمنية غير صالحة — تم المسح' : 'Invalid timezone — cleared'));
+          }
+          save3(); renderLocations();
+        },
+      });
+    },
+  });
 }
 
-const COMMON_TIMEZONES = ['UTC', 'Asia/Riyadh', 'Asia/Dubai', 'Asia/Qatar', 'Asia/Kuwait', 'Asia/Cairo', 'Asia/Jerusalem', 'Asia/Amman', 'Asia/Baghdad', 'Asia/Tehran', 'Asia/Karachi', 'Asia/Dhaka', 'Asia/Kolkata', 'Asia/Kuala_Lumpur', 'Asia/Jakarta', 'Asia/Manila', 'Asia/Shanghai', 'Asia/Tokyo', 'Asia/Seoul', 'Australia/Sydney', 'Europe/London', 'Europe/Paris', 'Europe/Berlin', 'Europe/Istanbul', 'Europe/Moscow', 'Africa/Lagos', 'Africa/Nairobi', 'Africa/Johannesburg', 'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles', 'America/Toronto', 'America/Sao_Paulo'];
+const COMMON_TIMEZONES = ['UTC', 'Asia/Riyadh', 'Asia/Dubai', 'Asia/Qatar', 'Asia/Kuwait', 'Asia/Cairo', 'Asia/Jerusalem', 'Asia/Amman', 'Asia/Baghdad', 'Asia/Tehran', 'Asia/Karachi', 'Asia/Dhaka', 'Asia/Kolkata', 'Asia/Kuala_Lumpur', 'Asia/Jakarta', 'Asia/Manila', 'Asia/Shanghai', 'Asia/Tokyo', 'Asia/Seoul', 'Australia/Sydney', 'Europe/London', 'Europe/Paris', 'Europe/Berlin', 'Europe/Istanbul', 'Europe/Moscow', 'Africa/Lagos', 'Africa/Nairobi', 'Africa/Johannesburg', 'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles', 'America/Toronto', 'America/Sao_Paulo', 'America/Argentina/Buenos_Aires', 'America/Indiana/Indianapolis'];
 
 window.addCurrentLocation = function addCurrentLocation() {
   if (S.lat == null) { showToast('⚠️ ' + t('toast.noCity')); return; }
-  const name = prompt(S.lang === 'ar' ? 'اسم الموقع:' : 'Location name:', S.city || `${S.lat.toFixed(2)}, ${S.lon.toFixed(2)}`);
-  if (name === null) return;
+  const L = S.lang === 'ar';
   const tzGuess = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
-  const tz = prompt(
-    (S.lang === 'ar' ? 'المنطقة الزمنية IANA (فارغة = النظام). استخدم منطقة الموقع نفسها إن كنت لا تسكن هناك:' : "IANA timezone (empty = system). Use the location's own zone if you are not there:") + '\n' + COMMON_TIMEZONES.slice(0, 8).join(', '),
-    tzGuess || 'UTC');
-  if (tz === null) return;
-  const id = 'loc-' + Date.now();
-  DB3.locations.push({
-    id, name: name.trim().slice(0, 60) || 'Location',
-    latitude: S.lat, longitude: S.lon, city: S.city || '', country: S.country || '',
-    timezone: tz.trim(),
+  openTextModal({
+    title: L ? 'حفظ الموقع' : 'Save location',
+    label: L ? 'اسم الموقع:' : 'Location name:',
+    initial: S.city || `${S.lat.toFixed(2)}, ${S.lon.toFixed(2)}`,
+    onOK: (name) => {
+      openTextModal({
+        title: L ? 'حفظ الموقع' : 'Save location',
+        label: (L ? 'المنطقة الزمنية IANA (فارغة = النظام). استخدم منطقة الموقع نفسها إن كنت لا تسكن هناك:' : "IANA timezone (empty = system). Use the location's own zone if you are not there:") + '\n' + COMMON_TIMEZONES.slice(0, 8).join(', '),
+        initial: tzGuess || 'UTC',
+        onOK: (tz) => {
+          const id = 'loc-' + Date.now();
+          DB3.locations.push({
+            id, name: name.trim().slice(0, 60) || 'Location',
+            latitude: S.lat, longitude: S.lon, city: S.city || '', country: S.country || '',
+            timezone: isValidTimezone(tz.trim()) ? tz.trim() : '',
+          });
+          save3(); renderLocations();
+          showToast('⭐ ' + (L ? 'تم الحفظ' : 'Location saved'));
+        },
+      });
+    },
   });
-  save3(); renderLocations();
-  showToast('⭐ ' + (S.lang === 'ar' ? 'تم الحفظ' : 'Location saved'));
 };
 
 /* ═══ STATISTICS (record-based, neutral) ═══ */
@@ -451,12 +472,18 @@ window.renderThemeBuilder = function renderThemeBuilder() {
   $('tbApply').onclick = () => { if (!tbDraft) return showToast('⚠️ Pick colors first'); applyCustomThemeDraft(); };
   $('tbSave').onclick = () => {
     if (!tbDraft) return showToast('⚠️ Pick colors first');
-    const name = prompt((S.lang === 'ar' ? 'اسم القالب:' : 'Theme name:'), 'My Theme');
-    if (name === null) return;
-    const id = 'custom-' + Date.now();
-    DB3.customThemes.push({ id, name: name.trim().slice(0, 40) || 'Custom', tokens: { ...tbDraft } });
-    save3(); renderThemeBuilder(); refreshThemeUI();
-    showToast('🎨 ' + (S.lang === 'ar' ? 'تم حفظ القالب' : 'Theme saved'));
+    const L = S.lang === 'ar';
+    openTextModal({
+      title: L ? 'حفظ القالب' : 'Save theme',
+      label: L ? 'اسم القالب:' : 'Theme name:',
+      initial: 'My Theme',
+      onOK: (name) => {
+        const id = 'custom-' + Date.now();
+        DB3.customThemes.push({ id, name: name.trim().slice(0, 40) || 'Custom', tokens: { ...tbDraft } });
+        save3(); renderThemeBuilder(); refreshThemeUI();
+        showToast('🎨 ' + (L ? 'تم حفظ القالب' : 'Theme saved'));
+      },
+    });
   };
   $('tbDelete').onclick = () => {
     const id = $('tbPick').value; if (!id) return showToast('⚠️ Pick a theme');

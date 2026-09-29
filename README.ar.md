@@ -6,7 +6,7 @@
 
 📥 **التنزيلات:** أحدث [الإصدارات](https://github.com/MalekMahmouda/prayer-times/releases) — مثبّت ويندوز + حزمة أندرويد موقّعة.
 
-![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Android%20%7C%20Web-blue) ![Electron](https://img.shields.io/badge/Electron-41-47848F) ![Version](https://img.shields.io/badge/version-1.1.0-green)
+![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Android%20%7C%20Web-blue) ![Electron](https://img.shields.io/badge/Electron-41-47848F) ![Version](https://img.shields.io/badge/version-1.2.0-green)
 
 > 🇬🇧 English readme: [README.md](README.md)
 
@@ -58,7 +58,7 @@ npm start
 ### بناء مثبّت ويندوز
 
 ```bash
-npm run package:installer   # → dist/Prayer-Times-Setup-1.1.0.exe
+npm run package:installer   # → dist/Prayer-Times-Setup-1.2.0.exe
 npm run release             # → مجلد release/ مع بصمات SHA-256
 ```
 
@@ -76,22 +76,33 @@ npm run web        # → dist-web/ (نسخة الويب PWA)
 ```
 main/               العملية الرئيسية في إلكترون
 ├── main.js         دورة حياة النوافذ/الشريط، IPC، الإشعارات، الشاشة، الأداة
-├── scheduler.js    حساب أوقات الصلاة دون اتصال + حلقة الإطلاق (adhan)
+├── scheduler.js    مجدول الصلوات المرجعي (adhan): حلقة الإطلاق، استرجاع الفوائت، الإشعارات/الأذان/التنبيه المسبق
+├── adhan-files.js  حل ملفات الأذان المحلية المرفقة (assets/adhans/ — يعمل دون اتصال)
 ├── tray.js         قائمة شريط المهام
 └── json-store.js   مخزن إعدادات بلا اعتماديات خارجية
 preload.js          جسر IPC آمن (contextIsolation + sandbox مفعّلان)
-js/                 وحدات الواجهة (app, pages, pages3, reader, data, store3)
+js/                 وحدات الواجهة (app, pages, pages3, reader, data, store3, overlay, widget)
 styles/app.css      رموز التصميم، 8 سمات، واجهة زجاجية، خصائص منطقية لـ RTL
 fonts/              خط Amiri Quran للمصحف (يعمل دون اتصال)
+assets/adhans/     ملفات الأذان المرفقة (تعمل بدون إنترنت)
 data/quran.json     نص القرآن الموثق + الترجمة (مضمّن)
 ```
 
-نموذج الأمان: `contextIsolation: true`، `sandbox: true`، `nodeIntegration: false`، قنوات IPC مُتحقق منها، وبلا نقاط تصحيح بعيدة.
+نموذج الأمان: `contextIsolation: true`، `sandbox: true`، `nodeIntegration: false`، قنوات IPC مُتحقق منها، سياسة CSP في كل نافذة، وبلا نقاط تصحيح بعيدة.
 
 ## الخصوصية
 
-كل ما هو شخصي — الإعدادات وسجل الصلوات والعلامات المرجعية والمواقع والسمات المخصصة — يُخزَّن محليًا على جهازك فقط. حسابات الصلاة ونص القرآن والبحث والأذكار والتقويم تعمل دون اتصال بالكامل. الشبكة تُستخدم فقط للاستعلام الاختياري عن الموقع وتحديد الموقع الجغرافي. لا حسابات، لا تحليلات، لا تتبع.
+كل ما هو شخصي — الإعدادات وسجل الصلوات والعلامات المرجعية والمواقع والسمات المخصصة — يُخزَّن محليًا على جهازك فقط. لا حسابات، لا تحليلات، لا تتبع.
+
+أوقات الصلاة تُحسب **محليًا على جهازك** (المحرك نفسه يغذّي العرض والمجدول). ما يحتاج الشبكة:
+
+- **البحث عن مدينة** — ترميز جغرافي عبر `api.aladhan.com` (إحداثيات فقط؛ الأوقات تُحسب محليًا بعدها)
+- **صوت القرآن** — بث من `cdn.islamic.network`
+- **صوت الأذان** — مرفق داخل التطبيق؛ النسخة الإلكترونية من `cdn.aladhan.com` بديل اختياري فقط إن غاب الملف المحلي
+- **GPS** (في المتصفح) و**الترميز الجغرافي العكسي** عبر `nominatim.openstreetmap.org` لعرض اسم مدينتك
+
+بدون إنترنت: أوقات الصلاة والإشعارات والأذان (الملف المرفق) ونص القرآن والبحث والأذكار والقبلة والتقويم والإحصاءات تعمل كلها.
 
 ## الترخيص
 
-جميع الحقوق محفوظة للمؤلف.
+يُوزَّع التطبيق برخصة ISC (انظر `package.json`). صوت الأذان المرفق: بفضل AlAdhan؛ وخطوط Amiri برخصة SIL Open Font License 1.1.

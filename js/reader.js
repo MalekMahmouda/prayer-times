@@ -64,18 +64,29 @@ function openVpop(surahN, ayahN, x, y) {
         const i = DB3.bookmarks.findIndex((x2) => x2.surah === surahN && x2.ayah === ayahN);
         if (i >= 0) DB3.bookmarks.splice(i, 1); else DB3.bookmarks.push({ surah: surahN, ayah: ayahN, ts: Date.now(), note: '' });
         save3();
-        const el = document.getElementById(`ayah-${surahN}-${ayahN}`);
-        if (el) el.classList.toggle('marked', i < 0);
+        const el_ayah = document.getElementById(`ayah-${surahN}-${ayahN}`);
+        if (el_ayah) el_ayah.classList.toggle('marked', i < 0);
         if (window.renderBookmarks) renderBookmarks();
         closeVpop();
       } else if (act === 'note') {
         const ex = DB3.bookmarks.find((x2) => x2.surah === surahN && x2.ayah === ayahN);
-        const note = prompt((S.lang === 'ar' ? 'ملاحظة:' : 'Note:'), ex ? ex.note : '');
-        if (note === null) { closeVpop(); return; }
-        if (ex) ex.note = note.slice(0, 300);
-        else DB3.bookmarks.push({ surah: surahN, ayah: ayahN, ts: Date.now(), note: note.slice(0, 300) });
-        save3(); closeVpop();
-        showToast('📝 ' + (S.lang === 'ar' ? 'تم حفظ الملاحظة' : 'Note saved'));
+        const L = S.lang === 'ar';
+        openTextModal({
+          title: L ? 'ملاحظة الآية' : 'Ayah note',
+          label: `${L ? 'سورة' : 'Surah'} ${surahN} · ${L ? 'الآية' : 'Ayah'} ${ayahN}`,
+          initial: ex ? ex.note : '',
+          onOK: (note) => {
+            const val = String(note).slice(0, 300);
+            if (ex) ex.note = val;
+            else DB3.bookmarks.push({ surah: surahN, ayah: ayahN, ts: Date.now(), note: val });
+            save3();
+            const el_ayah = document.getElementById(`ayah-${surahN}-${ayahN}`);
+            if (el_ayah) el_ayah.classList.add('marked');
+            if (window.renderBookmarks) renderBookmarks();
+            showToast('📝 ' + (L ? 'تم حفظ الملاحظة' : 'Note saved'));
+          },
+        });
+        closeVpop();
       } else if (act === 'copy') {
         const sur = QURAN_DATA && QURAN_DATA.surahs[surahN - 1];
         const ay = sur && sur.ayahs[ayahN - 1];

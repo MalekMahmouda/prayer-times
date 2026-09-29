@@ -8,34 +8,58 @@
 
 const { contextBridge, ipcRenderer } = require('electron');
 
-const VALID_PAGES = new Set(['pagePrayers', 'pageQibla', 'pageAsma', 'pageQuran']);
+// Canonical page ids (match gotoPage() in app.js and the tray contract).
+const VALID_PAGES = new Set(['prayers', 'calendar', 'qibla', 'quran', 'names', 'dhikr', 'stats', 'settings']);
+
+/** Explicit minutes-before validation: 0 is valid; invalid → default; clamp range. */
+function parseNotifMin(v, def = 10, min = 0, max = 120) {
+  if (v == null || v === '') return def;
+  const n = Number(v);
+  if (!Number.isFinite(n)) return def;
+  const i = Math.round(n);
+  if (i < min) return min;
+  if (i > max) return max;
+  return i;
+}
+
+/** Clamp adhan volume to 0.0–1.0 (invalid → fallback). */
+function parseVol(v, fallback = 1) {
+  const n = Number(v);
+  return Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : fallback;
+}
 
 contextBridge.exposeInMainWorld('ptDesktop', {
   /** Push scheduler config (location, method, offsets, toggles, language). */
   updateConfig: (cfg) => {
     try {
       const c = cfg && typeof cfg === 'object' ? cfg : {};
-      ipcRenderer.send('pt:update-config', {
+      return ipcRenderer.invoke('pt:update-config', {
         lat: (c.lat == null || c.lat === '') ? null : Number(c.lat),
         lon: (c.lon == null || c.lon === '') ? null : Number(c.lon),
         method: String(c.method || '4'),
         offsets: c.offsets && typeof c.offsets === 'object' ? c.offsets : {},
-        notifMin: Number(c.notifMin) || 10,
+        notifMin: parseNotifMin(c.notifMin),
         notif: !!c.notif,
         beep: !!c.beep,
         adhan: !!c.adhan,
         adhanPerPrayer: c.adhanPerPrayer && typeof c.adhanPerPrayer === 'object' ? c.adhanPerPrayer : {},
         adhanType: typeof c.adhanType === 'string' ? c.adhanType : 'alafasy',
+        adhanVol: parseVol(c.adhanVol, 1),
+        adhanProfiles: c.adhanProfiles && typeof c.adhanProfiles === 'object' ? c.adhanProfiles : {},
         madhab: c.madhab === 'hanafi' ? 'hanafi' : 'shafi',
         lang: c.lang === 'ar' ? 'ar' : 'en',
+        tz: typeof c.tz === 'string' ? c.tz : '',
+        preMin: c.preMin && typeof c.preMin === 'object' ? c.preMin : {},
       });
-    } catch (e) { /* never break the renderer */ }
+    } catch (e) { return Promise.resolve({ ok: false, error: 'bridge' }); } // never break the renderer
   },
 
   setCloseToTray: (v) => ipcRenderer.send('pt:set-close-to-tray', !!v),
   setStartWithWindows: (v) => ipcRenderer.send('pt:set-start-with-windows', !!v),
   setOverlayEnabled: (v) => ipcRenderer.send('pt:set-overlay-enabled', !!v),
-  setTheme: (id) => { try { if (typeof id === 'string' && id.length < 40) ipcRenderer.send('pt:set-theme', id); } catch (e) {} },
+  setTheme: (id, isDark) => {
+    try { if (typeof id === 'string' && id.length < 40) ipcRenderer.send('pt:set-theme', { id, isDark }); } catch (e) {}
+  },
   widgetToggle: (wanted) => ipcRenderer.send('widget:toggle', !!wanted),
   miniToggle: (wanted) => ipcRenderer.send('mini:toggle', !!wanted),
   /** Push of scheduler info to the main renderer (dashboard refresh). */
@@ -44,7 +68,7 @@ contextBridge.exposeInMainWorld('ptDesktop', {
   /** Fires a real notification after ~3 s so the user can preview alerts. */
   testAlert: () => ipcRenderer.send('pt:test-alert'),
 
-  /** Opens the fullscreen adhan overlay with a fake prayer (test). */
+  /** Opens the fullscreen adhan overlay with the real configured audio/volume (test). */
   testOverlay: () => ipcRenderer.send('pt:test-overlay'),
 
   /** Today's computed times / next prayer from the main-process scheduler. */

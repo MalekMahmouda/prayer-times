@@ -60,7 +60,7 @@ function buildTemplate(info, { onOpen, onQuit, onNavigate }) {
   if (info && info.next) {
     tpl.push({
       label: `Next: ${info.next.prayer} — ${info.next.hhmm} (in ${info.next.countdown})`,
-      click: () => onNavigate && onNavigate('pagePrayers'),
+      click: () => onNavigate && onNavigate('prayers'),
     });
     tpl.push({ type: 'separator' });
   }
@@ -69,7 +69,7 @@ function buildTemplate(info, { onOpen, onQuit, onNavigate }) {
     for (const t of info.times) {
       tpl.push({
         label: `${t.prayer}: ${t.time}`,
-        click: () => onNavigate && onNavigate('pagePrayers'),
+        click: () => onNavigate && onNavigate('prayers'),
       });
     }
     tpl.push({ type: 'separator' });

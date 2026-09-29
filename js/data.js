@@ -5,11 +5,34 @@
  * All datasets transcribed verbatim from the Phase 1 single-file build.
  */
 
+/* ═══ SHARED DATE / TIMEZONE HELPERS (app-wide single source) ═══ */
+/* Local calendar date key 'YYYY-MM-DD' from LOCAL components.
+   NEVER use toISOString().slice(0,10) for local-day data — it is UTC-based
+   and shifts the day for 00:00–03:00 in UTC+3 (and similar zones). */
+function localDateKey(d) {
+  const x = d instanceof Date ? d : new Date();
+  return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
+}
+
+/* IANA timezone validation — accepts multi-path zones like
+   America/Argentina/Buenos_Aires. Prefers Intl.DateTimeFormat (the same
+   database the runtime uses) over a fragile regex. */
+function isValidTimezone(tz) {
+  if (typeof tz !== 'string') return false;
+  const s = tz.trim();
+  if (!s) return false;
+  if (s === 'UTC') return true;
+  if (!/^[A-Za-z0-9_+\-/]+$/.test(s)) return false;
+  try { new Intl.DateTimeFormat('en', { timeZone: s }); return true; }
+  catch (e) { return false; }
+}
+
 /* ═══ THEMES (design-token palettes) — 3 dark / 5 light, no near-duplicates ═══ */
 const THEMES = [
   { id: 'midnight', en: 'Midnight', ar: 'ليلي',    color: '#4f7dff', dark: true },
   { id: 'royal',    en: 'Royal',    ar: 'ملكي',     color: '#a78bfa', dark: true },
   { id: 'oled',     en: 'OLED',     ar: 'أسود',     color: '#79ffb0', dark: true },
+  // (dark flag consumed by widget isDark + Android status-bar luminance)
   { id: 'blue',     en: 'Blue',     ar: 'أزرق',     color: '#0a6aaa', dark: false },
   { id: 'emerald',  en: 'Emerald',  ar: 'زمردي',    color: '#1d7a44', dark: false },
   { id: 'islamic',  en: 'Islamic',  ar: 'إسلامي',   color: '#146b47', dark: false },
@@ -55,7 +78,7 @@ const HMA = ['محرم','صفر','ربيع الأول','ربيع الثاني','
 const T = {
   en: {
     appName: 'Prayer Times', sub: 'Islamic Companion',
-    nav: { prayers: 'Prayers', calendar: 'Calendar', qibla: 'Qibla', quran: 'Quran', names: '99 Names', dhikr: 'Dhikr', settings: 'Settings' },
+    nav: { prayers: 'Prayers', calendar: 'Calendar', qibla: 'Qibla', quran: 'Quran', names: '99 Names', dhikr: 'Dhikr', stats: 'Stats', settings: 'Settings' },
     more: 'More', language: 'Language', location: 'Location',
     nextPrayer: 'Next Prayer', startsIn: 'Starts in', today: 'Today',
     tomorrow: 'Tomorrow', next: 'NEXT', passed: 'Passed', current: 'Now',
@@ -85,7 +108,7 @@ const T = {
   },
   ar: {
     appName: 'أوقات الصلاة', sub: 'رفيق إسلامي',
-    nav: { prayers: 'الصلوات', calendar: 'التقويم', qibla: 'القبلة', quran: 'القرآن', names: 'أسماء الله', dhikr: 'الذكر', settings: 'الإعدادات' },
+    nav: { prayers: 'الصلوات', calendar: 'التقويم', qibla: 'القبلة', quran: 'القرآن', names: 'أسماء الله', dhikr: 'الذكر', stats: 'الإحصاءات', settings: 'الإعدادات' },
     more: 'المزيد', language: 'اللغة', location: 'الموقع',
     nextPrayer: 'الصلاة القادمة', startsIn: 'تبدأ بعد', today: 'اليوم',
     tomorrow: 'غداً', next: 'التالية', passed: 'انقضت', current: 'الآن',
