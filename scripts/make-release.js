@@ -43,6 +43,21 @@ Highlights
 - 8 built-in themes + custom theme builder
 - English / Arabic with full RTL
 
+What's new in ${version}
+------------------------
+- Fixed "today" following the active location's timezone on every platform —
+  dashboard, calendar and scheduler day boundaries no longer shift when the
+  device lives in a different timezone than the prayer location
+- Fixed per-prayer minute adjustments being applied twice on the dashboard
+  and mini-home prayer cards (display now formats the engine instant once)
+- Fixed the location-midnight refresh timer (up to 7–30 h off for far
+  timezones) — now exact and DST-safe in the location's timezone
+- Fixed Ramadan fasting/iftar countdown comparing device time against the
+  location's prayer times
+- Fixed a Qibla compass listener leak when visiting the page repeatedly
+- Fixed concurrent reverse-geocode requests for different coordinates
+  interfering with each other
+
 Data & Privacy
 --------------
 All personal data (settings, history, bookmarks, locations, themes, dhikr
@@ -52,9 +67,9 @@ export or import a backup at any time.
 
 Notes
 -----
-- The installer is not code-signed yet; Windows SmartScreen may show a
-  warning on first run. Choose "More info" > "Run anyway" if you trust
-  this build. Code signing is planned for a future release.
+- The Windows installer is code-signed. On machines that do not yet trust
+  the certificate, Windows SmartScreen may still show a warning on first
+  run; choose "More info" > "Run anyway" if you trust this build.
 `;
 
 const CHECKLIST = `# Manual Test Checklist — Prayer Times ${version}

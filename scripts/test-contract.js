@@ -228,7 +228,7 @@ section('6. netFetch query-key isolation + per-request timeout');
     .replace('NET_TIMEOUT_MS = 12000', 'NET_TIMEOUT_MS = 120'); // fast test timeout
   const files = ['shared/pt-engine.js', 'js/data.js', 'js/platform.js', 'js/compass.js'];
   const bundle = files.map((f) => fs.readFileSync(path.join(ROOT, f), 'utf8')).join('\n;\n') + '\n;\n' + appSrc;
-  const sandboxCode = bundle + '\n;globalThis.__exports = { netFetch, useGPS, resolveTz, nextPrayerInfo, S, setLoc: (lat, lon) => { S.lat = lat; S.lon = lon; } };';
+  const sandboxCode = bundle + '\n;globalThis.__exports = { netFetch, useGPS, resolveTz, nextPrayerInfo, refreshTodaySchedule, msToNextLocationMidnight, fmtAtLoc, revGeo, S, setLoc: (lat, lon) => { S.lat = lat; S.lon = lon; } };';
   try { new Function(sandboxCode)(); } catch (e) { /* init continues async */ }
   const X = globalThis.__exports || {};
   ok(typeof X.netFetch === 'function', 'renderer sandbox booted (netFetch exposed)');
@@ -292,6 +292,87 @@ section('6. netFetch query-key isolation + per-request timeout');
       'nextPrayerInfo works from absolute instants');
     ok(day.instants[info.next.prayer] === info.next.at.getTime() || info.isTomorrow,
       'next prayer .at IS the contract instant (not a device-tz re-parse)');
+
+    // 6f. B2: offsets applied exactly once — engine instant == displayed time.
+    const offDay = Engine.computeDayInstant(
+      { lat: 24.7136, lon: 46.6753, method: '4', madhab: 'shafi', offsets: { Fajr: 5 } },
+      2026, 9, 29, deps);
+    ok(fmtInTz(offDay.instants.Fajr, 'Asia/Riyadh') === '04:32',
+      'engine instant includes the +5 Fajr offset (04:27 → 04:32)');
+    X.setLoc(24.7136, 46.6753); // Riyadh
+    X.S.times = {}; X.S.todaySchedule = { timings: {}, instants: offDay.instants, date: '2026-09-29' };
+    ok(X.fmtAtLoc(new Date(offDay.instants.Fajr), true) === '04:32',
+      'card display formats the offset-included instant ONCE (got ' + X.fmtAtLoc(new Date(offDay.instants.Fajr), true) + ')');
+    const appSrcNow = fs.readFileSync(path.join(ROOT, 'js', 'app.js'), 'utf8');
+    ok(/const at = atOf\(p\);/.test(appSrcNow) && !/const at = adjTime\(p, S\.times\[p\]\)/.test(appSrcNow),
+      'prayer cards render via the instants path (no second adjTime in the loop)');
+
+    // 6g. B1: refreshTodaySchedule computes the LOCATION-zoned day.
+    // Device here runs UTC+3; 2026-09-29T15:30Z = 18:30 device Sep-29 but
+    // 00:30 Tokyo Sep-30 — the day must come from zonedToday, not the device.
+    X.setLoc(35.6895, 139.6917); // Tokyo
+    await X.refreshTodaySchedule(new Date('2026-09-29T15:30:00Z'));
+    const zk = Engine.zonedToday('Asia/Tokyo', new Date('2026-09-29T15:30:00Z'));
+    ok(X.S.todaySchedule && X.S.todaySchedule.date === '2026-09-30' && X.S.todaySchedule.date === zk.key,
+      'refreshTodaySchedule uses the location-zoned day (Tokyo 2026-09-30, got ' + (X.S.todaySchedule && X.S.todaySchedule.date) + ')');
+
+    // 6h. B3: msToNextLocationMidnight — exact against a 1s reference scan.
+    const scanMidnight = (tz, from, dayKey) => {
+      let t = from;
+      while (Engine.zonedToday(tz, new Date(t)).key === dayKey) t += 1000;
+      return t - from;
+    };
+    const nowT = Date.UTC(2026, 8, 29, 15, 30); // Tokyo 00:30 Sep-30
+    const msT = X.msToNextLocationMidnight('Asia/Tokyo', nowT);
+    ok(Math.abs(msT - scanMidnight('Asia/Tokyo', nowT, '2026-09-30')) <= 2000,
+      'msToNextLocationMidnight finds Tokyo midnight (±2s, got ' + (msT / 3600000).toFixed(2) + 'h)');
+    const nowN = Date.UTC(2026, 8, 29, 3, 30); // EDT (UTC−4): Sep-28 23:30 in New York
+    const msN = X.msToNextLocationMidnight('America/New_York', nowN);
+    ok(Math.abs(msN - scanMidnight('America/New_York', nowN, '2026-09-28')) <= 2000,
+      'msToNextLocationMidnight finds New York midnight (±2s, got ' + (msN / 3600000).toFixed(2) + 'h)');
+    const dn = new Date(nowT);
+    const devMid = new Date(dn.getFullYear(), dn.getMonth(), dn.getDate() + 1).getTime();
+    ok(X.msToNextLocationMidnight('', nowT) === devMid - nowT,
+      'empty tz falls back to device midnight (legacy behavior)');
+
+    // 6i. B5: compass listener lifecycle — add once, remove on stop, no accumulation.
+    let adds = 0, removes = 0;
+    const origAdd = globalThis.addEventListener, origRemove = globalThis.removeEventListener;
+    globalThis.addEventListener = (t2) => { if (t2 === 'deviceorientation') adds++; };
+    globalThis.removeEventListener = (t2) => { if (t2 === 'deviceorientation') removes++; };
+    globalThis.DeviceOrientationEvent = function () {};
+    const CP = globalThis.PTCompass; // compass.js assigns window.PTCompass (window === globalThis here)
+    CP.start(); await sleep(60);
+    ok(adds === 1 && removes === 0, 'compass start adds exactly ONE deviceorientation listener (got ' + adds + ')');
+    CP.stop();
+    ok(removes === 1, 'compass stop removes the listener (no leak)');
+    CP.start(); await sleep(60);
+    ok(adds === 2 && removes === 1, 'compass restart re-adds exactly one (no accumulation across visits)');
+    // Late iOS permission grant after the page was left must wire nothing.
+    let resolvePerm = null;
+    globalThis.DeviceOrientationEvent.requestPermission = () => new Promise((r) => { resolvePerm = r; });
+    CP.stop();
+    CP.start(); await sleep(60); // let start() reach startWeb() and CALL requestPermission
+    const addsBeforeLate = adds;
+    CP.stop();
+    resolvePerm('granted'); await sleep(30);
+    ok(adds === addsBeforeLate, 'late iOS permission grant after stop wires NO listener');
+    globalThis.addEventListener = origAdd; globalThis.removeEventListener = origRemove;
+
+    // 6j. B6: revGeo single-flight is per-coordinate. revGeo is async, so
+    // every return is re-wrapped — assert behavior (skip + no duplicate
+    // request), never promise-object identity.
+    let geoCalls = 0;
+    globalThis.fetch = async (url) => { if (String(url).includes('nominatim')) geoCalls++; await sleep(50); return { ok: true, json: async () => ({ address: { city: 'TestCity', country: 'TestCountry' } }) }; };
+    X.setLoc(35.6895, 139.6917);
+    X.S.city = ''; // ensure the "already named" early-return cannot fire
+    const pGeo1 = X.revGeo(35.0, 139.0);
+    const v2 = await X.revGeo(36.0, 140.0); // different coordinates while one is in flight
+    ok(pGeo1 && v2 === undefined, 'concurrent revGeo for different coordinates is skipped, never bound to the other inflight');
+    await X.revGeo(35.0, 139.0); // same coordinates while in flight → joins the single request
+    await pGeo1.catch(() => {});
+    await sleep(80); // let any erroneous duplicate request surface
+    ok(geoCalls === 1, `revGeo is single-flight per coordinates: exactly one network call (got ${geoCalls})`);
 
     runMobileRegressions();
   })().catch((e) => { failures++; console.error('  ✗ renderer sandbox failed:', e.message); finish(); });

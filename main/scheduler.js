@@ -76,11 +76,11 @@ function createScheduler() {
     console.error('[Scheduler]', ...args); // errors always logged (rare)
   }
 
-  const todayKey = (d) => {
-    const x = d || new Date(state.clock());
-    const y = x.getFullYear(), m = String(x.getMonth() + 1).padStart(2, '0'), dd = String(x.getDate()).padStart(2, '0');
-    return `${y}-${m}-${dd}`;
-  };
+  // The scheduler's calendar day follows the ACTIVE LOCATION's timezone,
+  // not the device's: a Riyadh location must not lose Fajr just because the
+  // computer's own clock is still on the previous date. Empty tz →
+  // device-local day (unchanged legacy behavior).
+  const zonedDay = (cfg, ms) => Engine.zonedToday((cfg && cfg.tz) || '', new Date(ms == null ? state.clock() : ms));
 
   const hhmm = (d) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 
@@ -151,14 +151,16 @@ function createScheduler() {
 
   function compute(cfg) {
     const coords = new Coordinates(cfg.lat, cfg.lon);
-    const dayKey = todayKey();
-    const date = new Date(state.clock());
+    // Fire-day = the LOCATION's calendar date (see zonedDay above), built via
+    // the shared contract's local-noon convention (shared/pt-engine.js).
+    const day = zonedDay(cfg);
+    const date = new Date(day.y, day.m - 1, day.d, 12);
     const pt = new PrayerTimes(coords, date, paramsFor(cfg));
 
     state.cfg = cfg;
     state.pt = pt;
-    state.dayKey = dayKey;
-    return { pt, dayKey };
+    state.dayKey = day.key;
+    return { pt, dayKey: day.key };
   }
 
   // True fire datetimes for today, with per-prayer minute offsets applied.
@@ -181,9 +183,10 @@ function createScheduler() {
     let next = sched.find((e) => e.ms > now);
     if (!next) {
       // All of today's prayers passed — compute tomorrow's Fajr.
-      const tomorrow = new Date(now);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      const pt2 = new PrayerTimes(new Coordinates(cfg.lat, cfg.lon), tomorrow, paramsFor(cfg));
+      // Tomorrow on the LOCATION's calendar: +24 h then re-derive the
+      // location-local date (correct across zone/DST edges).
+      const day2 = zonedDay(cfg, now + 86400000);
+      const pt2 = new PrayerTimes(new Coordinates(cfg.lat, cfg.lon), new Date(day2.y, day2.m - 1, day2.d, 12), paramsFor(cfg));
       const fajrOff = (cfg.offsets && cfg.offsets.Fajr) || 0;
       const at = new Date(pt2.timeForPrayer(Prayer.Fajr).getTime() + fajrOff * 60000);
       next = { prayer: 'Fajr', at, hhmm: fmtT(at), ms: at.getTime() };
@@ -238,7 +241,8 @@ function createScheduler() {
     state.lastTickAt = now;
 
     // Day rollover → recalc for the new day (also prunes old fire-keys).
-    if (todayKey() !== state.dayKey) recompute();
+    // The day belongs to the LOCATION's calendar (zonedDay), not the device's.
+    if (zonedDay(cfg).key !== state.dayKey) recompute();
 
     const dayKey = state.dayKey;
     const sched = scheduleFor(state.pt);
@@ -332,7 +336,7 @@ function createScheduler() {
       const now = state.clock();
       const gap = now - state.lastTickAt;
       dlog(`Resume/late tick after ${Math.round(gap / 1000)}s — re-evaluating missed window`);
-      if (todayKey() !== state.dayKey) recompute(); // sleep crossed midnight
+      if (zonedDay(state.cfg).key !== state.dayKey) recompute(); // sleep crossed (location) midnight
       // Deliberately do NOT advance lastTickAt here: tick() compares against
       // the pre-sleep timestamp, so anything that happened while asleep sits
       // inside the recovery window and fires exactly once.

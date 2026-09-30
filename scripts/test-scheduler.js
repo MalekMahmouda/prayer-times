@@ -24,6 +24,7 @@
 const path = require('path');
 const { createScheduler } = require(path.join(__dirname, '..', 'main', 'scheduler.js'));
 const { Coordinates, CalculationMethod, PrayerTimes, Prayer, Madhab } = require('adhan');
+const EngineRef = require(path.join(__dirname, '..', 'shared', 'pt-engine.js'));
 
 let checks = 0, failures = 0;
 function ok(cond, msg) {
@@ -218,6 +219,39 @@ section('7. Adhan volume resolution');
   app3.now = prayerDates(BASE_CFG, NOON)[0].getTime() + 5 * 1000; app3.tick();
   const fajr3 = app3.events.find((e) => e.ev === 'adhan');
   ok(fajr3 && fajr3.volume === 0, 'negative volume clamped to 0');
+}
+
+/* ── 10. Location-timezone day (B1) ───────────────────────────────────── */
+section('10. Location-timezone day: schedule follows cfg.tz, not the device');
+{
+  // The device here runs at a UTC+X local offset. Anchoring the fake clock
+  // at 21:30 UTC puts the device's calendar day at UTC+X+21:30 while Tokyo
+  // is already on the NEXT calendar day (06:30 +09:00) — exactly the skew
+  // that used to make the scheduler compute the wrong day.
+  const base = Date.UTC(2026, 8, 29, 21, 30, 0, 0);
+  const app = makeApp({ ...BASE_CFG, tz: 'Asia/Tokyo', offsets: {} }, base);
+  ok(app.s._state.dayKey === '2026-09-30',
+    `dayKey is the LOCATION's calendar day (got ${app.s._state.dayKey}, want 2026-09-30)`);
+  const info = app.s.getInfo();
+  const tTokyo = (ms) => new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Tokyo', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(ms));
+  const instants = EngineRef.computeDayInstant({ lat: BASE_CFG.lat, lon: BASE_CFG.lon, method: BASE_CFG.method, madhab: BASE_CFG.madhab, tz: 'Asia/Tokyo' }, 2026, 9, 30, { Coordinates, CalculationMethod, PrayerTimes, Madhab }).instants;
+  const want = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'].map((p) => tTokyo(instants[p]));
+  const got = info.times.map((x) => x.time);
+  ok(JSON.stringify(got) === JSON.stringify(want),
+    `info.times match the location-zoned calculation day (got ${got.join(',')} / want ${want.join(',')})`);
+
+  // Fajr fires when its absolute instant passes, even though the device is
+  // still on the previous calendar date (pre-fix it was computed for the
+  // wrong day and never fired).
+  const [fajrTokyo] = ['Fajr'].map(() => instants.Fajr);
+  app.now = fajrTokyo + 5 * 1000; app.tick();
+  ok(app.count('prayer-time', 'Fajr') === 1 && app.count('adhan', 'Fajr') === 1,
+    'Fajr fires at its absolute instant while the device day is still yesterday');
+
+  // Empty tz keeps the legacy device-local behavior (regression guard).
+  const legacy = makeApp({ ...BASE_CFG, tz: '', offsets: {} }, todayAt(0, 5, 0));
+  const legacyKey = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`;
+  ok(legacy.s._state.dayKey === legacyKey, 'tz: "" keeps device-local day (legacy path unchanged)');
 }
 
 /* ── 8. Config re-push does not re-fire ────────────────────────────────── */

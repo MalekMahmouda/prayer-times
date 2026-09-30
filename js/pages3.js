@@ -334,8 +334,11 @@ window.renderRamadan = function renderRamadan(elId) {
   const timings = S.times || (S.todaySchedule && S.todaySchedule.timings);
   if (!timings) { el.innerHTML = ''; return; }
   const toMin = (s) => { const [h, m] = s.split(':').map(Number); return h * 60 + m; };
-  const now = new Date();
-  const nowMin = now.getHours() * 60 + now.getMinutes();
+  // S.times strings are wall-clock in the ACTIVE LOCATION's timezone — compare
+  // them against the location's current wall clock (zonedNowHM), never the
+  // device's getHours(), or fasting/iftar windows shift by the zone offset.
+  const nowMin = (typeof zonedNowHM === 'function') ? zonedNowHM(resolveTz())
+    : (() => { const n = new Date(); return n.getHours() * 60 + n.getMinutes(); })();
   const imsakStr = timings.Fajr, maghribStr = timings.Maghrib;
   const imsakMin = toMin(imsakStr) - imsakOff;
   const iftarMin = toMin(maghribStr);

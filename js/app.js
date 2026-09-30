@@ -3,8 +3,8 @@
 /* ════════════════════════════════════════════════════════════
    Prayer Times — app core: state, persistence, i18n, dashboard,
    countdown, sun times, location, desktop bridge, init.
-   pages.js depends on: S, t(), fmt(), showToast(), pushCfg(),
-   PT.getDay(), applyLang().
+   pages.js / pages3.js depend on: S, t(), fmt(), fmtAtLoc(), zonedNowHM(),
+   showToast(), pushCfg(), PT.getDay(), applyLang().
    ════════════════════════════════════════════════════════════ */
 
 /* ═══ ENGINE READY (calculation-contract load order) ═══
@@ -117,17 +117,70 @@ function resolveTz() {
    a different timezone, its wall clock differs from the device's — compute
    device-relative time via the location's UTC offset (DST-safe; Intl uses
    the tz database, no network). Falls back to plain now when no zone. */
+/* The absolute current instant. All next/past/countdown logic compares
+   ABSOLUTE instants, so "now" needs no timezone math: the active location's
+   wall clock only matters when FORMATTING for display (fmtAtLoc) or picking
+   the calendar day (Engine.zonedToday in refreshTodaySchedule). */
 function instantNow() {
+  return new Date();
+}
+
+/* Format an absolute instant as wall-clock in the ACTIVE LOCATION's timezone
+   (device-local when no zone is known). Used for contract instants — HH:MM
+   strings from the engine are already location-local, but instants need this
+   to display correctly on a device in a different timezone. */
+function fmtAtLoc(d, force24 = false) {
   const tz = resolveTz();
-  if (!tz || typeof Intl === 'undefined') return new Date();
+  if (!tz || typeof Intl === 'undefined') return fmt(d);
   try {
-    const dtf = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour12: false,
-      year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    const p = {};
-    for (const x of dtf.formatToParts(new Date())) p[x.type] = x.value;
-    const locMs = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour % 24, +p.minute, +p.second);
-    return new Date(Date.now() + (locMs - Date.now()) - (locMs - Date.now()));
-  } catch (e) { return new Date(); }
+    return new Intl.DateTimeFormat('en-US', {
+      timeZone: tz, hour: '2-digit', minute: '2-digit',
+      hour12: force24 ? false : !S.cfg.h24,
+    }).format(d);
+  } catch (e) { return fmt(d); }
+}
+
+/* Current wall-clock minutes-since-midnight in `tz` (device-local when
+   empty). Intl may render midnight's hour as "24" — +hour % 24 handles it.
+   Comparisons against location-formatted HH:MM strings MUST use this, not
+   the device's getHours(). */
+function zonedNowHM(tz) {
+  const deviceNow = () => { const n = new Date(); return n.getHours() * 60 + n.getMinutes(); };
+  try {
+    if (!tz || typeof Intl === 'undefined') return deviceNow();
+    const parts = {};
+    for (const x of new Intl.DateTimeFormat('en-US', { timeZone: tz, hour12: false,
+      hour: '2-digit', minute: '2-digit' }).formatToParts(new Date())) parts[x.type] = x.value;
+    return ((+parts.hour) % 24) * 60 + (+parts.minute);
+  } catch (e) { return deviceNow(); }
+}
+
+/* Milliseconds until the next midnight IN THE LOCATION'S timezone (device
+   midnight when tz is empty). The location day key from Engine.zonedToday is
+   monotone in time, so a forward scan with bisection is exact and DST-safe
+   by construction. Pure — takes (tz, now) and is unit-tested. */
+function msToNextLocationMidnight(tz, now) {
+  const n = (now instanceof Date) ? now : new Date(now == null ? Date.now() : now);
+  const E = (typeof window !== 'undefined') ? window.PT_ENGINE : null;
+  const deviceMidnight = () => {
+    const d = new Date(n); d.setHours(24, 0, 0, 0); return d.getTime() - n.getTime();
+  };
+  if (!tz || !E || typeof E.zonedToday !== 'function') return deviceMidnight();
+  try {
+    const cur = E.zonedToday(tz, n).key;
+    let t = n.getTime(), step = 30 * 60000; // coarse scan: 30m → up to 6h steps
+    for (;;) {
+      if (E.zonedToday(tz, new Date(t + step)).key !== cur) break;
+      t += step;
+      if (step < 6 * 3600000) step *= 2;
+    }
+    let lo = t, hi = t + step; // lo: still the current day, hi: the next day
+    while (hi - lo > 1000) {
+      const mid = Math.floor((lo + hi) / 2);
+      if (E.zonedToday(tz, new Date(mid)).key === cur) lo = mid; else hi = mid;
+    }
+    return hi - n.getTime();
+  } catch (e) { return deviceMidnight(); }
 }
 
 /* Coordinate validation (also enforced in the main process before scheduling). */
@@ -253,23 +306,29 @@ function renderMHome() {
   if (!S.times) return;
   const info = nextPrayerInfo();
   if (!info) return;
+  // Absolute instants from the contract when available — offsets are already
+  // applied by the engine, so they must NOT be added again here, and display
+  // must follow the location's wall clock (not the device's).
+  const I = S.todaySchedule && S.todaySchedule.instants;
+  const atOf = (p) => (I && Number.isFinite(I[p])) ? new Date(I[p]) : adjTime(p, S.times[p]);
+  const showAt = (p) => (I && Number.isFinite(I[p])) ? fmtAtLoc(atOf(p)) : fmt(atOf(p));
   $('mLocName').textContent = S.city ? `${S.city}${S.country ? ', ' + S.country : ''}` : (S.lat != null ? `${S.lat.toFixed(2)}, ${S.lon.toFixed(2)}` : '—');
   $('mHijri').textContent = S.hijri
     ? `${S.hijri.day} ${(S.lang === 'ar' ? HMA : HME)[parseInt(S.hijri.month.number) - 1]} ${S.hijri.year} ${S.lang === 'ar' ? 'هـ' : 'AH'}`
     : hijriOf(new Date());
   $('mNextLbl').textContent = t('nextPrayer');
   $('mName').textContent = S.lang === 'ar' ? AR_PRAYER[info.next.prayer] : info.next.prayer;
-  $('mTime').textContent = fmt(info.next.at) + (info.isTomorrow ? ` · ${t('tomorrow')}` : '');
+  $('mTime').textContent = showAt(info.next.prayer) + (info.isTomorrow ? ` · ${t('tomorrow')}` : '');
   $('mCdLbl').textContent = t('startsIn');
   const now = instantNow();
   $('mStrip').innerHTML = PRAYERS.map((p, i) => {
-    const at = adjTime(p, S.times[p]);
+    const at = atOf(p);
     const isNext = info.idx === i && !info.isTomorrow;
     const isPast = at < now && !isNext;
     return `<div class="pcard pt-${p.toLowerCase()}${isNext ? ' next' : ''}${isPast ? ' past' : ''}">
       <div class="ic">${ICON_PRAYER[p]}</div>
       <div class="nm">${S.lang === 'ar' ? AR_PRAYER[p] : p}</div>
-      <div class="tm">${fmt(at)}</div>
+      <div class="tm">${showAt(p)}</div>
     </div>`;
   }).join('');
 }
@@ -534,13 +593,19 @@ async function fetchByCity(city, country) {
 }
 
 /* ═══ OFFLINE SCHEDULE (platform adapter: main process on desktop, adhan lib on mobile/browser) ═══ */
-async function refreshTodaySchedule() {
+async function refreshTodaySchedule(now = new Date()) {
   if (S.lat == null || !window.Plat) return;
   try {
-    const actLoc = (typeof DB3 !== 'undefined' && DB3) ? DB3.locations.find((l) => l.id === DB3.prefs.activeLoc) : null;
-    S.todaySchedule = await window.Plat.getDay(localDateKey(instantNow()), {
+    // The prayer day belongs to the ACTIVE LOCATION's timezone, not the
+    // device's: with a Tokyo location the dashboard must show Tokyo's
+    // "today" even while the device is still on yesterday. Empty tz →
+    // device-local day (unchanged legacy behavior).
+    const E = (typeof window !== 'undefined') ? window.PT_ENGINE : null;
+    const tz = resolveTz();
+    const locDay = (E && E.zonedToday) ? E.zonedToday(tz, now) : { key: localDateKey(now) };
+    S.todaySchedule = await window.Plat.getDay(locDay.key, {
       lat: S.lat, lon: S.lon, method: S.cfg.method, madhab: S.cfg.madhab,
-      offsets: S.cfg.offsets, tz: resolveTz(),
+      offsets: S.cfg.offsets, tz,
     });
     if (S.todaySchedule && S.todaySchedule.timings) {
       // SINGLE SOURCE OF TRUTH: what the dashboard shows is what the
@@ -579,8 +644,16 @@ function nextPrayerInfo() {
   let next = list.find((x) => x.at > now);
   let isTomorrow = false;
   if (!next) {
-    const d = adjTime('Fajr', S.times.Fajr); d.setDate(d.getDate() + 1);
-    next = { prayer: 'Fajr', at: d };
+    // All of today's prayers passed → tomorrow's Fajr. With the contract,
+    // approximate its absolute instant as +24h on today's Fajr (drift well
+    // under a minute; refreshTodaySchedule corrects it hourly and at
+    // midnight). Legacy string path keeps the device-local +1 day.
+    if (I && Number.isFinite(I.Fajr)) {
+      next = { prayer: 'Fajr', at: new Date(I.Fajr + 86400000) };
+    } else {
+      const d = adjTime('Fajr', S.times.Fajr); d.setDate(d.getDate() + 1);
+      next = { prayer: 'Fajr', at: d };
+    }
     isTomorrow = true;
   }
   const idx = PRAYERS.indexOf(next.prayer);
@@ -592,8 +665,11 @@ function renderDashboard() {
 
   // Hero
   const info = nextPrayerInfo();
+  const I = S.todaySchedule && S.todaySchedule.instants;
+  const atOf = (p) => (I && Number.isFinite(I[p])) ? new Date(I[p]) : adjTime(p, S.times[p]);
+  const showAt = (p) => (I && Number.isFinite(I[p])) ? fmtAtLoc(atOf(p)) : fmt(atOf(p));
   $('heroName').textContent = S.lang === 'ar' ? AR_PRAYER[info.next.prayer] : info.next.prayer;
-  $('heroTime').textContent = fmt(info.next.at) + (info.isTomorrow ? ` · ${t('tomorrow')}` : '');
+  $('heroTime').textContent = showAt(info.next.prayer) + (info.isTomorrow ? ` · ${t('tomorrow')}` : '');
   $('heroGreg').textContent = fmtDate(new Date(), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   $('heroHijri').textContent = S.hijri
     ? `${S.hijri.day} ${(S.lang === 'ar' ? HMA : HME)[parseInt(S.hijri.month.number) - 1]} ${S.hijri.year} ${S.lang === 'ar' ? 'هـ' : 'AH'}`
@@ -601,19 +677,24 @@ function renderDashboard() {
   $('heroCdLbl').textContent = t('startsIn');
   $('heroNextLbl').textContent = t('nextPrayer');
 
-  // Prayer cards
+  // Prayer cards — instants path: the engine already applied the offsets,
+  // so re-adding them here displayed doubled times (04:32 → 04:37 for +5)
+  // and mis-stated past/next across timezones. adjTime remains only for the
+  // raw API fallback where timings are genuinely unadjusted.
   const now = instantNow();
   $('prayerCards').innerHTML = PRAYERS.map((p, i) => {
-    const at = adjTime(p, S.times[p]);
+    const at = atOf(p);
     const isNext = info.idx === i && !info.isTomorrow;
     const isPast = at < now && !isNext;
-    const sunrise = S.times.Sunrise ? `<div class="sr">${t('sunrise')} ${fmt(timeStrToDate(S.times.Sunrise))}</div>` : '';
+    const sunrise = (I && Number.isFinite(I.Sunrise))
+      ? `<div class="sr">${t('sunrise')} ${fmtAtLoc(new Date(I.Sunrise))}</div>`
+      : (S.times.Sunrise ? `<div class="sr">${t('sunrise')} ${fmt(timeStrToDate(S.times.Sunrise))}</div>` : '');
     return `<div class="pcard pt-${p.toLowerCase()}${isNext ? ' next' : ''}${isPast ? ' past' : ''}">
       ${isNext ? `<span class="ribbon">${t('next')}</span>` : ''}
       <div class="ic">${ICON_PRAYER[p]}</div>
       <div class="nm">${S.lang === 'ar' ? AR_PRAYER[p] : p}</div>
       <div class="nm-ar">${S.lang === 'ar' ? p : AR_PRAYER[p]}</div>
-      <div class="tm">${fmt(at)}</div>
+      <div class="tm">${showAt(p)}</div>
       ${p === 'Fajr' ? sunrise : ''}
     </div>`;
   }).join('');
@@ -734,9 +815,15 @@ async function revGeo(lat, lon) {
     S.city = hit.city; S.country = hit.country; saveLoc(); updateLocNames();
     return;
   }
-  if (_revGeo.inflight) return _revGeo.inflight; // one lookup at a time
+  // Reuse the single inflight ONLY when it targets the same coordinates —
+  // a lookup for a different location must never be answered by (or bound
+  // to) another coordinate's request.
+  if (_revGeo.inflight) {
+    if (_revGeo.inflight.key === key) return _revGeo.inflight.promise;
+    return undefined; // another coordinate is in flight; skip this one
+  }
   const gap = Date.now() - _revGeo.lastCall;
-  _revGeo.inflight = (async () => {
+  const promise = (async () => {
     try {
       if (gap < REV_GEO.MIN_GAP_MS) await new Promise((r) => setTimeout(r, REV_GEO.MIN_GAP_MS - gap));
       _revGeo.lastCall = Date.now();
@@ -750,9 +837,10 @@ async function revGeo(lat, lon) {
         if (key === roundKey(S.lat, S.lon)) { S.city = city; S.country = country; saveLoc(); updateLocNames(); }
       }
     } catch (e) { /* offline / throttled / down — coordinates keep working */ }
-    finally { _revGeo.inflight = null; }
+    finally { if (_revGeo.inflight && _revGeo.inflight.key === key) _revGeo.inflight = null; }
   })();
-  return _revGeo.inflight;
+  _revGeo.inflight = { key, promise };
+  return promise;
 }
 function setManualLoc() {
   const c = $('cityInp').value.trim();
@@ -1050,26 +1138,12 @@ function makkahFallback() {
 
 function scheduleMidnight() {
   // Re-render at the ACTIVE LOCATION's local midnight when it differs from
-  // the device's (location date rolls over at a different moment).
-  const tz = resolveTz();
-  let ms;
-  if (tz && typeof Intl !== 'undefined') {
-    try {
-      const nowMs = Date.now();
-      const parts = {};
-      for (const x of new Intl.DateTimeFormat('en-US', { timeZone: tz, hour12: false,
-        year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).formatToParts(new Date())) parts[x.type] = x.value;
-      const locMs = Date.UTC(+parts.year, +parts.month - 1, +parts.day, +parts.hour % 24, +parts.minute);
-      const offsetMs = locMs - nowMs;
-      const nextLocalMidnight = new Date(nowMs + offsetMs); nextLocalMidnight.setHours(24, 0, 0, 0);
-      ms = nextLocalMidnight.getTime() - nowMs;
-    } catch (e) { ms = null; }
-  } else ms = null;
-  if (!Number.isFinite(ms) || ms <= 0) {
-    const n = new Date();
-    ms = new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1) - n;
-  }
-  setTimeout(() => { if (S.lat != null) fetchTimes(S.lat, S.lon); refreshTodaySchedule(); scheduleMidnight(); }, ms);
+  // the device's (location date rolls over at a different moment). The old
+  // offset+setHours(24) math set DEVICE-wall midnight on a location-shifted
+  // date and fired 7–30 h off; msToNextLocationMidnight scans the monotone
+  // location day key instead — exact and DST-safe by construction.
+  const ms = msToNextLocationMidnight(resolveTz(), new Date());
+  setTimeout(() => { if (S.lat != null) fetchTimes(S.lat, S.lon); refreshTodaySchedule(); scheduleMidnight(); }, Math.max(1000, ms));
 }
 
 init();
