@@ -24,6 +24,7 @@
     lastRaw: null,
     jitter: 0,            // smoothed |Δheading| — high jitter = unreliable
     source: null,         // 'native' | 'web'
+    webHandler: null,     // the ONE deviceorientation handler (added on start, removed on stop)
     watchdog: null,
     lastRender: 0,
   };
@@ -109,16 +110,22 @@
 
   function startWeb() {
     if (typeof window.DeviceOrientationEvent !== 'function') return false;
-    const handler = (e) => {
-      // iOS exposes compass heading on webkitCompassHeading; Android Chrome
-      // exposes alpha (counter-clockwise from north) — convert.
-      let h = null;
-      if (typeof e.webkitCompassHeading === 'number') h = e.webkitCompassHeading;
-      else if (typeof e.alpha === 'number') h = norm360(360 - e.alpha);
-      if (h != null) acceptHeading(h);
-    };
+    // ONE handler, created per start() and removed by stop(). Recreating it
+    // here never stacks duplicates: start() early-returns while active.
+    if (!state.webHandler) {
+      state.webHandler = (e) => {
+        // iOS exposes compass heading on webkitCompassHeading; Android Chrome
+        // exposes alpha (counter-clockwise from north) — convert.
+        let h = null;
+        if (typeof e.webkitCompassHeading === 'number') h = e.webkitCompassHeading;
+        else if (typeof e.alpha === 'number') h = norm360(360 - e.alpha);
+        if (h != null) acceptHeading(h);
+      };
+    }
     const req = () => {
-      window.addEventListener('deviceorientation', handler, true);
+      // Permission resolved after the user left the Qibla page → wire nothing.
+      if (!state.active) return;
+      window.addEventListener('deviceorientation', state.webHandler, true);
       state.source = 'web';
     };
     try {
@@ -171,7 +178,12 @@
       state.jitter = 0;
       if (state.watchdog) { clearInterval(state.watchdog); state.watchdog = null; }
       if (state.source === 'web') {
-        // listeners are per page-visit; a reload clears them
+        // Remove the SAME handler with the SAME capture flag it was added
+        // with — otherwise every Qibla visit stacked another listener.
+        if (state.webHandler) {
+          try { window.removeEventListener('deviceorientation', state.webHandler, true); } catch (e) { /* ignore */ }
+        }
+        state.webHandler = null;
         state.source = null;
       }
       if (state.source === 'native' && window.ptCompass && typeof window.ptCompass.stop === 'function') {
