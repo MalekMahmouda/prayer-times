@@ -34,3 +34,31 @@ Cache `rounded(2dp) → {city,country}` with 7-day TTL, ≥2s throttle, single-f
 
 ## Known pre-existing (out of scope, not regressions)
 - CSP warnings for two CDN Google-Fonts (Amiri) in the packaged app — bundled fonts render instead; cosmetic log only.
+
+---
+
+# Bug Audit — v1.3.1 (deep pass over the shipped v1.3.0)
+
+Method: fresh read-only audit of the whole v1.3.0 surface, then **in-process probes against the real code** for every suspicion before any edit (no bug was fixed on theory alone). Baseline: v1.3.0 (`509b553`), 43/43 scheduler + 80/80 contract green.
+
+## Confirmed and fixed in v1.3.1
+
+| # | Bug | Evidence (probe at audit time) | Fix | Test |
+|---|-----|-------------------------------|-----|------|
+| B1 | **"today" computed in the device timezone, not the location's** — renderer passed `localDateKey(instantNow())` (device-local); desktop scheduler built its fire-day from `new Date(clock())`. Device NY + Riyadh location → yesterday's times for ~7 h daily, and the location-day's Fajr (~21:30 prev device day) fell before the device-day rollover → **Fajr never fired** | Probe: 2026-09-29T20:00Z → location key `2026-10-01` vs device key `2026-09-30` | `refreshTodaySchedule()` keys the day via `Engine.zonedToday(resolveTz())`; scheduler `compute()`/`buildInfo()`/`tick()`/`notifyResumed()` derive `{y,m,d}` from `Engine.zonedToday(cfg.tz, clock())` and build `new Date(y, m-1, d, 12)`; day key + fire keys follow location-local midnight. `tz:''` keeps legacy device-local behavior | scheduler §10: Tokyo dayKey `2026-09-30` while device is on the 29th; Fajr fires at its absolute instant; info.times == zoned engine day; `tz:''` regression guard. contract §6g: sandbox `refreshTodaySchedule` picks the Tokyo day |
+| B2 | **Dashboard double-applied minute offsets** — engine `getDay` strings/instants already include offsets, but prayer cards re-parsed them through `adjTime()` (+offset again) | Probe: Riyadh Fajr +5 → engine 04:32, card math 04:37 | `renderDashboard()`/`renderMHome()` + hero render from absolute `S.todaySchedule.instants[p]` once via `fmtAtLoc()` (location wall clock, honors h24); `adjTime()` only remains in the no-engine API fallback and instants-missing fallbacks | contract §6f: display of the offset instant == engine instant (04:32); source check: card loop uses the instants path, not `adjTime` |
+| B3 | **`scheduleMidnight()` fired 7–30 h off** — it set *device-wall* midnight (`setHours(24)`) on a date shifted into the location's day | Probe: Tokyo location from a UTC+3 device → algorithm 33.0 h vs true 3.0 h; NY → −7.0 h | Pure `msToNextLocationMidnight(tz, now)`: forward scan on the monotone `zonedToday` day key + bisection (DST-safe by construction); empty tz → device midnight; `scheduleMidnight()` now refreshes the new location-local day | contract §6h: Tokyo + NY midnights within ±2 s of a 1 s reference scan; empty-tz fallback exact |
+| B4 | **Ramadan card compared device wall clock to location strings** — `new Date().getHours()` vs `S.times` formatted in the location tz → wrong fasting/iftar windows across timezones | Code probe: device-wall minutes vs location-formatted strings | `zonedNowHM(tz)` (Intl parts, `hour % 24` for the `24:xx` quirk); `renderRamadan()` uses it | Manual (Ramadan timing); helper semantics pinned by §6h family (same Intl part handling as instantNow-era code) |
+| B5 | **Compass listener leak** — `stop()` reset state but never `removeEventListener`'d the web `deviceorientation` handler → one extra handler per Qibla visit | Code audit of `js/compass.js` stop() | Handler hoisted to `state.webHandler`; stop() removes the SAME handler with the SAME capture flag; iOS permission grant after the page is left wires nothing | contract §6i: start→1 add, stop→1 remove, restart→no accumulation; late-grant adds nothing |
+| B6 | **`revGeo()` returned the inflight of different coordinates** — `_revGeo.inflight` was reused regardless of target | Code audit + probe: second call with other coords bound to the first's promise | Inflight is `{key, promise}`; reuse only on key match; different-coordinate requests are skipped (not bound) | contract §6j: different coords skip; same coords single-flight — exactly ONE network call |
+| B7 | **`instantNow()` dead math** — `Date.now() + (x) − (x)` degenerated to `new Date(Date.now())` | Algebraic probe | Simplified to `return new Date()` with an honest comment: absolute now is correct because all comparisons use absolute instants | Covered by existing instants-path tests (§6e) |
+| B8 | **Release notes stale/false** — claimed the installer "is not code-signed yet" (it is), no per-version notes | Read of `scripts/make-release.js` | Signing note corrected; concise "What's new in {version}" section (v1.3.1 lists B1–B7 user-facing fixes) | Verified in generated `release/RELEASE-NOTES.txt` |
+
+## Verified correct — deliberately NOT changed (v1.3.1)
+- **pushMobile timing on Android**: the engine-bundle loads after app.js, so the first `setConfig` is a no-op — but the signature stays unset, so the `load`-event retry schedules correctly.
+- **`+p.hour % 24`**: Intl's `hour12:false` can emit hour `24`; the modulo handles it (probed at 00:30 Riyadh → correct).
+- **Calendar digit round-trips** (`fmt(timeStrToDate(str, date))`): identity — parse and reformat never cross a day boundary for HH:MM.
+- **Golden engine matrix**: no engine file touched in v1.3.1; anchors re-verified green.
+
+## Test totals after v1.3.1
+`scheduler 47/47` (+4), `contract 93/93` (+13), `check-dist` green. Artifacts: desktop 1.3.1, Android versionCode 5 / 1.3.1.

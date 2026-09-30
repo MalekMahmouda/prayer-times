@@ -1,6 +1,6 @@
-# Manual & Real-Device Test Checklist (v1.3.0)
+# Manual & Real-Device Test Checklist (v1.3.1)
 
-Automated coverage: `node scripts/test-scheduler.js` (43/43), `node scripts/test-contract.js` (80/80), `node scripts/check-dist.js` (all green after builds). The items below **require a real device or OS event** and cannot be automated here.
+Automated coverage: `node scripts/test-scheduler.js` (47/47), `node scripts/test-contract.js` (93/93), `node scripts/check-dist.js` (all green after builds). The items below **require a real device or OS event** and cannot be automated here.
 
 ## Windows (Electron)
 - [ ] **Online**: times render; no offline badge.
@@ -11,7 +11,7 @@ Automated coverage: `node scripts/test-scheduler.js` (43/43), `node scripts/test
 - [ ] **Notification + adhan**: overlay shows the correct prayer; volume matches profile/global.
 - [ ] **Timezone change** (OS setting, app open): schedule recomputes; next prayer/countdown correct.
 
-## Android (real device — APK versionCode 4 / versionName 1.3.0)
+## Android (real device — APK versionCode 5 / versionName 1.3.1)
 - [ ] **Install & first run**: location set (GPS or city); times match the desktop app for the same location/method/madhab.
 - [ ] **Cross-timezone matrix (key regression)**: set the device clock/timezone to a different zone than the prayer location (e.g. phone in America/New_York, location Riyadh). Times on screen must match Riyadh wall-clock, and notifications must fire at the Riyadh prayer instants (device date ≠ location date is fine).
 - [ ] **Locked screen**: notification with sound + vibration arrives at prayer time.
@@ -24,6 +24,13 @@ Automated coverage: `node scripts/test-scheduler.js` (43/43), `node scripts/test
 - [ ] **GPS accuracy**: indoors (poor fix) with a previous location → warning shown, previous location kept.
 - [ ] **Offline (airplane mode)**: times still correct; saved locations switch instantly.
 
+### v1.3.1 additions (timezone-correctness release)
+- [ ] **Day-boundary handoff (B1/B3)**: with a location ahead of the device (e.g. phone in America/New_York, location Asia/Tokyo), keep the app open across the LOCATION's midnight (Tokyo 00:00 = NY 11:00) — times must roll to the new Tokyo day at that moment, not at NY midnight; the next prayer after the location-day's Isha is tomorrow's Fajr with a sane countdown (never ~24 h inflated).
+- [ ] **Fajr before device midnight (B1)**: same setup, let the location-day Fajr instant pass (Tokyo ~04:30 = NY ~15:30 previous date) → the Fajr notification/adhan must fire at the Riyadh/Tokyo instant while the device date is still yesterday.
+- [ ] **Ramadan card** (during Ramadan): with a cross-timezone location, fasting/iftar countdown matches the location's prayer times, not the device clock.
+- [ ] **Compass repeat visits (B5)**: open/close the Qibla page 5× quickly → the dial stays responsive, no duplicated motion; on iOS-style permission prompts, granting after leaving the page must not start the dial.
+- [ ] **Qibla card display (B2)**: with a non-zero per-prayer offset set (e.g. Fajr +5), the card time and the countdown reference the SAME adjusted time (no double offset).
+
 ## Web/PWA (dist-web served over HTTP)
 - [ ] **First load**: service worker registers (new cache name).
 - [ ] **Offline refresh** after install: full app loads; times computed locally; offline badge appears.
@@ -35,7 +42,7 @@ For any one location/method/madhab (e.g. Riyadh, Umm al-Qura, Hanafi), the deskt
 
 ## Regression commands (must stay green before any release)
 ```bash
-node scripts/test-scheduler.js   # 43/43
-node scripts/test-contract.js    # 80/80
+node scripts/test-scheduler.js   # 47/47
+node scripts/test-contract.js    # 93/93
 node scripts/check-dist.js       # exit 0 after builds
 ```
