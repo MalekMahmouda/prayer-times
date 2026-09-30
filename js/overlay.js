@@ -20,6 +20,26 @@ let closeTimer = null;
 // overlay must not stay up forever. Prayer notifications already went out.
 const MAX_DURATION_MS = 6 * 60 * 1000;
 
+/* Diagnostics → main process → %APPDATA%\Prayer Times\azan-debug.log.
+   Records the full audio lifecycle: src assignment, load() result, play()
+   resolution/rejection (with the real DOMException), and error events —
+   so the exact failure reason is on disk instead of guessed. */
+const dbg = (msg, data) => { try { if (window.ptOverlay) window.ptOverlay.debug(msg, data); } catch (e) { /* never break playback */ } };
+function describeMediaError(err) {
+  if (!err) return 'unknown';
+  if (err instanceof DOMException || (err && err.name)) {
+    const codeMap = { 1: 'MEDIA_ERR_ABORTED', 2: 'MEDIA_ERR_NETWORK', 3: 'MEDIA_ERR_DECODE', 4: 'MEDIA_ERR_SRC_NOT_SUPPORTED' };
+    const code = (typeof err.code === 'number' && codeMap[err.code]) || (typeof MediaError !== 'undefined' && err instanceof MediaError ? codeMap[err.code] : '');
+    return `${err.name || 'Error'}${code ? ':' + code : ''}: ${err.message || ''}`;
+  }
+  return String(err.message || err);
+}
+audio.addEventListener('error', () => {
+  if (!audio.src) return;
+  const me = audio.error;
+  dbg('audio error event', { src: audio.src, code: me && me.code, detail: describeMediaError(me) });
+});
+
 function stopAndClose() {    try { audio.pause(); } catch (e) { /* already paused/unavailable — closing the overlay is the user-visible outcome */ }
   if (closeTimer) { clearTimeout(closeTimer); closeTimer = null; }
   if (window.ptOverlay) window.ptOverlay.dismiss();
@@ -48,11 +68,16 @@ function show(payload) {
 
   // Source was resolved by the main process (bundled local file first).
   audio.src = p.audioSrc || '';
+  dbg('audio.src set', { src: audio.src, volume: audio.volume, prayer });
+  try { audio.load(); dbg('audio.load() issued'); } catch (e) { dbg('audio.load() threw', { detail: describeMediaError(e) }); }
   audio.currentTime = 0;
   playing = true;
   playPauseBtn.textContent = '⏸';
-  audio.play().catch(() => {
+  audio.play().then(() => {
+    dbg('audio.play() resolved — adhan audio is playing', { src: audio.src });
+  }).catch((e) => {
     // Don't loop retries: notification already fired; user can Stop manually.
+    dbg('audio.play() REJECTED', { src: audio.src, detail: describeMediaError(e) });
     errLine.textContent = ar ? 'تعذر تشغيل الصوت — يمكنك الإيقاف' : 'Audio unavailable — you can dismiss';
   });
 
@@ -64,8 +89,11 @@ document.getElementById('stopBtn').addEventListener('click', stopAndClose);
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') stopAndClose(); });
 
 playPauseBtn.addEventListener('click', () => {
-  if (playing) { audio.pause(); playing = false; playPauseBtn.textContent = '▶'; }
-  else { audio.play().catch(() => {}); playing = true; playPauseBtn.textContent = '⏸'; }
+  if (playing) { audio.pause(); playing = false; playPauseBtn.textContent = '▶'; dbg('manual pause'); }
+  else {
+    audio.play().then(() => dbg('manual resume resolved')).catch((e) => dbg('manual resume REJECTED', { detail: describeMediaError(e) }));
+    playing = true; playPauseBtn.textContent = '⏸';
+  }
 });
 
 volSlider.addEventListener('input', (e) => {

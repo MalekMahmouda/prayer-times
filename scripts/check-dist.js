@@ -40,7 +40,7 @@ if (!fs.existsSync(listFile)) {
   const need = [
     'package.json', 'prayer-times.html', 'adhan.html', 'widget.html',
     'preload.js', 'widget-preload.js',
-    'main/main.js', 'main/scheduler.js', 'main/tray.js', 'main/adhan-files.js',
+    'main/main.js', 'main/scheduler.js', 'main/tray.js', 'main/adhan-files.js', 'main/debug-log.js',
     'main/overlay-preload.js', 'main/json-store.js',
     'shared/pt-engine.js',
     'js/app.js', 'js/pages.js', 'js/pages3.js', 'js/reader.js', 'js/store3.js',

@@ -40,6 +40,17 @@ Automated coverage: `node scripts/test-scheduler.js` (47/47), `node scripts/test
 ## Cross-platform agreement (Phase 22 spot check)
 For any one location/method/madhab (e.g. Riyadh, Umm al-Qura, Hanafi), the desktop app, the Android app and the PWA must show identical Fajr→Isha times and the same Qibla bearing.
 
+## Desktop adhan debug log
+The Windows app keeps a persistent, always-on forensic log at:
+
+    %APPDATA%\Prayer Times\azan-debug.log
+
+It records app version + boot, every renderer config push, scheduler start,
+pre-alert / prayer-time / adhan events, resolved audio file, overlay show/
+reuse/dismiss, test-alert / test-overlay requests, and system resume/recovery
+— each with timestamps. It self-trims at ~1 MB (older half removed). If a
+notification or adhan ever fails to fire, attach this file to the bug report.
+
 ## Regression commands (must stay green before any release)
 ```bash
 node scripts/test-scheduler.js   # 47/47

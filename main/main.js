@@ -11,6 +11,8 @@
  */
 
 const path = require('path');
+const fs = require('fs');
+const { fileURLToPath } = require('url');
 const {
   app, BrowserWindow, ipcMain, Notification, nativeImage, Menu, powerMonitor,
 } = require('electron');
@@ -54,6 +56,16 @@ if (!isPrimary) {
     defaults: { closeToTray: true, startWithWindows: false, adhanOverlayEnabled: true },
   });
   closeToTray = !!store.get('closeToTray', true);
+
+  // Persistent forensic log (ALWAYS on): %APPDATA%\Prayer Times\azan-debug.log
+  // Answers "why did my adhan/notification not fire?" after the fact — no
+  // debug flag needed. Console output is mirrored into it as well.
+  const azlog = require('./debug-log');
+  try {
+    azlog.init({ dir: app.getPath('userData'), version: app.getVersion(), packaged: app.isPackaged });
+    const origLog = console.log.bind(console);
+    console.log = (...a) => { origLog(...a); azlog(...a); };
+  } catch (e) { /* logging must never block startup */ }
 
   // Dev-only main-process logging (quiet in packaged builds).
   const dlog = (...a) => { if (process.env.PT_DEBUG === '1' || !app.isPackaged) console.log('[Main]', ...a); };
@@ -113,6 +125,7 @@ if (!isPrimary) {
   }
 
   function firePreAlert({ prayer, minutes, lang }) {
+    azlog('pre-alert event', { prayer, minutes, lang });
     const ar = lang === 'ar';
     const nm = ar ? PRAYER_AR[prayer] : prayer;
     const body = ar
@@ -122,6 +135,7 @@ if (!isPrimary) {
   }
 
   function firePrayerTime({ prayer, time, lang }) {
+    azlog('prayer-time event', { prayer, time, lang });
     const ar = lang === 'ar';
     const nm = ar ? PRAYER_AR[prayer] : prayer;
     const title = ar ? `حان وقت صلاة ${nm}` : `It is time for ${prayer} (${time})`;
@@ -129,11 +143,31 @@ if (!isPrimary) {
     notify(title, body, () => showMainWindow('prayers'));
   }
 
+  // Diagnostic: stat the resolved audio file so the log shows existence +
+  // size at the moment of use (catches missing/asar-unpack path regressions).
+  function probeAudioFile(resolved) {
+    try {
+      if (resolved && typeof resolved.src === 'string' && resolved.src.startsWith('file:')) {
+        const fp = fileURLToPath(resolved.src);
+        try {
+          const st = fs.statSync(fp);
+          azlog('audio file OK', { path: fp, bytes: st.size });
+        } catch (e) {
+          azlog('audio file MISSING', { path: fp, error: e.message });
+        }
+      } else {
+        azlog('audio source is remote (no file probe)', { src: resolved && resolved.src });
+      }
+    } catch (e) { azlog('audio probe failed', { error: e.message }); }
+  }
+
   function fireAdhanEvent({ prayer, time, lang, volume }) {
     // The notification is never blocked by the overlay (or its audio).
     const id = store.get('adhanType', 'alafasy');
     const resolved = resolveAdhanAudio(id);
     dlog(`Adhan audio: ${resolved.kind} → ${resolved.file || resolved.src}`);
+    azlog('adhan event', { prayer, time, volume, adhanType: id, kind: resolved.kind, src: resolved.src });
+    probeAudioFile(resolved);
     if (store.get('adhanOverlayEnabled', true)) {
       showOverlay({
         prayer,
@@ -145,6 +179,9 @@ if (!isPrimary) {
         audioKind: resolved.kind,
         volume: clampVolume(volume, 1),
       });
+      azlog('overlay shown', { prayer, time });
+    } else {
+      azlog('overlay disabled by setting — no adhan audio', { prayer });
     }
   }
 
@@ -153,6 +190,7 @@ if (!isPrimary) {
   // ────────────────────────────────────────────────────────────
   function showOverlay(payload) {
     if (overlay && !overlay.isDestroyed()) {
+      azlog('overlay reused for new adhan', { prayer: payload && payload.prayer });
       overlay.webContents.send('adhan:show', payload);
       overlay.show();
       overlay.focus();
@@ -184,10 +222,11 @@ if (!isPrimary) {
       overlay.focus();
       if (payload) overlay.webContents.send('adhan:show', payload);
     });
-    overlay.on('closed', () => { overlay = null; });
+    overlay.on('closed', () => { azlog('overlay window closed'); overlay = null; });
   }
 
   function hideOverlay() {
+    azlog('overlay dismissed');
     if (overlay && !overlay.isDestroyed()) overlay.close();
   }
 
@@ -231,9 +270,15 @@ if (!isPrimary) {
 
   // ───────────────────────── IPC ──────────────────────────────
   ipcMain.handle('pt:update-config', (e, cfg) => {
+    azlog('config update from renderer', {
+      lat: cfg && cfg.lat, lon: cfg && cfg.lon, method: cfg && cfg.method, madhab: cfg && cfg.madhab,
+      tz: cfg && cfg.tz, notif: cfg && cfg.notif, notifMin: cfg && cfg.notifMin,
+      adhan: cfg && cfg.adhan, adhanType: cfg && cfg.adhanType, adhanVol: cfg && cfg.adhanVol,
+    });
     if (cfg && cfg.adhanType) store.set('adhanType', String(cfg.adhanType));
     if (cfg && cfg.adhanVol != null) store.set('adhanVol', clampVolume(cfg.adhanVol, 1));
     const res = scheduler.updateConfig(cfg);
+    if (!res.ok) azlog('config REJECTED', { error: res.error });
     if (res.ok) updateTray(scheduler.getInfo());
     return res;
   });
@@ -252,6 +297,7 @@ if (!isPrimary) {
   });
 
   ipcMain.on('pt:test-alert', () => {
+    azlog('test-alert requested (fires in 3s)');
     // Fires a real pre-alert 3 s later so the user can see the whole pipeline.
     setTimeout(() => {
       notify('Prayer Time 🕌 (test)', 'This is how prayer alerts look. Click to open the app.', () => showMainWindow('prayers'));
@@ -262,6 +308,8 @@ if (!isPrimary) {
     // Full pipeline test: resolve the real selected audio, real configured volume.
     const id = store.get('adhanType', 'alafasy');
     const resolved = resolveAdhanAudio(id);
+    azlog('test-overlay requested', { adhanType: id, kind: resolved.kind, src: resolved.src });
+    probeAudioFile(resolved);
     showOverlay({
       prayer: 'Dhuhr',
       nameAr: PRAYER_AR.Dhuhr,
@@ -289,6 +337,10 @@ if (!isPrimary) {
     catch (err) { return null; }
   });
   ipcMain.on('overlay:dismiss', () => hideOverlay());
+  // One-way diagnostics channel from the overlay renderer (audio lifecycle).
+  ipcMain.on('overlay:debug', (e, msg, data) => {
+    azlog('[overlay]', String(msg == null ? '' : msg).slice(0, 300), data == null ? '' : data);
+  });
 
   // ───────────── Phase 3: mini widget & mini mode ─────────────
   // Both are pure consumers of the main scheduler — no timers, no
@@ -398,12 +450,13 @@ if (!isPrimary) {
 
     // Short fire loop — main-process timers, immune to renderer throttling.
     // Missed-window detection makes the loop gap-tolerant (sleep, throttle).
+    azlog('scheduler started', { tickMs: 30000 });
     schedulerLoop = setInterval(() => scheduler.tick(), 30 * 1000);
     scheduler.tick();
 
     // System wake → catch up on anything missed while asleep (fires once).
-    powerMonitor.on('resume', () => { dlog('System resume'); scheduler.notifyResumed(); });
-    powerMonitor.on('unlock-screen', () => scheduler.notifyResumed());
+    powerMonitor.on('resume', () => { dlog('System resume'); azlog('system resume — recovering missed window'); scheduler.notifyResumed(); });
+    powerMonitor.on('unlock-screen', () => { azlog('screen unlock — recovering missed window'); scheduler.notifyResumed(); });
 
     if (store.get('startWithWindows', false)) applyAutoLaunch(true);
     refreshAutoLaunchPath();

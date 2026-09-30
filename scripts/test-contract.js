@@ -498,6 +498,37 @@ function runArtifactChecks() {
   const tz = require('tz-lookup');
   ok(tz(21.4225, 39.8262) === 'Asia/Riyadh' && tz(51.5072, -0.1276) === 'Europe/London', 'tz-lookup sanity (Makkah, London)');
 
+  // azan-debug.log: persistent forensic logger (never throws, caps size).
+  section('9. azan-debug.log (persistent adhan pipeline log)');
+  const azlog = require(path.join(ROOT, 'main', 'debug-log.js'));
+  const os = require('os');
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pt-azlog-'));
+  const logFile = azlog.init({ dir: tmpDir, version: 'test', packaged: false });
+  ok(path.basename(logFile) === 'azan-debug.log', 'log file is azan-debug.log inside userData');
+  azlog('probe event', { prayer: 'Fajr', ms: 123 });
+  const line1 = fs.readFileSync(logFile, 'utf8');
+  ok(/\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}\] probe event \{"prayer":"Fajr","ms":123\}/.test(line1),
+    'lines carry timestamps and JSON payloads');
+  ok(typeof azlog === 'function' && /azan-debug\.log$/.test(logFile), 'logger is callable and resolves the userData path');
+  azlog('second', 'plain arg', 42);
+  const all = fs.readFileSync(logFile, 'utf8');
+  ok(all.includes('second plain arg 42'), 'mixed args joined readably');
+  // Rotation: force past the cap by shrinking MAX via rewrite of the module? —
+  // instead verify the trim marker path by writing a huge file first.
+  fs.writeFileSync(logFile, 'x'.repeat(1200 * 1024));
+  azlog('post-rotation line');
+  const after = fs.readFileSync(logFile, 'utf8');
+  ok(after.length < 1200 * 1024 && after.includes('log trimmed') && after.includes('post-rotation line'),
+    'log auto-trims older half after ~1MB and keeps writing');
+
+  const mainSrc = read('main/main.js');
+  ok(mainSrc.includes("require('./debug-log')") && mainSrc.includes('azlog.init(') && read('main/debug-log.js').includes('azan-debug start'),
+    'main process initializes the persistent log at boot');
+  ok(mainSrc.includes("azlog('adhan event'") && mainSrc.includes("azlog('pre-alert event'") && mainSrc.includes("azlog('prayer-time event'"),
+    'pre-alert / prayer-time / adhan events are logged');
+  ok(mainSrc.includes("azlog('system resume") && mainSrc.includes("azlog('overlay dismissed')"),
+    'sleep resume + overlay lifecycle are logged');
+
   finish();
 }
 
