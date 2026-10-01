@@ -19,8 +19,9 @@ window.renderQibla = function renderQibla() {
   $('qSub').textContent = `${t('qibla.from')} ${S.city || `${S.lat.toFixed(2)}, ${S.lon.toFixed(2)}`}`;
   $('compassIn').style.transform = `rotate(${b}deg)`;
   $('kaabaMark').style.transform = `rotate(${-b}deg)`; // keep Kaaba upright
-  // Live heading (Android/web sensors) rotates the dial relative to the
-  // device; desktop keeps the static bearing, honestly labeled.
+  // Live heading (Android/web sensors) rotates the dial by the SIGNED turn
+  // relative to the device; desktop keeps the static bearing, honestly
+  // labeled — it never pretends to have a live compass sensor (Phase 8).
   if (window.PTCompass) window.PTCompass.start();
   const d = distToKaaba();
   $('qDist').innerHTML = d != null

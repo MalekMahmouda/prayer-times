@@ -53,7 +53,7 @@ if (!isPrimary) {
   store = new JsonStore({
     dir: () => app.getPath('userData'),
     name: 'pt-desktop',
-    defaults: { closeToTray: true, startWithWindows: false, adhanOverlayEnabled: true },
+    defaults: { closeToTray: true, startWithWindows: false, adhanOverlayEnabled: true, adhanEnabled: false },
   });
   closeToTray = !!store.get('closeToTray', true);
 
@@ -162,38 +162,42 @@ if (!isPrimary) {
   }
 
   function fireAdhanEvent({ prayer, time, lang, volume }) {
-    // The notification is never blocked by the overlay (or its audio).
+    // v1.3.2 P15 DECOUPLE: the azan AUDIO plays whenever the adhan event
+    // fires. The overlay toggle only decides whether the fullscreen window
+    // is VISIBLE — with it off, the same overlay page plays the audio
+    // invisibly (identical src → load → play lifecycle, then auto-closes).
+    // Disabling the overlay must never silently disable the azan.
     const id = store.get('adhanType', 'alafasy');
     const resolved = resolveAdhanAudio(id);
     dlog(`Adhan audio: ${resolved.kind} → ${resolved.file || resolved.src}`);
-    azlog('adhan event', { prayer, time, volume, adhanType: id, kind: resolved.kind, src: resolved.src });
+    const overlayVisible = !!store.get('adhanOverlayEnabled', true);
+    azlog('adhan event', { prayer, time, volume, adhanType: id, kind: resolved.kind, src: resolved.src, overlayVisible });
     probeAudioFile(resolved);
-    if (store.get('adhanOverlayEnabled', true)) {
-      showOverlay({
-        prayer,
-        nameAr: PRAYER_AR[prayer] || prayer,
-        nameEn: prayer,
-        time,
-        lang: lang || 'en',
-        audioSrc: resolved.src,
-        audioKind: resolved.kind,
-        volume: clampVolume(volume, 1),
-      });
-      azlog('overlay shown', { prayer, time });
-    } else {
-      azlog('overlay disabled by setting — no adhan audio', { prayer });
-    }
+    showOverlay({
+      prayer,
+      nameAr: PRAYER_AR[prayer] || prayer,
+      nameEn: prayer,
+      time,
+      lang: lang || 'en',
+      audioSrc: resolved.src,
+      audioKind: resolved.kind,
+      volume: clampVolume(volume, 1),
+    }, { visible: overlayVisible });
+    azlog(overlayVisible ? 'overlay shown' : 'overlay hidden — azan audio plays without UI', { prayer, time });
   }
 
   // ────────────────────────────────────────────────────────────
   // Adhan overlay (fullscreen, always-on-top, plays audio)
   // ────────────────────────────────────────────────────────────
-  function showOverlay(payload) {
+  function showOverlay(payload, opts) {
+    // v1.3.2 P15: visible=false → the overlay window stays hidden while its
+    // audio still plays (overlay setting must not gate azan audio).
+    const visible = !(opts && opts.visible === false);
     if (overlay && !overlay.isDestroyed()) {
-      azlog('overlay reused for new adhan', { prayer: payload && payload.prayer });
+      azlog('overlay reused for new adhan', { prayer: payload && payload.prayer, visible });
       overlay.webContents.send('adhan:show', payload);
-      overlay.show();
-      overlay.focus();
+      if (visible) { overlay.show(); overlay.focus(); }
+      else if (overlay.isVisible()) overlay.hide();
       return;
     }
     const { screen } = require('electron');
@@ -203,7 +207,7 @@ if (!isPrimary) {
       height,
       x: 0,
       y: 0,
-      fullscreen: true,
+      fullscreen: visible,
       frame: false,
       alwaysOnTop: true,
       skipTaskbar: true,
@@ -218,9 +222,8 @@ if (!isPrimary) {
     });
     overlay.loadFile(path.join(__dirname, '..', 'adhan.html'));
     overlay.once('ready-to-show', () => {
-      overlay.show();
-      overlay.focus();
       if (payload) overlay.webContents.send('adhan:show', payload);
+      if (visible) { overlay.show(); overlay.focus(); }
     });
     overlay.on('closed', () => { azlog('overlay window closed'); overlay = null; });
   }
@@ -277,7 +280,16 @@ if (!isPrimary) {
     });
     if (cfg && cfg.adhanType) store.set('adhanType', String(cfg.adhanType));
     if (cfg && cfg.adhanVol != null) store.set('adhanVol', clampVolume(cfg.adhanVol, 1));
-    const res = scheduler.updateConfig(cfg);
+    // v1.3.2 P10 — azan switch normalization, once, at the IPC boundary:
+    // adhanEnabled is authoritative; legacy `adhan` is only a fallback.
+    const azanRaw = cfg && cfg.adhanEnabled !== undefined ? cfg.adhanEnabled : (cfg ? cfg.adhan : undefined);
+    const adhanEnabled = azanRaw === true || azanRaw === 'true';
+    if (azanRaw !== undefined && store.get('adhanEnabled') !== adhanEnabled) {
+      azlog('azan switch changed', { from: store.get('adhanEnabled'), to: adhanEnabled });
+    }
+    store.set('adhanEnabled', adhanEnabled); // observable state mirror
+    const toScheduler = { ...cfg, adhanEnabled, adhan: adhanEnabled };
+    const res = scheduler.updateConfig(toScheduler);
     if (!res.ok) azlog('config REJECTED', { error: res.error });
     if (res.ok) updateTray(scheduler.getInfo());
     return res;
@@ -319,7 +331,7 @@ if (!isPrimary) {
       audioSrc: resolved.src,
       audioKind: resolved.kind,
       volume: clampVolume(store.get('adhanVol', 1), 1),
-    });
+    }, { visible: !!store.get('adhanOverlayEnabled', true) });
   });
 
   ipcMain.handle('pt:get-info', () => scheduler.getInfo());
@@ -337,6 +349,10 @@ if (!isPrimary) {
     catch (err) { return null; }
   });
   ipcMain.on('overlay:dismiss', () => hideOverlay());
+  // v1.3.2 P9: one-way renderer diagnostics (toggle intent, push triggers).
+  ipcMain.on('pt:debug', (e, msg, data) => {
+    azlog('[renderer]', String(msg == null ? '' : msg).slice(0, 300), data == null ? '' : data);
+  });
   // One-way diagnostics channel from the overlay renderer (audio lifecycle).
   ipcMain.on('overlay:debug', (e, msg, data) => {
     azlog('[overlay]', String(msg == null ? '' : msg).slice(0, 300), data == null ? '' : data);

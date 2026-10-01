@@ -47,6 +47,13 @@ const S = {
 const PT = window.ptDesktop || null;
 const IS_DESKTOP = !!PT;
 
+/* v1.3.2 P9: dedup identical config pushes. init(), saveCfg() and saveLoc()
+   can all fire within seconds; main only needs CHANGED configs. A real
+   change (any field differs) always goes through. */
+let lastPushedCfg = null;
+function cfgFingerprint(cfg) {
+  try { return JSON.stringify(cfg); } catch (e) { return null; }
+}
 function pushCfg() {
   if (!PT) return;
   try {    // Active saved location's timezone (empty = system/unknown)
@@ -55,16 +62,27 @@ function pushCfg() {
       showToast('⚠️ ' + (S.lang === 'ar' ? 'إحداثيات غير صالحة — تحقق من الموقع' : 'Invalid coordinates — check your location'));
       return;
     }
-    PT.updateConfig({
+    // v1.3.2 P10: adhanEnabled is THE authoritative azan switch — one name,
+    // one meaning, everywhere. `adhan` rides along unchanged so older
+    // desktop builds and the mobile adapter keep working during transition.
+    const adhanEnabled = !!S.cfg.adhan;
+    const out = {
       lat: S.lat, lon: S.lon, method: S.cfg.method,
       madhab: S.cfg.madhab, offsets: S.cfg.offsets,
       notifMin: S.cfg.notifMin, notif: S.cfg.notif, beep: S.cfg.beep,
-      adhan: S.cfg.adhan, adhanPerPrayer: S.cfg.adhanPerPrayer,
+      adhanEnabled, adhan: adhanEnabled, adhanPerPrayer: S.cfg.adhanPerPrayer,
       adhanType: S.cfg.adhanType, adhanVol: S.cfg.adhanVol,
       lang: S.lang,
       tz: resolveTz(),
       preMin: S.cfg.preMin, adhanProfiles: S.cfg.adhanProfiles || {},
-    }).catch(() => { /* desktop bridge rejected config — coords validated above; renderer UI already reflects the same state */ });
+    };
+    const fp = cfgFingerprint(out);
+    if (fp && fp === lastPushedCfg) { pushMobile(); return; }
+    lastPushedCfg = fp;
+    // P9 diagnostics: every REAL push is visible in azan-debug.log with its
+    // trigger, so a future "adhan:false" mystery can be traced from the log.
+    try { if (PT.debug) PT.debug('config push', { adhanEnabled, adhanType: out.adhanType, trigger: String((new Error().stack || '').split('\n')[2] || '').trim() }); } catch (e) {}
+    PT.updateConfig(out).catch(() => { /* desktop bridge rejected config — coords validated above; renderer UI already reflects the same state */ });
     PT.setCloseToTray(S.cfg.desktop.closeToTray);
     PT.setOverlayEnabled(S.cfg.desktop.overlay);
     PT.setTheme(S.cfg.theme, themeIsDark(S.cfg.theme));

@@ -282,6 +282,34 @@ section('9. Notification / per-prayer toggles');
   ok(app2.count('adhan', 'Maghrib') === 1, 'other prayers unaffected by per-prayer mute');
 }
 
+/* ── 10. v1.3.2 P10/P15: azan switch contract ─────────────────────────── */
+section('10. v1.3.2 azan switch contract (adhanEnabled, overlay decouple)');
+{
+  const dates = prayerDates(BASE_CFG, NOON);
+  const dhuhr = dates[1].getTime();
+  const tickTo = (cfgOv, ms) => {
+    const app = makeApp(cfgOv);
+    app.now = ms; app.tick();
+    return app;
+  };
+
+  // P10: the canonical switch drives the event; legacy `adhan` still works.
+  const on = tickTo({ adhan: false, adhanEnabled: true }, dhuhr + 5000);
+  ok(on.count('adhan', 'Dhuhr') === 1, 'adhanEnabled=true → adhan event fires (canonical switch wins)');
+  const off = tickTo({ adhan: false, adhanEnabled: false }, dhuhr + 5000);
+  ok(off.count('adhan', 'Dhuhr') === 0, 'adhanEnabled=false → NO adhan event');
+  const legacy = tickTo({ adhan: true }, dhuhr + 5000);
+  ok(legacy.count('adhan', 'Dhuhr') === 1, 'legacy adhan=true still honored when canonical absent');
+  const bothOff = tickTo({ adhan: true, adhanEnabled: false }, dhuhr + 5000);
+  ok(bothOff.count('adhan', 'Dhuhr') === 0, 'canonical false overrides legacy true (no ambiguity)');
+
+  // P15 audit: notifications are NEVER gated by the azan switch.
+  const a1 = tickTo({ adhan: false, adhanEnabled: false, notif: true }, dhuhr + 5000);
+  ok(a1.count('prayer-time', 'Dhuhr') === 1, 'azan OFF keeps prayer-time notification');
+  const a2 = tickTo({ adhan: false, adhanEnabled: true }, dhuhr + 5000);
+  ok(a2.count('prayer-time', 'Dhuhr') === 1, 'azan ON keeps prayer-time notification');
+}
+
 /* ── Summary ───────────────────────────────────────────────────────────── */
 console.log(`\n${checks - failures}/${checks} checks passed${failures ? ` — ${failures} FAILED` : ' — ALL GREEN'}`);
 process.exit(failures ? 1 : 0);

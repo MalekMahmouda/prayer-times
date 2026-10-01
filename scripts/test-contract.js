@@ -359,6 +359,90 @@ section('6. netFetch query-key isolation + per-request timeout');
     ok(adds === addsBeforeLate, 'late iOS permission grant after stop wires NO listener');
     globalThis.addEventListener = origAdd; globalThis.removeEventListener = origRemove;
 
+    // ── 6i2. v1.3.2 P4–P8: heading validation, signed turn, rotation, cleanup ──
+    const PC = globalThis.PTCompass;
+    delete globalThis.DeviceOrientationEvent.requestPermission; // 6i left a pending-permission stub
+    delete globalThis.ondeviceorientationabsolute;              // default sandbox → legacy fallback type
+    let evtType = null, evtHandler = null;
+    globalThis.addEventListener = (t2, fn) => { if (t2 === 'deviceorientation' || t2 === 'deviceorientationabsolute') { evtType = t2; evtHandler = fn; } };
+    globalThis.removeEventListener = () => {};
+    const origScreen = Object.getOwnPropertyDescriptor(globalThis, 'screen');
+    const setScreen = (angle) => Object.defineProperty(globalThis, 'screen', { value: { orientation: { angle } }, configurable: true });
+    const noScreen = () => { if (origScreen) Object.defineProperty(globalThis, 'screen', origScreen); else delete globalThis.screen; };
+    noScreen();
+    X.setLoc(24.7136, 46.6753); // Riyadh — known bearing ≈ 244°
+    PC.start(); await sleep(60);
+    ok(evtType === 'deviceorientation' && evtHandler != null,
+      'P4 fallback: plain deviceorientation with ONE handler when no absolute event type exists');
+    // Invalid sensor values are REJECTED (NaN, Infinity, missing, absurd, relative-only).
+    evtHandler({ alpha: NaN, absolute: true }); evtHandler({ alpha: Infinity, absolute: true });
+    evtHandler({}); evtHandler(null); evtHandler({ alpha: 1e9, absolute: true });
+    evtHandler({ alpha: 30, absolute: false }); // relative data must never define north
+    ok(PC.snapshot().heading == null, 'P4: NaN/Infinity/missing/absurd/relative readings all rejected');
+    // Absolute data is accepted; alpha converts counter-sense (heading = 360 − α).
+    evtHandler({ alpha: 300, absolute: true });
+    const snapA = PC.snapshot();
+    ok(Math.abs(snapA.heading - 60) < 1e-9, 'P4: absolute alpha 300 → heading 60 (360−α)');
+    ok(snapA.sensor === 'deviceorientation', 'P8: sensor name surfaced (' + snapA.sensor + ')');
+    const bR = snapA.bearing;
+    ok(Math.abs(bR - 243.8) < 2, 'P8: Riyadh bearing through compass layer ≈ 244° (got ' + bR.toFixed(1) + '°)');
+    const expTurn = ((bR - 60 + 540) % 360) - 180;
+    ok(Math.abs(snapA.turn - expTurn) < 1e-9 && snapA.turn > -180 && snapA.turn <= 180,
+      'P5: signed turn = ((bearing−heading+540)%360)−180 (got ' + snapA.turn.toFixed(1) + '°)');
+    // Absolute-first priority: exposing the absolute event type switches to it.
+    globalThis.ondeviceorientationabsolute = null; // property exists → 'in' true
+    PC.stop(); PC.start(); await sleep(60);
+    ok(evtType === 'deviceorientationabsolute', 'P4: prefers deviceorientationabsolute when available');
+    evtHandler({ alpha: 300 }); // absolute event type is absolute by definition
+    ok(Math.abs(PC.snapshot().heading - 60) < 1e-9, 'P4: absolute event type needs no absolute flag');
+    // iOS webkitCompassHeading wins over alpha.
+    evtHandler({ alpha: 10, webkitCompassHeading: 238 });
+    ok(Math.abs(PC.snapshot().heading - 238) < 1e-9, 'P4: webkitCompassHeading takes priority over alpha');
+    ok(PC.snapshot().sensor === 'webkitCompassHeading', 'P8: iOS sensor name surfaced');
+    // Normalization: 0 ≤ heading < 360 for negative / >360 / exactly 360.
+    evtHandler({ webkitCompassHeading: -20 }); ok(PC.snapshot().heading === 340, 'P4: −20 normalizes to 340');
+    evtHandler({ webkitCompassHeading: 380 }); ok(PC.snapshot().heading === 20, 'P4: 380 normalizes to 20');
+    evtHandler({ webkitCompassHeading: 360 }); ok(PC.snapshot().heading === 0, 'P4: 360 normalizes to 0 (0≤h<360)');
+    // Signed turn at the ±180 edge and at 0.
+    evtHandler({ webkitCompassHeading: (bR + 180) % 360 });
+    ok(Math.abs(Math.abs(PC.snapshot().turn) - 180) < 1e-9, 'P5: heading at bearing+180 → |turn| = 180');
+    evtHandler({ webkitCompassHeading: bR });
+    ok(PC.snapshot().turn === 0, 'P5: heading = bearing → turn 0 (Kaaba straight ahead)');
+    // Screen rotation (P6): sensors report the natural portrait frame;
+    // screen.orientation.angle (CCW from natural) is subtracted.
+    setScreen(90);
+    evtHandler({ webkitCompassHeading: 100 });
+    ok(Math.abs(PC.snapshot().heading - 10) < 1e-9, 'P6: landscape (angle 90) adjusts heading 100 → 10');
+    setScreen(0);
+    evtHandler({ webkitCompassHeading: 100 });
+    ok(Math.abs(PC.snapshot().heading - 100) < 1e-9, 'P6: portrait (angle 0) keeps raw heading');
+    setScreen(90); evtHandler({ webkitCompassHeading: 100 }); const hL = PC.snapshot().heading;
+    setScreen(0); evtHandler({ webkitCompassHeading: 100 }); const hP = PC.snapshot().heading;
+    ok(Math.abs(hL - 10) < 1e-9 && Math.abs(hP - 100) < 1e-9, 'P6: portrait→landscape→portrait compensates each cycle');
+    // Legacy window.orientation fallback (clockwise legacy → same subtract form).
+    noScreen();
+    Object.defineProperty(globalThis, 'orientation', { value: 90, configurable: true });
+    evtHandler({ webkitCompassHeading: 0 });
+    ok(Math.abs(PC.snapshot().heading - 270) < 1e-9, 'P6: window.orientation=90 fallback → heading 270');
+    delete globalThis.orientation;
+    noScreen();
+    delete globalThis.ondeviceorientationabsolute;
+    // Lifecycle across repeated visits (P7): one listener per visit, zero accumulation.
+    PC.stop(); // leave the P6 block with the compass closed, as gotoPage does
+    let adds2 = 0, removes2 = 0;
+    globalThis.addEventListener = (t2) => { if (t2 === 'deviceorientation' || t2 === 'deviceorientationabsolute') adds2++; };
+    globalThis.removeEventListener = (t2) => { if (t2 === 'deviceorientation' || t2 === 'deviceorientationabsolute') removes2++; };
+    for (let i = 0; i < 3; i++) { PC.start(); await sleep(60); PC.stop(); }
+    ok(adds2 === 3 && removes2 === 3, 'P7: 3 open/close cycles → exactly 3 adds + 3 removes (got ' + adds2 + '/' + removes2 + ')');
+    ok(PC.snapshot().heading == null, 'P7: stop resets heading (fresh state on next visit)');
+    PC.start(); await sleep(60);
+    evtHandler({ webkitCompassHeading: 90 });
+    ok(Math.abs(PC.snapshot().heading - 90) < 1e-9, 'P7: fresh visit accepts headings again');
+    PC.stop();
+    evtHandler({ webkitCompassHeading: 90 }); // stale event after stop
+    ok(PC.snapshot().heading == null, 'P7: events after stop are ignored (epoch guard)');
+    globalThis.addEventListener = origAdd; globalThis.removeEventListener = origRemove;
+
     // 6j. B6: revGeo single-flight is per-coordinate. revGeo is async, so
     // every return is re-wrapped — assert behavior (skip + no duplicate
     // request), never promise-object identity.
@@ -528,6 +612,47 @@ function runArtifactChecks() {
     'pre-alert / prayer-time / adhan events are logged');
   ok(mainSrc.includes("azlog('system resume") && mainSrc.includes("azlog('overlay dismissed')"),
     'sleep resume + overlay lifecycle are logged');
+
+  // v1.3.2 P9–P15: azan config contract, packaging assets, audio decouple.
+  section('10. v1.3.2 azan contract: propagation, dedup, assets, decouple');
+  const { execSync } = require('child_process');
+  const asarJs = path.join(ROOT, 'node_modules', 'asar', 'bin', 'asar.js');
+  const asarPath = path.join(ROOT, 'dist', 'win-unpacked', 'resources', 'app.asar');
+  if (fs.existsSync(asarJs) && fs.existsSync(asarPath)) {
+    const asar = JSON.parse(execSync(`"${process.execPath}" "${asarJs}" list "${asarPath}"`, { maxBuffer: 64 * 1024 * 1024 }).toString());
+    for (const f of ['default.mp3', 'nafees.mp3', 'dubai.mp3', 'zahrani.mp3', 'turkey.mp3', 'classic.mp3']) {
+      ok(asar.some((x) => x.replace(/\\/g, '/').endsWith(`assets/adhans/${f}`)), `${f} is packaged in app.asar`);
+    }
+  } else {
+    ok(true, 'packaging asset checks pending a build (dist/win-unpacked not present)');
+  }
+
+  // P12: resolver + ALL SIX bundled MP3s (exist, non-zero, file:// output).
+  const RES = require(path.join(ROOT, 'main', 'adhan-files.js'));
+  for (const id of ['alafasy', 'nafees', 'dubai', 'zahrani', 'turkey', 'classic']) {
+    const r = RES.resolveAdhanAudio(id);
+    const fp = r.src.replace('file://', '');
+    ok(r.kind === 'bundled' && r.src.startsWith('file://'), `resolver(${id}) → bundled file:// (${r.file})`);
+    ok(fs.existsSync(fp), `bundled file exists on disk: ${r.file}`);
+    ok(fs.statSync(fp).size > 10000, `bundled file non-trivial size: ${r.file}`);
+  }
+  ok(RES.resolveAdhanAudio('does-not-exist').kind === 'bundled', 'unknown reciter falls back to default.mp3');
+
+  // P9/P10: one canonical switch renderer→preload→main→scheduler + dedup.
+  ok(appSrc.includes('adhanEnabled') && appSrc.includes('adhan: adhanEnabled'), 'renderer sends canonical adhanEnabled (+legacy twin)');
+  ok(appSrc.includes('lastPushedCfg'), 'renderer dedups identical config pushes (P9)');
+  ok(appSrc.includes("PT.debug('config push'"), 'every real config push is logged with its trigger (P9)');
+  ok(read('preload.js').includes('adhanEnabled'), 'preload bridge forwards adhanEnabled');
+  ok(mainSrc.includes('cfg.adhanEnabled !== undefined ? cfg.adhanEnabled'), 'main normalizes the azan switch once at the IPC boundary');
+  ok(mainSrc.includes("azlog('azan switch changed'"), 'azan switch changes are logged');
+  ok(mainSrc.includes('adhanEnabled, adhan: adhanEnabled }'), 'scheduler receives the normalized boolean on both keys');
+  const schedSrc = read('main/scheduler.js');
+  ok(schedSrc.includes('cfg.adhanEnabled !== undefined ? cfg.adhanEnabled : cfg.adhan'), 'scheduler reads the canonical switch with legacy fallback');
+
+  // P15: the overlay setting must never silently disable azan AUDIO.
+  ok(!/overlay disabled by setting/.test(mainSrc), 'audio is no longer skipped when the overlay is off (P15 decouple)');
+  ok(mainSrc.includes('opts.visible === false'), 'overlay window supports a hidden (audio-only) mode');
+  ok(mainSrc.includes('azan audio plays without UI'), 'hidden-overlay azan playback is logged');
 
   finish();
 }

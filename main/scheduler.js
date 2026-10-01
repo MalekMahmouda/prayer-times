@@ -292,7 +292,11 @@ function createScheduler() {
           bus.emit('prayer-time', { prayer, time: hhmm(at), lang: cfg.lang || 'en', dayKey });
           dlog('Notification: sent');
         }
-        const adhanOn = cfg.adhan && !(cfg.adhanPerPrayer && cfg.adhanPerPrayer[prayer] === false);
+        // v1.3.2 P10: adhanEnabled is THE authoritative azan switch; legacy
+        // `adhan` is accepted only when the canonical name is absent.
+        const azanFlag = cfg.adhanEnabled !== undefined ? cfg.adhanEnabled : cfg.adhan;
+        const adhanOn = (azanFlag === true || azanFlag === 'true')
+          && !(cfg.adhanPerPrayer && cfg.adhanPerPrayer[prayer] === false);
         if (adhanOn) {
           const vol = resolveVolume(prayer);
           dlog(`Adhan: triggered (volume ${Math.round(vol * 100)}%)`);

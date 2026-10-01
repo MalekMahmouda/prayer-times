@@ -46,6 +46,9 @@ contextBridge.exposeInMainWorld('ptDesktop', {
         notif: !!c.notif,
         beep: !!c.beep,
         adhan: !!c.adhan,
+        // v1.3.2 P10: adhanEnabled is the ONE authoritative azan switch.
+        // Legacy `adhan` is honored only when adhanEnabled is absent.
+        adhanEnabled: !!(c.adhanEnabled != null ? c.adhanEnabled : c.adhan),
         adhanPerPrayer: c.adhanPerPrayer && typeof c.adhanPerPrayer === 'object' ? c.adhanPerPrayer : {},
         adhanType: typeof c.adhanType === 'string' ? c.adhanType : 'alafasy',
         adhanVol: parseVol(c.adhanVol, 1),
@@ -61,6 +64,8 @@ contextBridge.exposeInMainWorld('ptDesktop', {
   setCloseToTray: (v) => ipcRenderer.send('pt:set-close-to-tray', !!v),
   setStartWithWindows: (v) => ipcRenderer.send('pt:set-start-with-windows', !!v),
   setOverlayEnabled: (v) => ipcRenderer.send('pt:set-overlay-enabled', !!v),
+  /** One-way renderer diagnostics → main → azan-debug.log (v1.3.2 P9). */
+  debug: (msg, data) => { try { ipcRenderer.send('pt:debug', String(msg == null ? '' : msg).slice(0, 300), data == null ? null : data); } catch (e) { /* never break the renderer */ } },
   setTheme: (id, isDark) => {
     try { if (typeof id === 'string' && id.length < 40) ipcRenderer.send('pt:set-theme', { id, isDark }); } catch (e) {}
   },
