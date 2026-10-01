@@ -139,6 +139,14 @@ window.exportMonthCsv = async function exportMonthCsv() {
 const qrAudio = new Audio();
 qrAudio.preload = 'none';
 let qrIdx = -1, qrPlaying = false, qrFallbackTried = false;
+// Output-device changes (HDMI sleep, Bluetooth unplug) can strand a Chromium
+// stream on a dead endpoint — rebind to the live system default when the
+// device list changes (same silent-output cure as the adhan overlay).
+try {
+  if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
+    navigator.mediaDevices.addEventListener('devicechange', () => { try { qrAudio.setSinkId(''); } catch (e) { /* ignore */ } });
+  }
+} catch (e) { /* optional */ }
 
 function qrUrl(n, reciterId) {
   const r = RECITERS.find((x) => x.id === reciterId) || RECITERS[0];
@@ -176,6 +184,10 @@ function qrLoadAndPlay(idx) {
   $('plNum').textContent = s.n;
   $('plAr').textContent = s.ar;
   $('plEn').textContent = `${s.en} · ${RECITERS.find((r) => r.id === S.cfg.reciter)?.en || RECITERS[0].en}`;
+  // Bind to the LIVE system default output — Chromium can latch onto a dead
+  // endpoint (errored HDMI / unplugged Bluetooth) and "play" silently while
+  // other apps use a working device.
+  try { qrAudio.setSinkId('').catch(() => {}); } catch (e) { /* older Chromium */ }
   qrAudio.src = qrUrl(s.n, S.cfg.reciter);
   qrAudio.load();
   // Autoplay policy may reject the first play(); the play/pause button state

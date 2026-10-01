@@ -68,10 +68,35 @@ audio.addEventListener('stalled', () => dbg('audio stalled', mediaState()));
 audio.addEventListener('waiting', () => dbg('audio waiting (buffering)', mediaState()));
 audio.addEventListener('pause', () => dbg('audio paused', mediaState()));
 audio.addEventListener('ended', () => dbg('audio ended'));
-// Output device enumeration changes (Bluetooth connect/disconnect etc.).
+// Output-device health (v1.3.2): Chromium can latch a media stream onto a
+// DEAD default endpoint (errored/asleep HDMI "Intel Display Audio", unplugged
+// Bluetooth) — the stream then "plays" with currentTime advancing into a
+// device with no speakers, while VLC/system sounds use a live device. Cure:
+// log the actual endpoints, bind explicitly to the live system default
+// (setSinkId('')), and re-bind whenever the device list changes.
+let lastDeviceSignature = '';
+function outputDeviceSignature() {
+  return navigator.mediaDevices && navigator.mediaDevices.enumerateDevices
+    ? navigator.mediaDevices.enumerateDevices().then((ds) => {
+      const outs = ds.filter((d) => d.kind === 'audiooutput');
+      return JSON.stringify(outs.map((d) => `${d.deviceId.slice(0, 8)}|${d.label}`));
+    }).catch(() => 'enumeration-failed')
+    : Promise.resolve('no-enumerateDevices');
+}
+async function auditOutputDevices(why) {
+  try {
+    const sig = await outputDeviceSignature();
+    dbg('output devices', { why, count: sig === 'no-enumerateDevices' ? -1 : (sig.match(/\|/g) || []).length, devices: sig, activeSink: String(audio.sinkId || 'default') });
+    if (lastDeviceSignature && sig !== lastDeviceSignature) {
+      dbg('output device list CHANGED — rebinding sink to system default');
+      try { await audio.setSinkId(''); dbg('sink rebound to system default', { sinkId: String(audio.sinkId || 'default') }); } catch (e) { dbg('setSinkId failed', { detail: describeMediaError(e) }); }
+    }
+    lastDeviceSignature = sig;
+  } catch (e) { dbg('output audit failed', { detail: String(e && e.message || e) }); }
+}
 try {
   if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
-    navigator.mediaDevices.addEventListener('devicechange', () => dbg('audio output device list changed'));
+    navigator.mediaDevices.addEventListener('devicechange', () => auditOutputDevices('devicechange'));
   }
 } catch (e) { /* optional diagnostic only */ }
 
@@ -112,6 +137,9 @@ function show(payload) {
   volSlider.value = String(audio.volume);
 
   // Source was resolved by the main process (bundled local file first).
+  // Bind to the LIVE system default output (never a stale/errored endpoint).
+  try { audio.setSinkId('').catch((e) => dbg('setSinkId(default) failed at show', { detail: describeMediaError(e) })); } catch (e) { /* older Chromium */ }
+  auditOutputDevices('show');
   audio.src = p.audioSrc || '';
   dbg('audio.src set', { src: audio.src, volume: audio.volume, prayer });
   try { audio.load(); dbg('audio.load() issued'); } catch (e) { dbg('audio.load() threw', { detail: describeMediaError(e) }); }
