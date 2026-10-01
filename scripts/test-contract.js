@@ -654,6 +654,18 @@ function runArtifactChecks() {
   ok(mainSrc.includes('opts.visible === false'), 'overlay window supports a hidden (audio-only) mode');
   ok(mainSrc.includes('azan audio plays without UI'), 'hidden-overlay azan playback is logged');
 
+  // Boundary trace (v1.3.2): every link of the azan chain must be visible in
+  // azan-debug.log — packaged builds included.
+  ok(mainSrc.includes('createScheduler({ log: azlog })'), 'scheduler decision logs reach azan-debug.log in packaged builds');
+  ok(schedSrc.includes('createScheduler(opts = {})') && schedSrc.includes('scheduler config accepted')
+    && schedSrc.includes('prayer window entered') && schedSrc.includes('adhan event emitted') && schedSrc.includes("'adhan skipped'"),
+    'scheduler logs every boundary: config accepted / schedule / window / emit-or-skip');
+  ok(mainSrc.includes("'overlay page loaded'") && mainSrc.includes("'overlay page load FAILED'"), 'overlay page load outcome is logged');
+  ok(mainSrc.includes("'adhan:show payload sent'") && mainSrc.includes('hidden: !overlayVisible'), 'payload-delivery boundary is logged and carries the hidden flag');
+  const ovSrc = read('js/overlay.js');
+  ok(ovSrc.includes("'adhan:show received'"), 'overlay renderer logs payload receipt');
+  ok(ovSrc.includes('audio canplay') && ovSrc.includes('audio playing') && ovSrc.includes("'audio ended'"), 'decode/output/end boundaries are logged in the overlay');
+
   finish();
 }
 

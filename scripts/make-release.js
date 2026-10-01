@@ -64,7 +64,8 @@ Azan
 - Fixed disabling the Adhan overlay also silencing the azan — the overlay
   toggle now controls visibility only; the adhan audio still plays
 - Verified all six bundled mu'adhdhin recordings end-to-end (file, size,
-  packaging and resolver), with fuller error details in azan-debug.log
+  packaging and resolver), with every azan event now leaving a complete
+  boundary-by-boundary trace in azan-debug.log
 
 Data & Privacy
 --------------

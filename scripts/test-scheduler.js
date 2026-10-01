@@ -50,7 +50,8 @@ function prayerDates(cfg, when) {
 
 function makeApp(cfgOverrides = {}, startAtMs = null) {
   const cfg = { ...BASE_CFG, ...cfgOverrides };
-  const s = createScheduler();
+  const logs = []; // boundary trace capture (v1.3.2)
+  const s = createScheduler({ log: (m, d) => logs.push({ m, d }) });
   const events = [];
   for (const ev of ['pre-alert', 'prayer-time', 'adhan', 'times-updated']) {
     s.bus.on(ev, (p) => events.push({ ev, ...p }));
@@ -63,7 +64,7 @@ function makeApp(cfgOverrides = {}, startAtMs = null) {
   if (!res.ok) throw new Error('config rejected: ' + res.error);
   s.tick();
   return {
-    events, s,
+    events, s, logs,
     set now(ms) { now = ms; },
     get now() { return now; },
     tick() { s.tick(); },
@@ -308,6 +309,27 @@ section('10. v1.3.2 azan switch contract (adhanEnabled, overlay decouple)');
   ok(a1.count('prayer-time', 'Dhuhr') === 1, 'azan OFF keeps prayer-time notification');
   const a2 = tickTo({ adhan: false, adhanEnabled: true }, dhuhr + 5000);
   ok(a2.count('prayer-time', 'Dhuhr') === 1, 'azan ON keeps prayer-time notification');
+
+  // v1.3.2: ONE event, EVERY scheduler boundary logged (the trace a packaged
+  // build must produce; anything missing between these lines = broken link).
+  const trace = a2; // ON case above
+  const marks = trace.logs.map((l) => l.m);
+  ok(trace.logs.some((l) => l.m === 'scheduler config accepted' && l.d.adhanEnabled === true),
+    'trace b4: scheduler config accepted with adhanEnabled=true');
+  ok(trace.logs.some((l) => l.m === 'scheduler schedule computed' && /Dhuhr/.test(l.d.times)),
+    'trace b5: day schedule computed (times include Dhuhr)');
+  ok(trace.logs.some((l) => l.m === 'prayer window entered' && l.d.prayer === 'Dhuhr' && l.d.recovered === false),
+    'trace b6: prayer window entered for Dhuhr');
+  ok(trace.logs.some((l) => l.m === 'adhan event emitted' && l.d.prayer === 'Dhuhr' && l.d.volume === 0.5),
+    'trace b7: adhan event emitted with resolved volume');
+  const skip = off.logs.find((l) => l.m === 'adhan skipped');
+  ok(skip && skip.d.azanOn === false && skip.d.perPrayerMuted === false,
+    'trace b7-alt: OFF logs adhan skipped WITH the reason (azanOn=false)');
+  ok(!off.logs.some((l) => l.m === 'adhan event emitted'), 'trace b7-alt: OFF never emits the event');
+  const mutedTrace = tickTo({ adhan: false, adhanEnabled: true, adhanPerPrayer: { Dhuhr: false } }, dhuhr + 5000);
+  const mutedSkip = mutedTrace.logs.find((l) => l.m === 'adhan skipped');
+  ok(mutedSkip && mutedSkip.d.azanOn === true && mutedSkip.d.perPrayerMuted === true,
+    'trace b7-alt2: per-prayer mute logged as the skip reason');
 }
 
 /* ── Summary ───────────────────────────────────────────────────────────── */

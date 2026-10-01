@@ -46,7 +46,11 @@ function paramsFor(cfg) {
   return Engine.paramsFor(cfg, { CalculationMethod, Madhab });
 }
 
-function createScheduler() {
+function createScheduler(opts = {}) {
+  // Boundary logger (v1.3.2): injected by main.js as azlog so every scheduler
+  // decision lands in azan-debug.log EVEN IN PACKAGED BUILDS (the old dlog
+  // lines are dev-only and invisible in production). Tests inject a capture.
+  const log = typeof opts.log === 'function' ? opts.log : () => {};
   // Events: 'pre-alert', 'prayer-time', 'adhan', 'times-updated'
   const bus = new EventEmitter();
 
@@ -251,6 +255,10 @@ function createScheduler() {
     if (state.lastLoggedSchedule !== dayKey) {
       dlog(`Scheduled (${dayKey} @ ${cfg.lat.toFixed(3)},${cfg.lon.toFixed(3)}):`
         + sched.map((e) => ` ${e.prayer} ${hhmm(e.at)}`).join(','));
+      log('scheduler schedule computed', {
+        dayKey, lat: cfg.lat, lon: cfg.lon, tz: cfg.tz || '',
+        times: sched.map((e) => `${e.prayer} ${hhmm(e.at)}`).join(','),
+      });
       state.lastLoggedSchedule = dayKey;
     }
     const nowD = new Date(now);
@@ -287,7 +295,10 @@ function createScheduler() {
           continue;
         }
         state.firedPrayerKeys.add(adhanKey);
-        dlog(`Prayer: ${prayer} at ${hhmm(at)}${atMs < now - GRACE_MS ? ' (recovered after gap)' : ''}`);
+        const recovered = atMs < now - GRACE_MS;
+        dlog(`Prayer: ${prayer} at ${hhmm(at)}${recovered ? ' (recovered after gap)' : ''}`);
+        // Boundary: the scheduler has decided this prayer is DUE.
+        log('prayer window entered', { prayer, time: hhmm(at), dayKey, recovered });
         if (cfg.notif) {
           bus.emit('prayer-time', { prayer, time: hhmm(at), lang: cfg.lang || 'en', dayKey });
           dlog('Notification: sent');
@@ -295,12 +306,18 @@ function createScheduler() {
         // v1.3.2 P10: adhanEnabled is THE authoritative azan switch; legacy
         // `adhan` is accepted only when the canonical name is absent.
         const azanFlag = cfg.adhanEnabled !== undefined ? cfg.adhanEnabled : cfg.adhan;
-        const adhanOn = (azanFlag === true || azanFlag === 'true')
-          && !(cfg.adhanPerPrayer && cfg.adhanPerPrayer[prayer] === false);
+        const azanOn = azanFlag === true || azanFlag === 'true';
+        const perPrayerMuted = !!(cfg.adhanPerPrayer && cfg.adhanPerPrayer[prayer] === false);
+        const adhanOn = azanOn && !perPrayerMuted;
         if (adhanOn) {
           const vol = resolveVolume(prayer);
           dlog(`Adhan: triggered (volume ${Math.round(vol * 100)}%)`);
+          // Boundary: scheduler → main handoff (main logs 'adhan event' next).
+          log('adhan event emitted', { prayer, time: hhmm(at), volume: vol, dayKey });
           bus.emit('adhan', { prayer, time: hhmm(at), lang: cfg.lang || 'en', volume: vol, dayKey });
+        } else {
+          // Boundary: WHY nothing fired — the #1 "why no azan?" answer.
+          log('adhan skipped', { prayer, time: hhmm(at), azanOn, perPrayerMuted, azanFlag, dayKey });
         }
       }
     }
@@ -323,6 +340,16 @@ function createScheduler() {
       }
       const prev = state.cfg;
       state.cfg = cfg;
+      // Boundary: the EFFECTIVE config the scheduler will actually use.
+      log('scheduler config accepted', {
+        adhanEnabled: cfg.adhanEnabled !== undefined ? cfg.adhanEnabled : cfg.adhan,
+        adhan: cfg.adhan, notif: cfg.notif, notifMin: cfg.notifMin,
+        method: cfg.method, madhab: cfg.madhab, tz: cfg.tz || '',
+        lat: cfg.lat, lon: cfg.lon,
+        perPrayerMuted: cfg.adhanPerPrayer
+          ? Object.keys(cfg.adhanPerPrayer).filter((p) => cfg.adhanPerPrayer[p] === false)
+          : [],
+      });
       // (Re)compute whenever config or the day changed.
       if (!prev || prev.lat !== cfg.lat || prev.lon !== cfg.lon || prev.method !== cfg.method
         || prev.madhab !== cfg.madhab || prev.tz !== cfg.tz

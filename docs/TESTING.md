@@ -70,6 +70,39 @@ test-overlay requests, and system resume/recovery — each with timestamps. It
 self-trims at ~1 MB (older half removed). If a notification or adhan ever
 fails to fire, attach this file to the bug report.
 
+## One real azan event, line by line (v1.3.2)
+A complete, healthy event leaves EXACTLY this trace. When the azan fails,
+the trace simply stops at the failing boundary — find the last line that
+exists and read its meaning:
+
+| Boundary | Expected azan-debug.log line |
+|----------|------------------------------|
+| 1. Settings toggle | `[renderer] adhan toggle → ON/OFF` |
+| 2. Renderer push | `[renderer] config push {"adhanEnabled":true,…,"trigger":…}` |
+| 3. IPC normalization | `config update from renderer {…}` (plus `azan switch changed` when it flips) |
+| 4. Scheduler accepts | `scheduler config accepted {"adhanEnabled":true,…}` |
+| 5. Day schedule | `scheduler schedule computed {"times":"Fajr 04:32,Dhuhr 12:12,…"}` |
+| 6. Prayer due | `prayer window entered {"prayer":"Dhuhr","time":"12:12"…}` |
+| 7. Decision | `adhan event emitted {"prayer":"Dhuhr","volume":0.5…}` — or `adhan skipped {"azanOn":false,"perPrayerMuted":false…}` WITH the reason |
+| 8. Main receives | `adhan event {…,"overlayVisible":true}` |
+| 9. File probe | `audio file OK {"path":"…","bytes":…}` (or `audio file MISSING`) |
+| 10. Overlay window | `overlay window created {"visible":true}` → `overlay shown` (or `overlay hidden — azan audio plays without UI`) |
+| 11. Page + payload | `overlay page loaded` → `adhan:show payload sent` → `[overlay] adhan:show received` |
+| 12. Source set | `[overlay] audio.src set {"src":"file://…","volume":0.5}` → `audio.load() issued` |
+| 13. Decode | `[overlay] audio canplay (file decoded by the OS) {"duration":…}` |
+| 14. play() | `[overlay] audio.play() resolved — adhan audio is playing` (a REJECTED line here names the exact DOMException) |
+| 15. Output | `[overlay] audio playing (output device active)` |
+| 16. End | `[overlay] audio ended` → `overlay dismissed` → `overlay window closed` |
+
+Reading a truncated trace: stops after 7 with `adhan skipped` → the azan
+switch or a per-prayer mute (the reason fields say which); stops after 9
+with `audio file MISSING` → packaging/path problem; stops at 11/12 →
+overlay page failed to load (`overlay page load FAILED` names it); `audio
+error event {"code":4,"detail":"…MEDIA_ERR_SRC_NOT_SUPPORTED…"}` at 12/13 →
+codec/packaging; `play() REJECTED {"detail":"NotAllowedError…"}` at 14 →
+autoplay/output-device class; `play() resolved` but no 15 and no sound →
+output device / Volume Mixer (nothing code-side to fix).
+
 ## Qibla debug readout (v1.3.2)
 The Qibla page shows one small diagnostic line: `Qibla bearing / Device
 heading / Turn / Sensor`. Desktop intentionally shows the geographic bearing

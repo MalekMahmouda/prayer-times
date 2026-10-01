@@ -40,6 +40,12 @@ audio.addEventListener('error', () => {
   dbg('audio error event', { src: audio.src, code: me && me.code, detail: describeMediaError(me) });
 });
 
+// Media boundaries (v1.3.2): each listener marks one link of the playback
+// chain, so a silent failure points at the exact boundary that never logged.
+audio.addEventListener('canplay', () => dbg('audio canplay (file decoded by the OS)', { duration: audio.duration }));
+audio.addEventListener('playing', () => dbg('audio playing (output device active)', { currentTime: audio.currentTime }));
+audio.addEventListener('ended', () => dbg('audio ended'));
+
 function stopAndClose() {    try { audio.pause(); } catch (e) { /* already paused/unavailable — closing the overlay is the user-visible outcome */ }
   if (closeTimer) { clearTimeout(closeTimer); closeTimer = null; }
   if (window.ptOverlay) window.ptOverlay.dismiss();
@@ -49,6 +55,8 @@ function show(payload) {
   const p = payload || {};
   const ar = p.lang === 'ar';
   const prayer = p.prayer || 'Dhuhr';
+  // Boundary: the overlay page actually RECEIVED the adhan payload from main.
+  dbg('adhan:show received', { prayer: p.prayer, hasAudioSrc: !!p.audioSrc, hidden: !!p.hidden, volume: p.volume });
 
   document.getElementById('lbl').textContent = ar ? 'حان وقت الصلاة' : 'It is time for prayer';
   document.getElementById('lbl').dataset.ar = ar ? '1' : '0';
@@ -82,7 +90,7 @@ function show(payload) {
   });
 
   if (closeTimer) clearTimeout(closeTimer);
-  closeTimer = setTimeout(stopAndClose, MAX_DURATION_MS);
+  closeTimer = setTimeout(() => { dbg('max duration reached — force closing'); stopAndClose(); }, MAX_DURATION_MS);
 }
 
 document.getElementById('stopBtn').addEventListener('click', stopAndClose);

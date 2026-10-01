@@ -182,6 +182,7 @@ if (!isPrimary) {
       audioSrc: resolved.src,
       audioKind: resolved.kind,
       volume: clampVolume(volume, 1),
+      hidden: !overlayVisible, // observability: the overlay page logs it back
     }, { visible: overlayVisible });
     azlog(overlayVisible ? 'overlay shown' : 'overlay hidden — azan audio plays without UI', { prayer, time });
   }
@@ -202,6 +203,7 @@ if (!isPrimary) {
     }
     const { screen } = require('electron');
     const { width, height } = screen.getPrimaryDisplay().workArea;
+    azlog('overlay window created', { visible });
     overlay = new BrowserWindow({
       width,
       height,
@@ -221,8 +223,13 @@ if (!isPrimary) {
       },
     });
     overlay.loadFile(path.join(__dirname, '..', 'adhan.html'));
+    // Boundary: the overlay PAGE must actually load before anything can play.
+    overlay.webContents.once('did-finish-load', () => azlog('overlay page loaded'));
+    overlay.webContents.once('did-fail-load', (e, code, desc) => azlog('overlay page load FAILED', { code, desc }));
     overlay.once('ready-to-show', () => {
       if (payload) overlay.webContents.send('adhan:show', payload);
+      // Boundary: the payload left main → the overlay renderer takes over.
+      azlog('adhan:show payload sent', { prayer: payload && payload.prayer, visible });
       if (visible) { overlay.show(); overlay.focus(); }
     });
     overlay.on('closed', () => { azlog('overlay window closed'); overlay = null; });
@@ -452,7 +459,7 @@ if (!isPrimary) {
   app.whenReady().then(() => {
     createWindow();
 
-    scheduler = createScheduler();
+    scheduler = createScheduler({ log: azlog }); // scheduler decisions → azan-debug.log
     trayApi = createTray({
       onOpen: () => showMainWindow(),
       onQuit: () => { quitting = true; app.quit(); },
