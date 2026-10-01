@@ -62,3 +62,46 @@ Method: fresh read-only audit of the whole v1.3.0 surface, then **in-process pro
 
 ## Test totals after v1.3.1
 `scheduler 47/47` (+4), `contract 93/93` (+13), `check-dist` green. Artifacts: desktop 1.3.1, Android versionCode 5 / 1.3.1.
+
+# Bug Audit — v1.3.2 (Qibla + Azan reliability)
+
+Method: diagnose FIRST, then the smallest confirmed fix. Geographic layer
+probed against 6 reference cities BEFORE touching anything; azan pipeline
+traced end-to-end with azan-debug.log; the release was never modified
+mid-diagnosis. Baseline: v1.3.1 + forensic logging (`2eb6267`), 47/47
+scheduler + 101/101 contract, tag `v1.3.2-baseline`.
+
+## Phase A — Qibla: separate geographic bearing from device heading
+
+The ENGINE was verified correct first and deliberately left untouched:
+Riyadh 243.80°, Cairo 136.14°, London 118.99°, New York 58.48°,
+Tokyo 293.02°, Karachi 267.74° (max deviation 0.52° from published
+values). The wrong arrow was a compass/heading-layer defect:
+
+| # | Bug | Evidence | Fix | Test |
+|---|-----|----------|-----|------|
+| Q1 | **Relative alpha trusted as absolute north** — plain `deviceorientation` events were accepted even when the sensor only provided gyro-relative data, so "north" drifted and the arrow pointed wrong | W3C Device Orientation §3.1/§6: alpha is counter-sense to compass heading; only absolute data defines north | Web handler accepts ONLY `webkitCompassHeading` (iOS), `deviceorientationabsolute`, or `deviceorientation` with `absolute === true`; relative-only readings are rejected → honest static mode instead of a wrong arrow | contract §6i2: relative reading rejected; absolute accepted; iOS priority |
+| Q2 | **No screen-rotation compensation** — sensors report the natural-portrait frame; rotating the phone to landscape rotated the Qibla with the screen | W3C Screen Orientation §2.2 (angle = CCW from natural) + Device Orientation §3.1 (device frame stays natural-portrait) | `heading = norm360(raw − screen.orientation.angle)` with legacy `window.orientation` fallback | contract §6i2: 100°→10° at angle 90; portrait→landscape→portrait cycles; legacy fallback |
+| Q3 | **Unsigned turn math + weak validation** — the arrow had no signed direction semantics; NaN/Infinity/absurd sensor values were accepted | v1.3.2 plan P4/P5 | Signed turn `((bearing − heading + 540) % 360) − 180` drives needle + readout; strict validation (non-finite and |v|>1e6 rejected; normalized to 0≤h<360) | contract §6i2: −20→340, 380→20, 360→0, ±180 edge, invalid-value matrix |
+| Q4 | (hardening) **Sensor lifecycle** extended to the new event types; late iOS permission grants after leaving the page wire nothing (epoch guard) | B5 follow-up | One handler per active period, removed with the same type+capture flag; 3 open/close cycles → exactly 3 adds / 3 removes | contract §6i2 lifecycle block |
+
+Debug readout (P8): the Qibla page now shows `Qibla bearing / Device
+heading / Turn / Sensor` — desktop shows the geographic bearing with
+`Sensor: none` and never pretends to have a live compass.
+
+## Phase B — Azan: state pipeline first, then audio
+
+| # | Bug | Evidence | Fix | Test |
+|---|-----|----------|-----|------|
+| A1 | **Azan switch ambiguity** — renderer sent `adhan`, main persisted only type/volume, scheduler gated on `cfg.adhan`; the boot log showed `"adhan":false` while the user believed azan was enabled | azan-debug.log config lines (the #1 clue of the plan) | ONE canonical switch `adhanEnabled` (strict boolean), normalized ONCE at the main IPC boundary, mirrored into the scheduler on both keys + a store mirror; toggle clicks and every real push are logged with their caller | scheduler §10 truth table (canonical wins over conflicting legacy; string forms normalized); contract §10 |
+| A2 | **Repeated identical config pushes within ~4 s** (init + GPS/revGeo + language paths) | azan-debug.log: several `config update` lines in a row | `pushCfg()` fingerprints the payload; identical consecutive pushes are dropped; any real change always flows through | contract §10: dedup + trigger logging |
+| A3 | **Overlay toggle silently disabled azan AUDIO** — audio played only inside `if (store.get('adhanOverlayEnabled'))`; overlay OFF = no adhan at all | main.js `fireAdhanEvent` audit (P15) | Decoupled: overlay VISIBILITY (`opts.visible`) and audio are independent; overlay-off plays the SAME lifecycle through the hidden overlay window; logs `azan audio plays without UI` | scheduler §10 azan-OFF/ON notification matrix; contract §10 decouple checks |
+| A4 | **Audio failures unclassifiable** | P14 plan | Instrumentation retained + extended: renderer push triggers via `pt:debug`, `adhan event {overlayVisible}`, real DOMException names + MEDIA_ERR_* codes from the overlay page | azan-debug.log pipeline (TESTING.md matrices) |
+
+Bundled audio verified (P12): all six MP3s exist, non-trivial size, resolve
+to `file://` paths, are packaged in app.asar (asar-list check) with the
+asar-unpack preference — not just alafasy.
+
+## Test totals after v1.3.2
+`scheduler 53/53` (+6), `contract 155/155` (+54), `check-dist` green.
+Artifacts: desktop Setup-1.3.2.exe, Android versionCode 6 / versionName 1.3.2.

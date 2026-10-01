@@ -63,7 +63,7 @@
     webHandler: null,     // the ONE web handler (added on start, removed on stop)
     watchdog: null,
     lastRender: 0,
-    debug: false,
+    debug: true, // v1.3.2 P8: diagnostic readout ON by default (honest on desktop)
   };
 
   const STALE_MS = 3000;      // no updates for this long → unreliable
@@ -250,6 +250,15 @@
     }
   }
 
+  function setDebug(on) {
+    state.debug = !!on;
+    const { dbg } = els();
+    if (dbg) {
+      dbg.style.display = state.debug ? 'block' : 'none';
+      if (state.debug) dbg.textContent = debugLine();
+    }
+  }
+
   function startWatchdog() {
     if (state.watchdog) clearInterval(state.watchdog);
     state.watchdog = setInterval(() => {
@@ -280,6 +289,7 @@
           startWatchdog();
         }
         render();
+        setDebug(state.debug); // P8 readout follows every visit
       })();
     },
     stop() {
@@ -305,14 +315,7 @@
       }
     },
     // Phase 8: honest debug readout (also drives the contract tests via snapshot).
-    debug(on) {
-      state.debug = !!on;
-      const { dbg } = els();
-      if (dbg) {
-        dbg.style.display = state.debug ? 'block' : 'none';
-        if (state.debug) dbg.textContent = debugLine();
-      }
-    },
+    debug(on) { setDebug(on); },
     // Machine-readable mirror of the debug line, for tests and diagnostics.
     snapshot() {
       const b = norm360(qiblaBearing());

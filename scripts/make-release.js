@@ -45,18 +45,26 @@ Highlights
 
 What's new in ${version}
 ------------------------
-- Fixed "today" following the active location's timezone on every platform —
-  dashboard, calendar and scheduler day boundaries no longer shift when the
-  device lives in a different timezone than the prayer location
-- Fixed per-prayer minute adjustments being applied twice on the dashboard
-  and mini-home prayer cards (display now formats the engine instant once)
-- Fixed the location-midnight refresh timer (up to 7–30 h off for far
-  timezones) — now exact and DST-safe in the location's timezone
-- Fixed Ramadan fasting/iftar countdown comparing device time against the
-  location's prayer times
-- Fixed a Qibla compass listener leak when visiting the page repeatedly
-- Fixed concurrent reverse-geocode requests for different coordinates
-  interfering with each other
+Qibla
+- Corrected the Qibla arrow: relative sensor data is no longer mistaken for
+  true north (absolute orientation events and iOS compass headings only)
+- Landscape/rotation no longer turns the arrow: heading is compensated by
+  the screen orientation angle (portrait → landscape → portrait stays put)
+- Signed turn semantics with strict sensor-value validation; the compass
+  listener still never accumulates across page visits
+- New diagnostic readout on the Qibla page: Qibla bearing / Device heading /
+  Turn / Sensor — desktop shows the static bearing honestly (no fake compass)
+
+Azan
+- Fixed the Azan setting pipeline: one authoritative adhanEnabled switch is
+  normalized once and persisted, so OFF stays OFF and ON stays ON after
+  restarts (the earlier adhan:false state confusion)
+- Stopped repeated identical configuration pushes (the config-update bursts
+  seen in azan-debug.log); every real push is now logged with its trigger
+- Fixed disabling the Adhan overlay also silencing the azan — the overlay
+  toggle now controls visibility only; the adhan audio still plays
+- Verified all six bundled mu'adhdhin recordings end-to-end (file, size,
+  packaging and resolver), with fuller error details in azan-debug.log
 
 Data & Privacy
 --------------
