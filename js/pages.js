@@ -17,11 +17,13 @@ window.renderQibla = function renderQibla() {
   // with device GPS. The location modal's GPS button is the explicit way to
   // make coordinates current.
   $('qSub').textContent = `${t('qibla.from')} ${S.city || `${S.lat.toFixed(2)}, ${S.lon.toFixed(2)}`}`;
-  $('compassIn').style.transform = `rotate(${b}deg)`;
-  $('kaabaMark').style.transform = `rotate(${-b}deg)`; // keep Kaaba upright
-  // Live heading (Android/web sensors) rotates the dial by the SIGNED turn
-  // relative to the device; desktop keeps the static bearing, honestly
-  // labeled — it never pretends to have a live compass sensor (Phase 8).
+  // Map-rose static render (v1.3.2): north up, Kaaba on the rim at its
+  // bearing. The live compass (if any) takes over the dial from here.
+  $('compassIn').style.transform = 'rotate(0deg)';
+  $('kaabaMark').style.transform = `rotate(${b}deg) translate(78px) rotate(${-b}deg)`;
+  // Live heading (Android/web sensors) rotates the dial by −heading so the
+  // rose matches the world; desktop keeps the static map, honestly labeled —
+  // it never pretends to have a live compass sensor (Phase 8).
   if (window.PTCompass) window.PTCompass.start();
   const d = distToKaaba();
   $('qDist').innerHTML = d != null

@@ -60,6 +60,8 @@
     sensor: null,         // human-readable sensor label for the debug line
     denied: false,        // iOS permission explicitly denied
     webType: null,        // 'deviceorientationabsolute' | 'deviceorientation'
+    fallbackType: null,   // opened after 3s of silence on the primary channel
+    sensorTimer: null,
     webHandler: null,     // the ONE web handler (added on start, removed on stop)
     watchdog: null,
     lastRender: 0,
@@ -171,12 +173,16 @@
     const now = Date.now();
     const { needle, mark, deg, dbg } = els();
     const b = norm360(qiblaBearing());
-    const rel = state.heading == null ? null : signedTurn(b, state.heading);
     if (deg) deg.textContent = `${Math.round(b)}°`;
     if (dbg && state.debug) dbg.textContent = debugLine();
-    if (needle) needle.style.transform = `rotate(${rel != null ? rel : b}deg)`;
-    // Keep the Kaaba glyph upright whatever the dial does.
-    if (mark) mark.style.transform = `rotate(${rel != null ? -rel : -b}deg)`;
+    // MAP-ROSE GEOMETRY (v1.3.2 fix): the dial is a compass rose that must
+    // align with the world, so it rotates by −heading (rose-N lands on true
+    // north on screen). The Kaaba sits ON THE RIM at its geographic bearing
+    // (dial-local), so its screen angle = b − h = the true qibla direction;
+    // the inner rotate(−b) keeps the glyph upright. With no heading (static)
+    // the dial stays a map with north up and the Kaaba at bearing b.
+    if (needle) needle.style.transform = `rotate(${state.heading == null ? 0 : -state.heading}deg)`;
+    if (mark) mark.style.transform = `rotate(${b}deg) translate(78px) rotate(${-b}deg)`;
     if (state.heading == null) {
       renderStatus(state.denied ? 'qibla.denied' : 'qibla.noSensor', state.denied);
     } else {
@@ -217,11 +223,30 @@
     if (acceptHeading(got.heading)) state.sensor = got.sensor;
   }
 
+  // Some Android WebViews expose the absolute event type but never fire it
+  // (no magnetometer stack), leaving the page sensor-less forever. If the
+  // preferred channel is silent for 3s, open the fallback channel too —
+  // validation (absolute flag / webkitCompassHeading) still protects north.
+  function openFallbackChannel() {
+    const other = state.webType === 'deviceorientationabsolute' ? 'deviceorientation' : 'deviceorientationabsolute';
+    if (state.source === 'web' && !state.fallbackType) {
+      try {
+        window.addEventListener(other, state.webHandler, true);
+        state.fallbackType = other;
+      } catch (e) { /* ignore */ }
+    }
+  }
+
   function startWeb(epoch) {
     if (typeof window.DeviceOrientationEvent !== 'function') return false;
     if (state.webType) return true; // already wired this active period
     state.webType = pickWebType();
     if (!state.webHandler) state.webHandler = onWebOrientation; // ONE stable handler
+    if (state.sensorTimer) { clearTimeout(state.sensorTimer); state.sensorTimer = null; }
+    state.sensorTimer = setTimeout(() => {
+      state.sensorTimer = null;
+      if (state.active && state.epoch === epoch && state.heading == null) openFallbackChannel();
+    }, 3000);
     const wire = () => {
       // Permission resolved after the page was left (or restarted) → nothing.
       if (!state.active || epoch !== state.epoch) return;
@@ -301,12 +326,17 @@
       state.sensor = null;
       if (state.watchdog) { clearInterval(state.watchdog); state.watchdog = null; }
       if (state.source === 'web') {
-        // Remove the SAME handler with the SAME capture flag it was added
-        // with — otherwise every Qibla visit stacked another listener.
+        // Remove the SAME handler(s) with the SAME capture flag they were
+        // added with — otherwise every Qibla visit stacked another listener.
+        if (state.sensorTimer) { clearTimeout(state.sensorTimer); state.sensorTimer = null; }
         if (state.webHandler && state.webType) {
           try { window.removeEventListener(state.webType, state.webHandler, true); } catch (e) { /* ignore */ }
         }
+        if (state.webHandler && state.fallbackType) {
+          try { window.removeEventListener(state.fallbackType, state.webHandler, true); } catch (e) { /* ignore */ }
+        }
         state.webType = null;
+        state.fallbackType = null;
         state.source = null;
       }
       if (state.source === 'native' && window.ptCompass && typeof window.ptCompass.stop === 'function') {
