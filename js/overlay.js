@@ -40,13 +40,38 @@ audio.addEventListener('error', () => {
   dbg('audio error event', { src: audio.src, code: me && me.code, detail: describeMediaError(me) });
 });
 
+// Media state dump (v1.3.2): "play() resolved" means Chromium ACCEPTED the
+// request — this dump proves whether the element is actually rendering audio
+// (paused/muted/readyState/error), separating an output-device problem from
+// a media-element problem.
+function mediaState() {
+  return {
+    paused: audio.paused,
+    muted: audio.muted,
+    volume: audio.volume,
+    readyState: audio.readyState,
+    networkState: audio.networkState,
+    currentTime: Math.round((audio.currentTime || 0) * 100) / 100,
+    duration: audio.duration,
+    error: audio.error ? describeMediaError(audio.error) : null,
+  };
+}
+
 // Media boundaries (v1.3.2): each listener marks one link of the playback
 // chain, so a silent failure points at the exact boundary that never logged.
 audio.addEventListener('canplay', () => dbg('audio canplay (file decoded by the OS)', { duration: audio.duration }));
-audio.addEventListener('playing', () => dbg('audio playing (output device active)', { currentTime: audio.currentTime }));
+audio.addEventListener('playing', () => dbg('audio playing (output device active)', mediaState()));
+audio.addEventListener('stalled', () => dbg('audio stalled', mediaState()));
+audio.addEventListener('waiting', () => dbg('audio waiting (buffering)', mediaState()));
+audio.addEventListener('pause', () => dbg('audio paused', mediaState()));
 audio.addEventListener('ended', () => dbg('audio ended'));
 
-function stopAndClose() {    try { audio.pause(); } catch (e) { /* already paused/unavailable — closing the overlay is the user-visible outcome */ }
+function stopAndClose(reason) {
+  // Why did playback stop? Distinguishes the natural end, the user, and the
+  // 6-minute force close — a close WITHOUT a prior 'audio ended'/'audio
+  // paused' line means the element stopped on its own (silently).
+  try { dbg('overlay closing', Object.assign({ reason: reason || 'unspecified' }, mediaState())); } catch (e) { /* never block the close */ }
+  try { audio.pause(); } catch (e) { /* already paused/unavailable — closing the overlay is the user-visible outcome */ }
   if (closeTimer) { clearTimeout(closeTimer); closeTimer = null; }
   if (window.ptOverlay) window.ptOverlay.dismiss();
 }
@@ -90,11 +115,11 @@ function show(payload) {
   });
 
   if (closeTimer) clearTimeout(closeTimer);
-  closeTimer = setTimeout(() => { dbg('max duration reached — force closing'); stopAndClose(); }, MAX_DURATION_MS);
+  closeTimer = setTimeout(() => stopAndClose('max duration reached (6 min)'), MAX_DURATION_MS);
 }
 
-document.getElementById('stopBtn').addEventListener('click', stopAndClose);
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') stopAndClose(); });
+document.getElementById('stopBtn').addEventListener('click', () => stopAndClose('user stop button'));
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') stopAndClose('user Escape key'); });
 
 playPauseBtn.addEventListener('click', () => {
   if (playing) { audio.pause(); playing = false; playPauseBtn.textContent = '▶'; dbg('manual pause'); }
@@ -109,7 +134,7 @@ volSlider.addEventListener('input', (e) => {
   if (Number.isFinite(v)) audio.volume = Math.min(1, Math.max(0, v));
 });
 
-audio.addEventListener('ended', stopAndClose);
+audio.addEventListener('ended', () => stopAndClose('audio ended'));
 audio.addEventListener('error', () => {
   if (!audio.src) return;
   errLine.textContent = (document.getElementById('lbl').dataset.ar === '1')

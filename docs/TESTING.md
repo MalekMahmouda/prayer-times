@@ -91,8 +91,8 @@ exists and read its meaning:
 | 12. Source set | `[overlay] audio.src set {"src":"file://…","volume":0.5}` → `audio.load() issued` |
 | 13. Decode | `[overlay] audio canplay (file decoded by the OS) {"duration":…}` |
 | 14. play() | `[overlay] audio.play() resolved — adhan audio is playing` (a REJECTED line here names the exact DOMException) |
-| 15. Output | `[overlay] audio playing (output device active)` |
-| 16. End | `[overlay] audio ended` → `overlay dismissed` → `overlay window closed` |
+| 15. Output | `[overlay] audio playing (output device active) {"paused":false,"muted":false,"volume":1,"readyState":4…}` |
+| 16. End | `[overlay] audio ended` → `[overlay] overlay closing {"reason":"audio ended"}` → `overlay dismissed` → `overlay window closed` |
 
 Reading a truncated trace: stops after 7 with `adhan skipped` → the azan
 switch or a per-prayer mute (the reason fields say which); stops after 9
@@ -100,8 +100,30 @@ with `audio file MISSING` → packaging/path problem; stops at 11/12 →
 overlay page failed to load (`overlay page load FAILED` names it); `audio
 error event {"code":4,"detail":"…MEDIA_ERR_SRC_NOT_SUPPORTED…"}` at 12/13 →
 codec/packaging; `play() REJECTED {"detail":"NotAllowedError…"}` at 14 →
-autoplay/output-device class; `play() resolved` but no 15 and no sound →
-output device / Volume Mixer (nothing code-side to fix).
+autoplay/output-device class.
+
+**Chromium accepted play() but you hear nothing:** 14 succeeded, 15 never
+appeared. The state dumps now settle WHERE it died:
+- `overlay closing {"reason":"audio ended"}` exists but you heard nothing →
+  the media element ran to completion with a **silent output**: Windows
+  Volume Mixer (per-app volume/selected device), muted speakers, Bluetooth
+  routed elsewhere. Nothing code-side to fix.
+- `overlay closing {"reason":"user stop button"/"user Escape key"}` → you
+  (or something focusing the overlay) dismissed it before audio was audible.
+- `overlay closing {"reason":"max duration reached (6 min)"}` with no
+  `audio paused`/`ended` before it → the element stalled silently; compare
+  its `readyState`/`networkState` and any `audio stalled`/`audio waiting`
+  lines.
+- `audio paused {"paused":true,…}` you did not cause → something paused the
+  element (the dump names the state at that moment).
+- `play() resolved` then `overlay closing {"reason":"unspecified"}` almost
+  immediately → an external close (system shutdown/second event path) —
+  include the surrounding seconds of the log in the report.
+
+Also confirm the file itself (all six shipped MP3s are verified MPEG-1
+Layer III with ID3 tags): play `assets\adhans\<file>.mp3` from the install
+directory directly in VLC — if VLC is silent too, the problem is the
+Windows output device, not the app.
 
 ## Qibla debug readout (v1.3.2)
 The Qibla page shows one small diagnostic line: `Qibla bearing / Device
