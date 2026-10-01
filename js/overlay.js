@@ -53,6 +53,7 @@ function mediaState() {
     networkState: audio.networkState,
     currentTime: Math.round((audio.currentTime || 0) * 100) / 100,
     duration: audio.duration,
+    sinkId: String(audio.sinkId || ''),
     error: audio.error ? describeMediaError(audio.error) : null,
   };
 }
@@ -60,11 +61,19 @@ function mediaState() {
 // Media boundaries (v1.3.2): each listener marks one link of the playback
 // chain, so a silent failure points at the exact boundary that never logged.
 audio.addEventListener('canplay', () => dbg('audio canplay (file decoded by the OS)', { duration: audio.duration }));
+audio.addEventListener('loadeddata', () => dbg('audio loadeddata (first frame ready)', mediaState()));
 audio.addEventListener('playing', () => dbg('audio playing (output device active)', mediaState()));
+audio.addEventListener('volumechange', () => dbg('audio volumechange', { volume: audio.volume, muted: audio.muted }));
 audio.addEventListener('stalled', () => dbg('audio stalled', mediaState()));
 audio.addEventListener('waiting', () => dbg('audio waiting (buffering)', mediaState()));
 audio.addEventListener('pause', () => dbg('audio paused', mediaState()));
 audio.addEventListener('ended', () => dbg('audio ended'));
+// Output device enumeration changes (Bluetooth connect/disconnect etc.).
+try {
+  if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
+    navigator.mediaDevices.addEventListener('devicechange', () => dbg('audio output device list changed'));
+  }
+} catch (e) { /* optional diagnostic only */ }
 
 function stopAndClose(reason) {
   // Why did playback stop? Distinguishes the natural end, the user, and the
@@ -95,8 +104,11 @@ function show(payload) {
 
   // Volume: from the payload (Settings → config → main → event → here).
   // Never reset to 100% — initialize the slider with the configured value.
+  // Explicit output contract (v1.3.2): the element MUST be unmuted with a
+  // clamped volume — no inherited state can silently silence playback.
   const v = Math.min(1, Math.max(0, Number(p.volume)));
   audio.volume = Number.isFinite(v) ? v : 1;
+  audio.muted = false;
   volSlider.value = String(audio.volume);
 
   // Source was resolved by the main process (bundled local file first).

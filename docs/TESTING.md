@@ -116,9 +116,18 @@ appeared. The state dumps now settle WHERE it died:
   lines.
 - `audio paused {"paused":true,…}` you did not cause → something paused the
   element (the dump names the state at that moment).
-- `play() resolved` then `overlay closing {"reason":"unspecified"}` almost
-  immediately → an external close (system shutdown/second event path) —
-  include the surrounding seconds of the log in the report.
+
+**CONFIRMED on this machine (2026-10-01, packaged 1.3.2 test instance):**
+the full Electron output chain WORKS — window-level `audioMuted:false` on
+both windows, element state `paused:false muted:false volume:1
+readyState:4`, `webContents audio-state-changed {"muted":false}` (Chromium
+confirmed a live, unmuted audio stream), and `currentTime` advancing.
+Therefore, if the speakers stay silent during a real event, the remaining
+suspect is Windows per-app audio routing — check **Settings → System →
+Sound → Volume mixer** WHILE the azan plays: the Prayer Times app entry
+must not be at 0/muted, and its per-app output device must be the speakers
+(a stale Bluetooth/headphone assignment silences exactly one app while VLC
+and system sounds stay fine — this matches every observation so far).
 
 Also confirm the file itself (all six shipped MP3s are verified MPEG-1
 Layer III with ID3 tags): play `assets\adhans\<file>.mp3` from the install

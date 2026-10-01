@@ -95,6 +95,12 @@ if (!isPrimary) {
 
     win.once('ready-to-show', () => win.show());
 
+    // Same window-level audio audit for the main window (Quran playback path).
+    try { azlog('main window audio config', { audioMuted: win.webContents.isAudioMuted() }); } catch (e) { /* diagnostic only */ }
+    win.webContents.on('audio-state-changed', (e, muted) => {
+      azlog('main webContents audio-state-changed', { muted: !!muted });
+    });
+
     win.on('close', (e) => {
       if (!quitting && closeToTray && trayApi) {
         e.preventDefault();
@@ -220,7 +226,15 @@ if (!isPrimary) {
         contextIsolation: true,
         nodeIntegration: false,
         sandbox: true,
+        // Hidden (audio-only) playback must never be throttled or suspended.
+        backgroundThrottling: false,
       },
+    });
+    // v1.3.2: audit the WINDOW-level audio state Chromium actually applies —
+    // this is the layer above the <audio> element (win.setAudioMuted etc.).
+    try { azlog('overlay audio config', { audioMuted: overlay.webContents.isAudioMuted() }); } catch (e) { /* diagnostic only */ }
+    overlay.webContents.on('audio-state-changed', (e, muted) => {
+      azlog('webContents audio-state-changed', { muted: !!muted });
     });
     overlay.loadFile(path.join(__dirname, '..', 'adhan.html'));
     // Boundary: the overlay PAGE must actually load before anything can play.
