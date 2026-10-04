@@ -57,13 +57,17 @@ const ADHAN_SOUNDS = {
   classic: 'https://cdn.aladhan.com/audio/adhans/a7.mp3',
 };
 
-/* ═══ QURAN RECITERS (cdn.islamic.network, bitrates verified per edition) ═══ */
+/* ═══ QURAN RECITERS (full-surah audio; endpoints verified 2026-10) ═══
+   cdn.islamic.network now serves only alafasy + abdulbasitmurattal on
+   audio-surah (all 192k bitrates and husary/sudais/minshawi → 403). The other
+   three use mp3quran.net full-surah servers; {n} = surah number as-is,
+   {n3} = zero-padded to 3 digits (mp3quran naming: 001.mp3). */
 const RECITERS = [
-  { id: 'ar.alafasy',         en: 'Mishary Alafasy',       ar: 'مشاري العفاسي',       br: 128 },
-  { id: 'ar.abdulbasitmurattal', en: 'Abdul Basit (Murattal)', ar: 'عبد الباسط (مرتل)', br: 192 },
-  { id: 'ar.abdurrahmaansudais', en: 'Abdurrahman As-Sudais', ar: 'عبد الرحمن السديس', br: 192 },
-  { id: 'ar.husary',          en: 'Mahmoud Al-Husary',     ar: 'محمود الحصري',       br: 128 },
-  { id: 'ar.minshawi',        en: 'Mohamed Al-Minshawi',   ar: 'محمد المنشاوي',      br: 128 },
+  { id: 'ar.alafasy',            en: 'Mishary Alafasy',        ar: 'مشاري العفاسي',    url: 'https://cdn.islamic.network/quran/audio-surah/128/ar.alafasy/{n}.mp3' },
+  { id: 'ar.abdulbasitmurattal', en: 'Abdul Basit (Murattal)', ar: 'عبد الباسط (مرتل)', url: 'https://cdn.islamic.network/quran/audio-surah/128/ar.abdulbasitmurattal/{n}.mp3' },
+  { id: 'ar.abdurrahmaansudais', en: 'Abdurrahman As-Sudais',  ar: 'عبد الرحمن السديس', url: 'https://server11.mp3quran.net/sds/{n3}.mp3' },
+  { id: 'ar.husary',             en: 'Mahmoud Al-Husary',      ar: 'محمود الحصري',     url: 'https://server13.mp3quran.net/husr/{n3}.mp3' },
+  { id: 'ar.minshawi',           en: 'Mohamed Al-Minshawi',    ar: 'محمد المنشاوي',    url: 'https://server10.mp3quran.net/minsh/{n3}.mp3' },
 ];
 
 /* ═══ PRAYER CONSTANTS ═══ */
@@ -90,7 +94,7 @@ const T = {
     offline: 'Offline', cached: 'Using cached times', detecting: 'Detecting…',
     setDate: 'Date', failedLoad: 'Failed to load. Check connection.',
     cal: { title: 'Monthly Calendar', prev: 'Previous month', nextM: 'Next month', todayBtn: 'Today', selectDay: 'Select a day to see prayer times', noTimes: 'Times unavailable for this date', exportCsv: 'Export month (CSV)' },
-    qibla: { title: 'Qibla Direction', from: 'from', distance: 'Distance to Kaaba', km: 'km', yourCoords: 'Your coordinates', kaabaCoords: 'Kaaba coordinates', how: 'How to use', howText: 'Face the direction shown by the bearing. The dial rotates the Kaaba marker to the qibla angle from North.', live: 'Live compass — turn until the 🕋 marker points forward', calibrate: 'Compass unreliable — move the phone in a ∞ figure to calibrate', noSensor: 'No compass data yet — showing static bearing', static: 'Static bearing — this device has no compass' },
+    qibla: { title: 'Qibla Direction', from: 'from', distance: 'Distance to Kaaba', km: 'km', yourCoords: 'Your coordinates', kaabaCoords: 'Kaaba coordinates', how: 'How to use', howText: 'Face the direction shown by the bearing. The dial rotates the Kaaba marker to the qibla angle from North.', live: 'Live compass — turn until the 🕋 marker points forward', calibrate: 'Compass unreliable — move the phone in a ∞ figure to calibrate', noSensor: 'No compass data yet — showing static bearing', static: 'Static bearing — this device has no compass', denied: 'Compass permission denied — showing static bearing', turn: 'Turn' },
     quran: { search: 'Search surah by name or number…', meccan: 'Meccan', medinan: 'Medinan', verses: 'verses', noResults: 'No surahs found.', reciter: 'Reciter', loading: 'Could not load audio. Check connection.' },
     names: { search: 'Search by name or meaning…', day: 'Name of the Day', all: 'All 99 Names', dhikr: 'Dhikr', noResults: 'No names found.', source: 'Asma Allah al-Husna' },
     dhikr: { title: 'Dhikr Counter', target: 'Target', custom: 'Custom', reset: 'Reset', daily: 'Today', total: 'All time', tapHint: 'Tap the counter or press Space', done: 'Target reached — Alhamdulillah!' },
@@ -103,7 +107,7 @@ const T = {
       notif: 'Prayer Alerts', notifS: 'Notify before each prayer', minutesBefore: 'Minutes before', beep: 'Pre-prayer beep', adhanSound: 'Play adhan at prayer time',
       adjust: 'Time Adjustments (min)', dataNote: 'All data is stored locally on this device. No account, no analytics.',
     },
-    toast: { locSet: 'Location updated!', locFail: 'City not found. Try again.', noCity: 'Please enter a city', gpsDenied: 'Location denied. Set manually.', gpsNo: 'Geolocation not supported', switchedEn: 'Switched to English 🌙', switchedAr: 'تم التبديل للعربية 🌙', testIn3: 'Test notification in 3s…', deskOnly: 'Desktop mode only', beep: '🔊', adhanPlay: 'Playing adhan preview…' },
+    toast: { locSet: 'Location updated!', locFail: 'City not found. Try again.', noCity: 'Please enter a city', gpsDenied: 'Location denied. Set manually.', gpsNo: 'Geolocation not supported', switchedEn: 'Switched to English 🌙', switchedAr: 'تم التبديل للعربية 🌙', testIn3: 'Test notification in 3s…', deskOnly: 'Desktop mode only', adhanPlay: 'Playing adhan preview…', adhanOverlay: 'Playing adhan — fullscreen overlay', adhanFail: 'Could not play the adhan preview' },
     dh: { subhan: 'SubhanAllah', subhanAr: 'سُبْحَانَ اللَّه', alhamd: 'Alhamdulillah', alhamdAr: 'الْحَمْدُ لِلَّه', akbar: 'Allahu Akbar', akbarAr: 'اللَّهُ أَكْبَر', tahlil: 'La ilaha illa Allah', tahlilAr: 'لَا إِلَٰهَ إِلَّا اللَّه', istighfar: 'Astaghfirullah', istighfarAr: 'أَسْتَغْفِرُ اللَّه', salawat: 'Salawat', salawatAr: 'صَلَّى اللَّهُ عَلَيْهِ وَسَلَّمَ' },
   },
   ar: {
@@ -120,7 +124,7 @@ const T = {
     offline: 'غير متصل', cached: 'أوقات مخزنة مؤقتاً', detecting: 'جاري التحديد…',
     setDate: 'التاريخ', failedLoad: 'فشل التحميل. تحقق من الاتصال.',
     cal: { title: 'التقويم الشهري', prev: 'الشهر السابق', nextM: 'الشهر التالي', todayBtn: 'اليوم', selectDay: 'اختر يوماً لعرض أوقات الصلاة', noTimes: 'الأوقات غير متاحة لهذا التاريخ', exportCsv: 'تصدير الشهر (CSV)' },
-    qibla: { title: 'اتجاه القبلة', from: 'من', distance: 'المسافة إلى الكعبة', km: 'كم', yourCoords: 'إحداثياتك', kaabaCoords: 'إحداثيات الكعبة', how: 'كيفية الاستخدام', howText: 'اتجه نحو الدرجة المعروضة. تدور البوصلة لتشير علامة الكعبة إلى زاوية القبلة من الشمال.', live: 'بوصلة حية — أدر الهاتف حتى يشير مؤشر 🕋 إلى الأمام', calibrate: 'البوصلة غير مستقرة — حرّك الهاتف على شكل ∞ للمعايرة', noSensor: 'لا توجد بيانات بوصلة بعد — يتم عرض الاتجاه الثابت', static: 'اتجاه ثابت — هذا الجهاز لا يحتوي بوصلة' },
+    qibla: { title: 'اتجاه القبلة', from: 'من', distance: 'المسافة إلى الكعبة', km: 'كم', yourCoords: 'إحداثياتك', kaabaCoords: 'إحداثيات الكعبة', how: 'كيفية الاستخدام', howText: 'اتجه نحو الدرجة المعروضة. تدور البوصلة لتشير علامة الكعبة إلى زاوية القبلة من الشمال.', live: 'بوصلة حية — أدر الهاتف حتى يشير مؤشر 🕋 إلى الأمام', calibrate: 'البوصلة غير مستقرة — حرّك الهاتف على شكل ∞ للمعايرة', noSensor: 'لا توجد بيانات بوصلة بعد — يتم عرض الاتجاه الثابت', static: 'اتجاه ثابت — هذا الجهاز لا يحتوي بوصلة', denied: 'تم رفض إذن البوصلة — يتم عرض الاتجاه الثابت', turn: 'أدر حتى' },
     quran: { search: 'ابحث عن سورة بالاسم أو الرقم…', meccan: 'مكية', medinan: 'مدنية', verses: 'آية', noResults: 'لا توجد نتائج.', reciter: 'القارئ', loading: 'تعذر تحميل الصوت. تحقق من الاتصال.' },
     names: { search: 'ابحث عن الاسم أو المعنى…', day: 'اسم اليوم', all: 'أسماء الله الحسنى', dhikr: 'الذكر', noResults: 'لا توجد نتائج.', source: 'أسماء الله الحسنى' },
     dhikr: { title: 'مسبحة إلكترونية', target: 'الهدف', custom: 'مخصص', reset: 'تصفير', daily: 'اليوم', total: 'الإجمالي', tapHint: 'اضغط على العداد أو مفتاح المسافة', done: 'اكتمل الهدف — الحمد لله!' },
@@ -133,7 +137,7 @@ const T = {
       notif: 'تنبيهات الصلاة', notifS: 'إشعار قبل كل صلاة', minutesBefore: 'دقائق قبل', beep: 'تنبيه قبل الصلاة', adhanSound: 'تشغيل الأذان عند وقت الصلاة',
       adjust: 'تعديل الأوقات (د)', dataNote: 'جميع البيانات محفوظة محلياً على هذا الجهاز. لا حسابات ولا تحليلات.',
     },
-    toast: { locSet: 'تم تحديث الموقع!', locFail: 'لم يتم العثور على المدينة. حاول مجدداً.', noCity: 'الرجاء إدخال مدينة', gpsDenied: 'تم رفض الموقع. حدد يدوياً.', gpsNo: 'تحديد الموقع غير مدعوم', switchedEn: 'Switched to English 🌙', switchedAr: 'تم التبديل للعربية 🌙', testIn3: 'تنبيه تجريبي بعد ٣ ثوان…', deskOnly: 'يعمل في وضع سطح المكتب فقط', beep: '🔊', adhanPlay: 'تجربة الأذان…' },
+    toast: { locSet: 'تم تحديث الموقع!', locFail: 'لم يتم العثور على المدينة. حاول مجدداً.', noCity: 'الرجاء إدخال مدينة', gpsDenied: 'تم رفض الموقع. حدد يدوياً.', gpsNo: 'تحديد الموقع غير مدعوم', switchedEn: 'Switched to English 🌙', switchedAr: 'تم التبديل للعربية 🌙', testIn3: 'تنبيه تجريبي بعد ٣ ثوان…', deskOnly: 'يعمل في وضع سطح المكتب فقط', adhanPlay: 'تجربة الأذان…', adhanOverlay: 'تشغيل الأذان — شاشة كاملة', adhanFail: 'تعذر تشغيل معاينة الأذان' },
     dh: { subhan: 'سبحان الله', subhanAr: 'سُبْحَانَ اللَّه', alhamd: 'الحمد لله', alhamdAr: 'الْحَمْدُ لِلَّه', akbar: 'الله أكبر', akbarAr: 'اللَّهُ أَكْبَر', tahlil: 'لا إله إلا الله', tahlilAr: 'لَا إِلَٰهَ إِلَّا اللَّه', istighfar: 'أستغفر الله', istighfarAr: 'أَسْتَغْفِرُ اللَّه', salawat: 'الصلاة على النبي', salawatAr: 'صَلَّى اللَّهُ عَلَيْهِ وَسَلَّمَ' },
   },
 };

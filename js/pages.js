@@ -17,10 +17,13 @@ window.renderQibla = function renderQibla() {
   // with device GPS. The location modal's GPS button is the explicit way to
   // make coordinates current.
   $('qSub').textContent = `${t('qibla.from')} ${S.city || `${S.lat.toFixed(2)}, ${S.lon.toFixed(2)}`}`;
-  $('compassIn').style.transform = `rotate(${b}deg)`;
-  $('kaabaMark').style.transform = `rotate(${-b}deg)`; // keep Kaaba upright
-  // Live heading (Android/web sensors) rotates the dial relative to the
-  // device; desktop keeps the static bearing, honestly labeled.
+  // Map-rose static render (v1.3.2): north up, Kaaba on the rim at its
+  // bearing. The live compass (if any) takes over the dial from here.
+  $('compassIn').style.transform = 'rotate(0deg)';
+  $('kaabaMark').style.transform = `rotate(${b}deg) translate(78px) rotate(${-b}deg)`;
+  // Live heading (Android/web sensors) rotates the dial by −heading so the
+  // rose matches the world; desktop keeps the static map, honestly labeled —
+  // it never pretends to have a live compass sensor (Phase 8).
   if (window.PTCompass) window.PTCompass.start();
   const d = distToKaaba();
   $('qDist').innerHTML = d != null
@@ -136,10 +139,19 @@ window.exportMonthCsv = async function exportMonthCsv() {
 const qrAudio = new Audio();
 qrAudio.preload = 'none';
 let qrIdx = -1, qrPlaying = false, qrFallbackTried = false;
+// Output-device changes (HDMI sleep, Bluetooth unplug) can strand a Chromium
+// stream on a dead endpoint — rebind to the live system default when the
+// device list changes (same silent-output cure as the adhan overlay).
+try {
+  if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
+    navigator.mediaDevices.addEventListener('devicechange', () => { try { qrAudio.setSinkId(''); } catch (e) { /* ignore */ } });
+  }
+} catch (e) { /* optional */ }
 
 function qrUrl(n, reciterId) {
   const r = RECITERS.find((x) => x.id === reciterId) || RECITERS[0];
-  return `https://cdn.islamic.network/quran/audio-surah/${r.br}/${r.id}/${n}.mp3`;
+  // Per-reciter URL template ({n} = surah number, {n3} = 3-digit padded).
+  return String(r.url).replace('{n3}', String(n).padStart(3, '0')).replace('{n}', String(n));
 }
 
 window.renderSurahList = function renderSurahList() {
@@ -173,6 +185,10 @@ function qrLoadAndPlay(idx) {
   $('plNum').textContent = s.n;
   $('plAr').textContent = s.ar;
   $('plEn').textContent = `${s.en} · ${RECITERS.find((r) => r.id === S.cfg.reciter)?.en || RECITERS[0].en}`;
+  // Bind to the LIVE system default output — Chromium can latch onto a dead
+  // endpoint (errored HDMI / unplugged Bluetooth) and "play" silently while
+  // other apps use a working device.
+  try { qrAudio.setSinkId('').catch(() => {}); } catch (e) { /* older Chromium */ }
   qrAudio.src = qrUrl(s.n, S.cfg.reciter);
   qrAudio.load();
   // Autoplay policy may reject the first play(); the play/pause button state
