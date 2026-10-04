@@ -665,6 +665,27 @@ function runArtifactChecks() {
   const ovSrc = read('js/overlay.js');
   ok(ovSrc.includes("'adhan:show received'"), 'overlay renderer logs payload receipt');
   ok(ovSrc.includes('audio canplay') && ovSrc.includes('audio playing') && ovSrc.includes("'audio ended'"), 'decode/output/end boundaries are logged in the overlay');
+  // v1.3.3: Test Adhan runs the REAL desktop pipeline; CSP hosts are scheme-prefixed.
+  section('11. v1.3.3: test-overlay routing + CSP host schemes');
+  ok(/testAdhan[\s\S]*?PT\.testOverlay\(\)[\s\S]*?return/.test(appSrc),
+    'desktop testAdhan routes through PT.testOverlay() before any CDN path');
+  ok(appSrc.includes("t('toast.adhanOverlay')") && appSrc.includes("t('toast.adhanFail')"),
+    'adhan test/failure toasts use honest i18n keys (adhanOverlay / adhanFail)');
+  ok(!appSrc.includes("showToast('🔇 ' + t('toast.beep'))"),
+    'the cryptic 🔇+beep failure toast is gone');
+  ok(!/beep: '🔊'/.test(read('js/data.js')), 'data.js no longer defines the emoji-only beep toast');
+  const csp = (read('prayer-times.html').match(/Content-Security-Policy[\s\S]*?content="([^"]+)"/) || [])[1] || '';
+  ok(csp.length > 0, 'desktop page defines a CSP');
+  ok(csp.split(/;\s*/).every((d) => d.split(/\s+/).slice(1).every((t) => !t || t === '' || /^(https?:|'self'|'none'|data:|'unsafe-inline')/.test(t))),
+    'every CSP host token is scheme-prefixed or self/data/none (CSP3 file:// safety)');
+  ok(csp.includes('https://*.mp3quran.net') && csp.includes('https://cdn.islamic.network'),
+    'media-src covers both Quran streaming hosts');
+  const recSrc = read('js/data.js');
+  ok(/url: 'https:\/\/cdn\.islamic\.network[^']*\{n\}\.mp3'/.test(recSrc) && /url: 'https:\/\/[^']*mp3quran\.net[^']*\{n3\}\.mp3'/.test(recSrc),
+    'RECITERS carry islamic.network + mp3quran URL templates ({n}/{n3})');
+  ok(read('js/pages.js').includes('padStart(3'), 'qrUrl expands {n3} zero-padded');
+
+
 
   finish();
 }

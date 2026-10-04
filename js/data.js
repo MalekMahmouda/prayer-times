@@ -57,13 +57,17 @@ const ADHAN_SOUNDS = {
   classic: 'https://cdn.aladhan.com/audio/adhans/a7.mp3',
 };
 
-/* ═══ QURAN RECITERS (cdn.islamic.network, bitrates verified per edition) ═══ */
+/* ═══ QURAN RECITERS (full-surah audio; endpoints verified 2026-10) ═══
+   cdn.islamic.network now serves only alafasy + abdulbasitmurattal on
+   audio-surah (all 192k bitrates and husary/sudais/minshawi → 403). The other
+   three use mp3quran.net full-surah servers; {n} = surah number as-is,
+   {n3} = zero-padded to 3 digits (mp3quran naming: 001.mp3). */
 const RECITERS = [
-  { id: 'ar.alafasy',         en: 'Mishary Alafasy',       ar: 'مشاري العفاسي',       br: 128 },
-  { id: 'ar.abdulbasitmurattal', en: 'Abdul Basit (Murattal)', ar: 'عبد الباسط (مرتل)', br: 192 },
-  { id: 'ar.abdurrahmaansudais', en: 'Abdurrahman As-Sudais', ar: 'عبد الرحمن السديس', br: 192 },
-  { id: 'ar.husary',          en: 'Mahmoud Al-Husary',     ar: 'محمود الحصري',       br: 128 },
-  { id: 'ar.minshawi',        en: 'Mohamed Al-Minshawi',   ar: 'محمد المنشاوي',      br: 128 },
+  { id: 'ar.alafasy',            en: 'Mishary Alafasy',        ar: 'مشاري العفاسي',    url: 'https://cdn.islamic.network/quran/audio-surah/128/ar.alafasy/{n}.mp3' },
+  { id: 'ar.abdulbasitmurattal', en: 'Abdul Basit (Murattal)', ar: 'عبد الباسط (مرتل)', url: 'https://cdn.islamic.network/quran/audio-surah/128/ar.abdulbasitmurattal/{n}.mp3' },
+  { id: 'ar.abdurrahmaansudais', en: 'Abdurrahman As-Sudais',  ar: 'عبد الرحمن السديس', url: 'https://server11.mp3quran.net/sds/{n3}.mp3' },
+  { id: 'ar.husary',             en: 'Mahmoud Al-Husary',      ar: 'محمود الحصري',     url: 'https://server13.mp3quran.net/husr/{n3}.mp3' },
+  { id: 'ar.minshawi',           en: 'Mohamed Al-Minshawi',    ar: 'محمد المنشاوي',    url: 'https://server10.mp3quran.net/minsh/{n3}.mp3' },
 ];
 
 /* ═══ PRAYER CONSTANTS ═══ */
@@ -103,7 +107,7 @@ const T = {
       notif: 'Prayer Alerts', notifS: 'Notify before each prayer', minutesBefore: 'Minutes before', beep: 'Pre-prayer beep', adhanSound: 'Play adhan at prayer time',
       adjust: 'Time Adjustments (min)', dataNote: 'All data is stored locally on this device. No account, no analytics.',
     },
-    toast: { locSet: 'Location updated!', locFail: 'City not found. Try again.', noCity: 'Please enter a city', gpsDenied: 'Location denied. Set manually.', gpsNo: 'Geolocation not supported', switchedEn: 'Switched to English 🌙', switchedAr: 'تم التبديل للعربية 🌙', testIn3: 'Test notification in 3s…', deskOnly: 'Desktop mode only', beep: '🔊', adhanPlay: 'Playing adhan preview…' },
+    toast: { locSet: 'Location updated!', locFail: 'City not found. Try again.', noCity: 'Please enter a city', gpsDenied: 'Location denied. Set manually.', gpsNo: 'Geolocation not supported', switchedEn: 'Switched to English 🌙', switchedAr: 'تم التبديل للعربية 🌙', testIn3: 'Test notification in 3s…', deskOnly: 'Desktop mode only', adhanPlay: 'Playing adhan preview…', adhanOverlay: 'Playing adhan — fullscreen overlay', adhanFail: 'Could not play the adhan preview' },
     dh: { subhan: 'SubhanAllah', subhanAr: 'سُبْحَانَ اللَّه', alhamd: 'Alhamdulillah', alhamdAr: 'الْحَمْدُ لِلَّه', akbar: 'Allahu Akbar', akbarAr: 'اللَّهُ أَكْبَر', tahlil: 'La ilaha illa Allah', tahlilAr: 'لَا إِلَٰهَ إِلَّا اللَّه', istighfar: 'Astaghfirullah', istighfarAr: 'أَسْتَغْفِرُ اللَّه', salawat: 'Salawat', salawatAr: 'صَلَّى اللَّهُ عَلَيْهِ وَسَلَّمَ' },
   },
   ar: {
@@ -133,7 +137,7 @@ const T = {
       notif: 'تنبيهات الصلاة', notifS: 'إشعار قبل كل صلاة', minutesBefore: 'دقائق قبل', beep: 'تنبيه قبل الصلاة', adhanSound: 'تشغيل الأذان عند وقت الصلاة',
       adjust: 'تعديل الأوقات (د)', dataNote: 'جميع البيانات محفوظة محلياً على هذا الجهاز. لا حسابات ولا تحليلات.',
     },
-    toast: { locSet: 'تم تحديث الموقع!', locFail: 'لم يتم العثور على المدينة. حاول مجدداً.', noCity: 'الرجاء إدخال مدينة', gpsDenied: 'تم رفض الموقع. حدد يدوياً.', gpsNo: 'تحديد الموقع غير مدعوم', switchedEn: 'Switched to English 🌙', switchedAr: 'تم التبديل للعربية 🌙', testIn3: 'تنبيه تجريبي بعد ٣ ثوان…', deskOnly: 'يعمل في وضع سطح المكتب فقط', beep: '🔊', adhanPlay: 'تجربة الأذان…' },
+    toast: { locSet: 'تم تحديث الموقع!', locFail: 'لم يتم العثور على المدينة. حاول مجدداً.', noCity: 'الرجاء إدخال مدينة', gpsDenied: 'تم رفض الموقع. حدد يدوياً.', gpsNo: 'تحديد الموقع غير مدعوم', switchedEn: 'Switched to English 🌙', switchedAr: 'تم التبديل للعربية 🌙', testIn3: 'تنبيه تجريبي بعد ٣ ثوان…', deskOnly: 'يعمل في وضع سطح المكتب فقط', adhanPlay: 'تجربة الأذان…', adhanOverlay: 'تشغيل الأذان — شاشة كاملة', adhanFail: 'تعذر تشغيل معاينة الأذان' },
     dh: { subhan: 'سبحان الله', subhanAr: 'سُبْحَانَ اللَّه', alhamd: 'الحمد لله', alhamdAr: 'الْحَمْدُ لِلَّه', akbar: 'الله أكبر', akbarAr: 'اللَّهُ أَكْبَر', tahlil: 'لا إله إلا الله', tahlilAr: 'لَا إِلَٰهَ إِلَّا اللَّه', istighfar: 'أستغفر الله', istighfarAr: 'أَسْتَغْفِرُ اللَّه', salawat: 'الصلاة على النبي', salawatAr: 'صَلَّى اللَّهُ عَلَيْهِ وَسَلَّمَ' },
   },
 };

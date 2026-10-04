@@ -150,7 +150,8 @@ try {
 
 function qrUrl(n, reciterId) {
   const r = RECITERS.find((x) => x.id === reciterId) || RECITERS[0];
-  return `https://cdn.islamic.network/quran/audio-surah/${r.br}/${r.id}/${n}.mp3`;
+  // Per-reciter URL template ({n} = surah number, {n3} = 3-digit padded).
+  return String(r.url).replace('{n3}', String(n).padStart(3, '0')).replace('{n}', String(n));
 }
 
 window.renderSurahList = function renderSurahList() {

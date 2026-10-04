@@ -105,3 +105,15 @@ asar-unpack preference — not just alafasy.
 ## Test totals after v1.3.2
 `scheduler 53/53` (+6), `contract 155/155` (+54), `check-dist` green.
 Artifacts: desktop Setup-1.3.2.exe, Android versionCode 6 / versionName 1.3.2.
+
+## v1.3.3 — Test Adhan pipeline, CSP scheme fix, reciter endpoints
+
+| # | Bug | Evidence | Fix | Test |
+|---|-----|----------|-----|------|
+| T1 | **Desktop Test Adhan streamed from the CDN instead of the real pipeline** — the in-app `<audio>` preview failed silently and surfaced the cryptic `🔇 🔊` toast (adhan-fail emoji + the old `toast.beep: '🔊'` string) | user report; playAdhanBrowser() rejects without any CSP/diagnostic signal | `testAdhan()` on desktop routes through `PT.testOverlay()` (bundled recording, configured volume, the actual overlay, azan-debug.log trace); CDN preview kept for web/PWA; honest `toast.adhanFail` / `toast.adhanOverlay` i18n keys (en+ar) | contract §11: desktop branch returns before the CDN path; old `🔊` beep toast string gone |
+| T2 | **CSP host rules without an explicit scheme never matched on file:// pages** (CSP3: schemeless hosts match the document scheme) — blocked the adhan preview, Quran streaming AND Arabic web fonts on desktop; browser/PWA unaffected | CSP3 §host-source matching; everything remote dead only in Electron | all remote hosts in the meta CSP are `https:`-prefixed (fonts, geocoding, media incl. new `*.mp3quran.net`) — matches on both http(s) and file:// | contract §11: every CSP host token in prayer-times.html is scheme-prefixed or self/data |
+| T3 | **Streaming Quran reciters 403** — cdn.islamic.network audio-surah serves only Alafasy + Abdul Basid now | upstream endpoint audit 2026-10 | per-reciter URL templates: islamic.network for the two live editions, mp3quran.net full-surah servers for Sudais/Husary/Minshawi (`{n3}` zero-padded naming) | contract §8 artifact checks extend to the new template fields |
+
+## Test totals after v1.3.3
+`scheduler 60/60`, `contract 170/170` (+15), `check-dist` green.
+Artifacts: desktop Setup-1.3.3.exe, Android versionCode 7 / versionName 1.3.3.

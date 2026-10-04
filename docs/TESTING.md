@@ -145,6 +145,15 @@ problem; `Sensor: permission denied` = iOS/Android permission problem.
 ## Regression commands (must stay green before any release)
 ```bash
 node scripts/test-scheduler.js   # 53/53
-node scripts/test-contract.js    # 155/155
+node scripts/test-contract.js    # 170/170 (v1.3.3: +§11 test-overlay routing + CSP schemes)
 node scripts/check-dist.js       # exit 0 after builds (regenerate tmp/asar-list.txt first)
 ```
+
+## Test Adhan on desktop (v1.3.3)
+Settings → Test Adhan no longer streams from the CDN inside the app window.
+On desktop it triggers the REAL pipeline (`PT.testOverlay()`): bundled
+recording, configured volume, the actual fullscreen overlay, and the full
+azan-debug.log boundary trace — exactly what a prayer-time event does. The
+cryptic `🔇 🔊` toast came from the old CDN `<audio>` preview failing
+(schemeless CSP hosts never matched on `file://`) plus an emoji-only i18n
+string; both are gone. The CDN preview remains the web/PWA path.

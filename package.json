@@ -1,7 +1,7 @@
 {
   "name": "prayertimes",
   "productName": "Prayer Times",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "description": "Islamic desktop companion with prayer times, Quran, Dhikr and Qibla.",
   "main": "main/main.js",
   "author": "Malek",

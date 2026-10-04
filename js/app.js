@@ -888,9 +888,18 @@ function playAdhanBrowser() {
   if (!a.src || !a.src.startsWith('http')) a.src = ADHAN_SOUNDS[S.cfg.adhanType] || ADHAN_SOUNDS.alafasy;
   a.volume = S.cfg.adhanVol != null ? S.cfg.adhanVol : 1;
   a.currentTime = 0;
-  a.play().catch(() => showToast('🔇 ' + t('toast.beep')));
+  a.play().catch(() => showToast('🔇 ' + t('toast.adhanFail')));
 }
 function testAdhan() {
+  // Desktop: run the REAL pipeline (bundled audio file, configured volume, the
+  // actual overlay shown at prayer time — also logged to azan-debug.log), so
+  // the test verifies exactly what will happen at prayer time, offline too.
+  // The CDN <audio> preview is kept only for the browser/PWA build.
+  if (IS_DESKTOP && PT && typeof PT.testOverlay === 'function') {
+    showToast('🕌 ' + t('toast.adhanOverlay'));
+    PT.testOverlay();
+    return;
+  }
   showToast('🔊 ' + t('toast.adhanPlay'));
   playAdhanBrowser();
 }

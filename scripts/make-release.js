@@ -45,27 +45,39 @@ Highlights
 
 What's new in ${version}
 ------------------------
-Qibla
-- Corrected the Qibla arrow: relative sensor data is no longer mistaken for
-  true north (absolute orientation events and iOS compass headings only)
-- Landscape/rotation no longer turns the arrow: heading is compensated by
-  the screen orientation angle (portrait → landscape → portrait stays put)
-- Signed turn semantics with strict sensor-value validation; the compass
-  listener still never accumulates across page visits
-- New diagnostic readout on the Qibla page: Qibla bearing / Device heading /
-  Turn / Sensor — desktop shows the static bearing honestly (no fake compass)
+Azan & audio
+- Test Adhan on Windows now plays through the REAL pipeline — the same
+  bundled recording, configured volume and fullscreen overlay used at
+  prayer time, fully offline. Previously the test streamed from a CDN
+  inside the app window; when that silently failed the app showed the
+  cryptic "🔇 🔊" toast. The CDN preview remains for the web/PWA build.
+- Fixed the renderer Content-Security-Policy: host rules without an
+  explicit scheme never matched on desktop (file://) pages, silently
+  blocking the adhan preview, streaming Quran audio and the Arabic web
+  fonts. Hosts are now scheme-prefixed and match everywhere.
+- Repaired the streaming Quran reciters: cdn.islamic.network now serves
+  only two editions (Alafasy, Abdul Basid); As-Sudais, Al-Husary and
+  Al-Minshawi moved to their mp3quran.net full-surah servers.
 
-Azan
-- Fixed the Azan setting pipeline: one authoritative adhanEnabled switch is
-  normalized once and persisted, so OFF stays OFF and ON stays ON after
-  restarts (the earlier adhan:false state confusion)
-- Stopped repeated identical configuration pushes (the config-update bursts
-  seen in azan-debug.log); every real push is now logged with its trigger
-- Fixed disabling the Adhan overlay also silencing the azan — the overlay
-  toggle now controls visibility only; the adhan audio still plays
-- Verified all six bundled mu'adhdhin recordings end-to-end (file, size,
-  packaging and resolver), with every azan event now leaving a complete
-  boundary-by-boundary trace in azan-debug.log
+Qibla
+- Map-rose rendering: the dial rotates by the device heading, so the
+  Kaaba marker on the rim always sits at the TRUE qibla direction
+  (previously the Kaaba spun decoratively in the dial's center)
+- Compass hardening: if the primary orientation channel stays silent
+  for 3 s the fallback channel opens automatically; both listeners are
+  removed together when the Qibla page closes
+
+Azan reliability
+- One authoritative adhanEnabled switch: OFF stays OFF and ON stays ON
+  after restarts (the earlier adhan:false state confusion)
+- The overlay toggle now controls visibility only — disabling the
+  fullscreen overlay no longer silences the azan audio
+- Every azan event leaves a complete boundary-by-boundary trace in
+  azan-debug.log, and all six bundled mu'adhdhin recordings are
+  verified end-to-end (file, size, packaging, resolver)
+- Audio output hardening: the overlay re-binds to the default output
+  device when it changes mid-playback (setSinkId), and window/element
+  audio state is diagnosable via azan-debug.log
 
 Data & Privacy
 --------------
@@ -76,9 +88,9 @@ export or import a backup at any time.
 
 Notes
 -----
-- The Windows installer is code-signed. On machines that do not yet trust
-  the certificate, Windows SmartScreen may still show a warning on first
-  run; choose "More info" > "Run anyway" if you trust this build.
+- The Windows installer is not code-signed, so Windows SmartScreen may
+  show a warning on first run; choose "More info" > "Run anyway" if you
+  trust this build. SHA-256 checksums ship alongside the installer.
 `;
 
 const CHECKLIST = `# Manual Test Checklist — Prayer Times ${version}

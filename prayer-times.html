@@ -4,7 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' cdn.jsdelivr.net; connect-src 'self' api.aladhan.com nominatim.openstreetmap.org; media-src 'self' cdn.islamic.network cdn.aladhan.com; object-src 'none'">
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' https://cdn.jsdelivr.net; connect-src 'self' https://api.aladhan.com https://nominatim.openstreetmap.org; media-src 'self' https://cdn.islamic.network https://cdn.aladhan.com https://*.mp3quran.net; object-src 'none'">
+<!-- v1.3.3: remote hosts are scheme-prefixed (https:) — schemeless hosts match
+     the document's own scheme per CSP3, so on Electron's file:// page nothing
+     remote ever matched: Test Adhan CDN, Quran audio AND Arabic web fonts were
+     all silently blocked (media-load 'URL safety check'). Explicit https:
+     matches on both http(s) pages and file:// pages. -->
 <title>Prayer Times | أوقات الصلاة</title>
 <link rel="stylesheet" href="styles/app.css">
 <link rel="stylesheet" href="styles/fonts.css">
