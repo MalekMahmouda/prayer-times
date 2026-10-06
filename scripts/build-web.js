@@ -74,7 +74,7 @@ fs.writeFileSync(path.join(DIST, 'manifest.webmanifest'), JSON.stringify({
 
 // ── 5. sw.js — offline app shell (cache key changes every build) ──
 const CACHE = 'pt-cache-' + new Date().toISOString().replace(/\D/g, '').slice(0, 14);
-const SHELL = ['index.html', 'styles/app.css', 'styles/fonts.css', 'styles/web.css', 'js/app.js', 'js/pages.js', 'js/pages3.js', 'js/reader.js', 'js/store3.js', 'js/data.js', 'js/platform.js', 'js/adhan-bundle.js', 'data/quran.json', 'manifest.webmanifest', ...fs.readdirSync(path.join(ROOT, 'fonts')).filter((f) => f.endsWith('.woff2')).map((f) => `fonts/${f}`), ...fs.readdirSync(path.join(ROOT, 'assets')).filter((f) => /^icon-(16|32|48|64|128|256)\.png$/.test(f)).map((f) => `icons/${f}`)];
+const SHELL = ['index.html', 'styles/app.css', 'styles/fonts.css', 'styles/web.css', 'js/app.js', 'js/pages.js', 'js/pages3.js', 'js/reader.js', 'js/store3.js', 'js/data.js', 'js/platform.js', 'js/adhan-bundle.js', 'js/pt-engine.js', 'js/compass.js', 'data/quran.json', 'manifest.webmanifest', ...fs.readdirSync(path.join(ROOT, 'fonts')).filter((f) => f.endsWith('.woff2')).map((f) => `fonts/${f}`), ...fs.readdirSync(path.join(ROOT, 'assets')).filter((f) => /^icon-(16|32|48|64|128|256)\.png$/.test(f)).map((f) => `icons/${f}`)];
 fs.writeFileSync(path.join(DIST, 'sw.js'), `/* Prayer Times service worker — offline app shell (v1) */
 const CACHE = '${CACHE}';
 const SHELL = ${JSON.stringify(SHELL)};

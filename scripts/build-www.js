@@ -47,6 +47,13 @@ for (const f of ['app.js', 'pages.js', 'pages3.js', 'reader.js', 'store3.js', 'd
 // Shared calculation contract — same file the desktop scheduler requires.
 cp(path.join(ROOT, 'shared', 'pt-engine.js'), path.join(WWW, 'js', 'pt-engine.js'));
 cp(path.join(ROOT, 'data', 'quran.json'), path.join(WWW, 'data', 'quran.json'));
+// v1.4.0: bundle the adhan recordings so Android/PWA Test Adhan plays the
+// LOCAL file offline (same recordings the desktop app and the Android
+// notification channels ship).
+fs.mkdirSync(path.join(WWW, 'adhans'), { recursive: true });
+for (const f of fs.readdirSync(path.join(ROOT, 'assets', 'adhans'))) {
+  if (f.endsWith('.mp3')) cp(path.join(ROOT, 'assets', 'adhans', f), path.join(WWW, 'adhans', f));
+}
 for (const icon of fs.readdirSync(path.join(ROOT, 'assets'))) {
   if (icon.startsWith('icon-')) cp(path.join(ROOT, 'assets', icon), path.join(WWW, 'icons', icon));
 }

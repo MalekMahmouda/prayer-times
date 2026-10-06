@@ -117,3 +117,38 @@ Artifacts: desktop Setup-1.3.2.exe, Android versionCode 6 / versionName 1.3.2.
 ## Test totals after v1.3.3
 `scheduler 60/60`, `contract 170/170` (+15), `check-dist` green.
 Artifacts: desktop Setup-1.3.3.exe, Android versionCode 7 / versionName 1.3.3.
+
+## v1.4.0 — REVIEW.docx fix pass (third-party review, 2026-10-05)
+
+Method: every finding re-verified against the code BEFORE fixing (review
+claims were accurate; two were corrected in scope: the Quran “reader” is a
+page, not an overlay, and `changeExactNotificationSetting()` takes no
+arguments). Desktop findings R1–R5 + mobile R6–R12:
+
+| # | Bug | Evidence | Fix | Test |
+|---|-----|----------|-----|------|
+| R1 | **Next prayer never advanced** — tick() refreshed only the countdown; after Fajr the tray/widget/mini still showed Fajr until midnight | probe: stale name + live countdown to Dhuhr | `info.next.ms` exposed; tick() recomputes when `now >= next.ms`; main.js pushes updateTray + broadcastInfo every tick | scheduler: advance + boundary tests |
+| R2 | **Notification time in device tz** — NY device + Riyadh location announced 21:29 for a 04:29 Fajr | probe | event payloads formatted with `fmtInTz(at, cfg.tz)` | scheduler: tz-format test |
+| R3 | **Tray icon click wiped the menu** — a second click handler called rebuild(null) | tray.js:38 | handler deleted; left-click opens only | source check |
+| R4 | **AppUserModelID mismatch** — com.prayertimes.desktop vs appId com.malek.prayertimes (toasts may never show on installed builds) | main.js:45 vs package.json | set to com.malek.prayertimes | source check |
+| R5 | **tz-lookup in sandboxed preload always failed** — window.tzLookup undefined on desktop; GPS/city locations got tz: | preload.js require under sandbox:true | bridge removed; pt:update-config resolves empty tz in MAIN via tz-lookup | source check |
+| R6 | **Qibla marker 90° clockwise** — translate(78px) moved along the rotated x-axis (bearing is measured from north/up) | screenshot: bearing 244/h heading 242, marker at 3 o’clock | `rotate(b) translateY(-78px) rotate(-b)` in compass.js + pages.js | contract §12 geometry |
+| R7 | **Sleep-gap adhan burst** — every prayer missed during sleep fired back-to-back on resume | tick() recovery window covers the whole gap | 15-min recovery cap: ≤15 min late plays (recovered), beyond = notification only, logged `missed-too-long` | scheduler: boundary tests (±1 ms) |
+| R8 | **Settings file corruptible** — direct writeFileSync, crash mid-write = silent reset | json-store.js | write to `.tmp` + rename (atomic) | source check |
+| R9 | **Android adhan settings lied** — controls shown, pushMobile never sent adhan fields, CDN-only Test Adhan | review + code | per-reciter `adhan-<type>` channels with res/raw sounds (scripts/gen-android-raw.js), offline Test Adhan from www/adhans/, honest UI (volume/overlay hidden, notes added) | contract §12 + device matrix |
+| R10 | **Per-prayer mute skipped the whole Android notification** (desktop parity broken) | mobile-scheduler.js:140 continue | mute now only re-routes to the plain channel — the alert always arrives | contract §12 source check + device matrix |
+| R11 | **7-day notification cliff** | DAYS=7, MAX_NOTIFS=80 | DAYS=14, MAX_NOTIFS=150 (< ~500 alarm budget) | source check |
+| R12 | **No way to grant exact alarms** | status line only, no button | Settings button → `changeExactNotificationSetting()` | source check + device |
+
+Also in this pass (smaller findings): `--hidden` autostart flash
+(gated ready-to-show), adhan.html CSP https-prefixed, Android back button
+closes sheets/modals first, compass debug line opt-in
+(`localStorage.ptCompassDebug=1`), coords LTR + N/E labels, top-bar
+truncation, PWA SHELL += pt-engine/compass, `allowBackup=false`, keystore
+guard (assembleRelease fails loudly), @capacitor/* moved to
+devDependencies (installer slimmed), electron pinned 41.1.0, `npm test` +
+GitHub Actions CI, ISC LICENSE + in-app credits, stale README/label fixes.
+
+## Test totals after v1.4.0
+`scheduler 74/74`, `contract 205/205 with dist present (200 on a fresh clone — the §10 packaging checks summarize as one placeholder without dist/)`, `check-dist` green.
+Artifacts: desktop Setup-1.4.0.exe, Android versionCode 8 / versionName 1.4.0.

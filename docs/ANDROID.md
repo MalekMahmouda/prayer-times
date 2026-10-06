@@ -21,8 +21,8 @@ The renderer never calls Electron APIs directly (audited: zero `require('electro
 | Electron | Android |
 |---|---|
 | BrowserWindow + preload | Capacitor WebView + bridge |
-| Main-process scheduler fire loop | `LocalNotifications.schedule` (3-day window, exact alarms `allowWhileIdle`) |
-| Electron Notification | Local notification channel `prayer` (high, heads-up) |
+| Main-process scheduler fire loop | `LocalNotifications.schedule` (14-day window, exact alarms `allowWhileIdle`) |
+| Electron Notification | Channels: `prayer` (default sound) + `adhan-<reciter>` (bundled adhan recording) + silent for muted prayers |
 | Adhan overlay window | Not ported (mobile notifications instead) |
 | Tray / widget / mini mode | Hidden (desktop-only cards removed from Settings) |
 | `setLoginItemSettings` | `RECEIVE_BOOT_COMPLETED` restore receiver (plugin-native) |
@@ -37,10 +37,10 @@ Sun/midnight/last-third: `SunnahTimes` on both platforms.
 
 ## Notifications & alarms
 
-- Channels: `prayer` (high/heads-up, vibration) — created on first schedule.
-- Window: next 3 days, refreshed on config change, app resume, and device timezone change (timezone id is part of the schedule signature).
+- Channels (v1.4.0): `prayer` (high/heads-up, default sound) + one `adhan-<reciter>` channel carrying the chosen BUNDLED recording from `res/raw` (channel sound is immutable, so the reciter is part of the id; stale `adhan-*` channels are deleted on every reschedule). Per-prayer mute sends the prayer-time notification on the plain `prayer` channel — the alert still arrives, silently (desktop parity).
+- Window: next 14 days, refreshed on config change, app resume, and device timezone change (timezone id is part of the schedule signature). Hard-capped at 150 scheduled alarms (~500-alarm OS budget).
 - Boot: `LocalNotificationRestoreReceiver` (plugin manifest) reloads pending alarms after `BOOT_COMPLETED` — no user action needed.
-- Exact alarms: `SCHEDULE_EXACT_ALARM` declared; capability surfaced via `window.ptMobile.exactAlarms`. If revoked (Android 12+), delivery may be batched by the OS; in-app times are unaffected.
+- Exact alarms: `SCHEDULE_EXACT_ALARM` declared; capability surfaced via `window.ptMobile.exactAlarms`. If revoked (Android 12+), delivery may be batched by the OS; in-app times are unaffected. Settings shows an "Enable exact alarms" button that opens the special-access screen (`LocalNotifications.changeExactNotificationSetting()`).
 - Fire-once semantics come free: each notification has a stable id derived from `prayer|date|kind`, so reschedules never duplicate.
 
 ## Location & timezone
@@ -50,7 +50,7 @@ Sun/midnight/last-third: `SunnahTimes` on both platforms.
 
 ## Storage
 
-Same keys and model as desktop (`pts`, `ptl`, `ptt`, `ptlg`, `pt3` with history/dhikrFavs/bookmarks/locations/prefs/customThemes) in WebView localStorage — persistent, backed up by Android's `allowBackup` where the OS allows.
+Same keys and model as desktop (`pts`, `ptl`, `ptt`, `ptlg`, `pt3` with history/dhikrFavs/bookmarks/locations/prefs/customThemes) in WebView localStorage — persistent, LOCAL ONLY: `allowBackup="false"` since v1.4.0 so prayer history/bookmarks are never uploaded to Google (matches the privacy promise).
 
 ## Permissions (complete list + justification)
 
@@ -112,6 +112,6 @@ Outputs land in `android/app/build/outputs/apk/` and are copied to `release-apk/
 ## Play Store notes (future)
 
 - Target SDK must track current Play requirements (built against 36).
-- `allowBackup` + keystore strategy: Play App Signing recommended.
+- Keystore: `keystore/prayertimes.properties` (gitignored) is REQUIRED — `assembleRelease` now fails with a clear GradleException when it is missing instead of silently producing an unsigned APK (v1.4.0). Play App Signing recommended.
 - Consider an AAB (`bundleRelease`) instead of APK for Play distribution.
 - Privacy policy URL required (app is offline-first; only optional network calls are location lookup / Quran audio).

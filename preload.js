@@ -10,7 +10,12 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 // Offline coordinate→IANA-timezone lookup (shared with main process).
 // Injected into the renderer world; tz-lookup is a tiny pure-data package.
-try { contextBridge.exposeInMainWorld('tzLookup', require('tz-lookup')); } catch (e) { /* optional */ }
+// v1.4.0: the window.tzLookup bridge was removed — a sandboxed preload can
+// load only Electron built-ins, so the third-party timezone module ALWAYS
+// failed here and the bridge stayed silently undefined. Timezone resolution
+// now happens main-side in pt:update-config (see main/main.js), which covers
+// GPS and typed-city locations alike. The renderer caches per-coordinate
+// results in localStorage (pttz) and stays source-agnostic.
 
 // Canonical page ids (match gotoPage() in app.js and the tray contract).
 const VALID_PAGES = new Set(['prayers', 'calendar', 'qibla', 'quran', 'names', 'dhikr', 'stats', 'settings']);

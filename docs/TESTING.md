@@ -144,10 +144,48 @@ problem; `Sensor: permission denied` = iOS/Android permission problem.
 
 ## Regression commands (must stay green before any release)
 ```bash
-node scripts/test-scheduler.js   # 53/53
-node scripts/test-contract.js    # 170/170 (v1.3.3: +§11 test-overlay routing + CSP schemes)
+node scripts/test-scheduler.js   # 74/74 (v1.4.0: +tick-advance / tz / recovery-boundary)
+node scripts/test-contract.js    # 205/205 with dist (200 on a fresh clone; §10 packaging checks need dist/)
 node scripts/check-dist.js       # exit 0 after builds (regenerate tmp/asar-list.txt first)
 ```
+The contract prints a different total depending on `dist/` presence: the
+packaging checks run for real when `dist/win-unpacked` exists and are
+summarized as one pending check when it does not (a fresh CI clone).
+
+## v1.4.0 review-fix verification (third-party REVIEW.docx pass)
+
+### Qibla map-rose geometry (BLOCKER — fixed)
+The v1.3.3 marker transform moved along the rotated +x axis, landing the
+Kaaba 90° clockwise (3 o'clock when the phone faced Qibla). Fixed to
+`rotate(b) translateY(-78px) rotate(-b)` in BOTH the live compass
+(compass.js) and the static render (pages.js). **Device check:** face the
+Qibla (status line Turn ≈ 0°) — the Kaaba must sit at the TOP of the ring;
+then rotate the phone 90° — the marker must slide a quarter turn on the rim.
+
+### Android adhan sound matrix (physical device — user-run)
+| # | Config | Expected notification |
+|---|--------|-----------------------|
+| 1 | Azan ON, prayer unmuted | prayer-time notification plays the chosen bundled adhan (channel `adhan-<reciter>`) |
+| 2 | Azan ON, prayer muted | prayer-time notification ARRIVES, silent (plain channel) — never skipped |
+| 3 | Azan OFF | prayer-time notification with the normal default sound |
+| 4 | Pre-alert | always the normal default sound — never the adhan |
+Also verify: fresh install creates only `prayer` + current `adhan-*`; upgrading from v1.3.x deletes stale `adhan-*` channels on the first reschedule; switching the reciter re-routes future notifications to the new channel.
+
+### Scheduler recovery + next-prayer advance (desktop)
+- Sleep 30+ minutes past Fajr with azan ON → notification fires once, NO adhan overlay (recovery cap 15 min; the boundary `now − at ≤ 15 min → plays`, `> 15 min → notification only` is unit-pinned).
+- Let a prayer time pass with the app open: tray, widget and mini mode must show the NEW next prayer within 30 s (no more "Fajr 04:29 in 07:02:13" at noon).
+- New York device + Riyadh location: the prayer notification must say the Riyadh wall-clock time (04:xx), not 21:xx.
+
+### Mobile misc
+- Android hardware Back closes the More sheet / location modal before exiting.
+- Compass debug line hidden by default; `localStorage.ptCompassDebug=1` re-enables it.
+- Coordinates read `24.7555°N, 46.7804°E` left-to-right in the Arabic UI; the top-bar location truncates from the END.
+- PWA: second visit with airplane mode must still load (SHELL now bundles js/pt-engine.js + js/compass.js).
+- Exact alarms: Settings → "Enable exact alarms" opens the Android special-access screen; status line updates after returning.
+
+### Deferred (documented, not fixed)
+- Umm al-Qura Ramadan Isha (~120 min after Maghrib): verify against an OFFICIAL calendar before Ramadan 2027; adhan-js may not encode the Ramadan exception.
+- Quran lock-screen/background playback (needs a foreground service + media session).
 
 ## Test Adhan on desktop (v1.3.3)
 Settings → Test Adhan no longer streams from the CDN inside the app window.

@@ -119,8 +119,13 @@ section('3. Sleep/resume missed-window recovery');
   ok(app.count('prayer-time', 'Fajr') === 1, 'Fajr fires normally');
 
   // "Sleep" for 3 hours: no ticks between Fajr and well past Dhuhr.
+  // v1.4.0 recovery cap: the notification ALWAYS recovers exactly once, but
+  // an adhan 45 min past its time must NOT blast out of the speakers.
   app.now = dhuhr.getTime() + 45 * MIN; app.s.notifyResumed();
-  ok(app.count('prayer-time', 'Dhuhr') === 1 && app.count('adhan', 'Dhuhr') === 1, 'Dhuhr recovered exactly once after 3h sleep gap');
+  ok(app.count('prayer-time', 'Dhuhr') === 1, 'Dhuhr notification recovered exactly once after 3h sleep gap');
+  ok(app.count('adhan', 'Dhuhr') === 0, 'Dhuhr adhan NOT replayed 45 min late (15-min recovery cap)');
+  ok(app.logs.some((l) => l.m === 'adhan skipped' && l.d && l.d.prayer === 'Dhuhr' && l.d.reason === 'missed-too-long'),
+    'the skipped replay is logged with reason=missed-too-long');
   ok(app.count('pre-alert', 'Dhuhr') === 0, 'no spurious Dhuhr pre-alert after the gap');
   ok(app.count('prayer-time', 'Asr') === 0, 'Asr (still in the future) does not fire early');
 
@@ -327,9 +332,68 @@ section('10. v1.3.2 azan switch contract (adhanEnabled, overlay decouple)');
     'trace b7-alt: OFF logs adhan skipped WITH the reason (azanOn=false)');
   ok(!off.logs.some((l) => l.m === 'adhan event emitted'), 'trace b7-alt: OFF never emits the event');
   const mutedTrace = tickTo({ adhan: false, adhanEnabled: true, adhanPerPrayer: { Dhuhr: false } }, dhuhr + 5000);
-  const mutedSkip = mutedTrace.logs.find((l) => l.m === 'adhan skipped');
+  // The jump also makes Fajr's adhan skip (recovery cap); read Dhuhr's skip.
+  const mutedSkip = mutedTrace.logs.find((l) => l.m === 'adhan skipped' && l.d.prayer === 'Dhuhr');
   ok(mutedSkip && mutedSkip.d.azanOn === true && mutedSkip.d.perPrayerMuted === true,
     'trace b7-alt2: per-prayer mute logged as the skip reason');
+}
+
+/* ── 11. v1.4.0: next-prayer advance, tz payloads, recovery cap ────────── */
+section('11. v1.4.0: advance next, location-tz payloads, 15-min recovery cap');
+{
+  const dates = prayerDates(BASE_CFG, NOON);
+  const [fajr, dhuhr] = dates;
+
+  // R1: after Fajr passes, the SAME tick must advance the next-prayer name
+  // (previously tray/widget/mini froze on the passed prayer until midnight).
+  {
+    const app = makeApp();
+    app.now = fajr.getTime() + 5 * 1000; app.tick();
+    const info = app.s.getInfo();
+    ok(info.next.prayer === 'Dhuhr' && info.next.ms === dhuhr.getTime(),
+      `next-prayer advances to Dhuhr within the same tick (got ${info.next.prayer})`);
+    ok(info.next.countdown === app.s.getInfo().next.countdown, 'countdown refreshed for the new next');
+    ok(app.count('times-updated') >= 1, 'times-updated emitted so every surface can refresh');
+    // And it never advances a prayer that has not passed yet.
+    const app2 = makeApp();
+    const before = app2.s.getInfo().next.prayer;
+    app2.now = fajr.getTime() - 60 * 1000; app2.tick();
+    ok(app2.s.getInfo().next.prayer === before, 'next unchanged while the prayer is still ahead');
+  }
+
+  // R2: event payloads are formatted in the LOCATION tz, not the device tz.
+  {
+    const app = makeApp({ ...BASE_CFG, tz: 'Asia/Tokyo' });
+    app.now = fajr.getTime() + 5 * 1000; app.tick();
+    const pt = app.events.find((e) => e.ev === 'prayer-time' && e.prayer === 'Fajr');
+    const want = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Tokyo', hour: '2-digit', minute: '2-digit', hour12: false }).format(fajr);
+    ok(pt && pt.time === want, `prayer-time payload carries Tokyo-local time (got ${pt && pt.time}, want ${want})`);
+    const ad = app.events.find((e) => e.ev === 'adhan' && e.prayer === 'Fajr');
+    ok(ad && ad.time === want, 'adhan payload carries the same location-local time');
+  }
+
+  // R7: recovery cap — a sleep gap of ≤ 15 min still plays the adhan;
+  // beyond it only the notification fires. Boundary is pinned (±1 s).
+  const capAt = (msAfter) => {
+    const app = makeApp();
+    app.now = fajr.getTime() + msAfter; app.tick();
+    return {
+      adhan: app.count('adhan', 'Fajr'),
+      notif: app.count('prayer-time', 'Fajr'),
+      skip: app.logs.find((l) => l.m === 'adhan skipped' && l.d && l.d.reason === 'missed-too-long'),
+    };
+  };
+  {
+    const r = capAt(10 * MIN);
+    ok(r.adhan === 1 && !r.skip, '10 min late (sleep): adhan still fires (recovery)');
+    const exact = capAt(15 * MIN);
+    ok(exact.adhan === 1 && !exact.skip, 'EXACTLY 15 min late: adhan still fires (inclusive boundary)');
+    const beyond = capAt(15 * MIN + 1000);
+    ok(beyond.adhan === 0, '15 min + 1 s late: NO adhan (cap holds)');
+    ok(beyond.notif === 1, 'beyond the cap the prayer-time notification STILL fires');
+    ok(!!beyond.skip, 'beyond the cap the skip is logged with reason=missed-too-long');
+    ok(beyond.skip && beyond.skip.d && beyond.skip.d.azanOn === true, 'the skip log carries azanOn=true (not a settings skip)');
+  }
 }
 
 /* ── Summary ───────────────────────────────────────────────────────────── */

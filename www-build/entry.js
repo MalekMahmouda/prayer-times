@@ -23,6 +23,20 @@ if (Capacitor.isNativePlatform()) {
   // (LocalNotificationRestoreReceiver in the plugin manifest).
   App.addListener('resume', () => { if (window.ptMobile) window.ptMobile.reschedule(); });
 
+  // v1.4.0: hardware Back closes overlays first (More sheet → location
+  // modal → text-input modal), then walks page history; exiting the app is
+  // the LAST resort, never the first effect of a back press.
+  App.addListener('backButton', () => {
+    const closers = [
+      () => { const sh = document.getElementById('mMoreSheet'); if (sh && sh.classList.contains('open')) { sh.classList.remove('open'); return true; } return false; },
+      () => { const m = document.getElementById('locOverlay'); if (m && m.classList.contains('open')) { m.classList.remove('open'); return true; } return false; },
+      () => { const m = document.getElementById('txtModal'); if (m && m.classList.contains('open')) { m.classList.remove('open'); return true; } return false; },
+      () => { if (window.history.length > 1) { window.history.back(); return true; } return false; },
+    ];
+    for (const close of closers) { try { if (close()) return; } catch (e) { /* try next */ } }
+    App.exitApp();
+  });
+
   // Status bar icon style; safe-area CSS keeps content clear of the cutout.
   window.ptStatusBar = function (dark) {
     try { StatusBar.setStyle({ style: dark ? Style.Dark : Style.Light }); } catch (e) { /* ignore */ }

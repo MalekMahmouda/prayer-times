@@ -35,7 +35,10 @@ function createTray({ onOpen, onQuit, onNavigate }) {
 
   rebuild(null);
 
-  tray.on('click', () => { try { rebuild(null); } catch (e) { /* noop */ } });
+  // v1.4.0: the old second click handler called rebuild(null), which WIPED
+  // the prayer times and next-prayer line from the menu until the next
+  // update. Left-click is handled above (onOpen); the context menu rebuilds
+  // only from real info (updateTray).
 
   function rebuild(info) {
     const ctx = Menu.buildFromTemplate(buildTemplate(info, { onOpen, onQuit, onNavigate }));

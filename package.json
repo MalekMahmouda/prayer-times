@@ -1,7 +1,7 @@
 {
   "name": "prayertimes",
   "productName": "Prayer Times",
-  "version": "1.3.3",
+  "version": "1.4.0",
   "description": "Islamic desktop companion with prayer times, Quran, Dhikr and Qibla.",
   "main": "main/main.js",
   "author": "Malek",
@@ -16,8 +16,9 @@
     "package:installer": "electron-builder --win nsis",
     "release": "node scripts/make-release.js",
     "www": "node scripts/build-www.js",
-    "apk": "npm run www && npx cap sync android && cd android && gradlew.bat assembleRelease",
-    "apk:debug": "npm run www && npx cap sync android && cd android && gradlew.bat assembleDebug",
+    "test": "node scripts/test-scheduler.js && node scripts/test-contract.js",
+    "apk": "npm run www && node scripts/gen-android-raw.js && npx cap sync android && node scripts/apk-gradle.js assembleRelease",
+    "apk:debug": "npm run www && node scripts/gen-android-raw.js && npx cap sync android && node scripts/apk-gradle.js assembleDebug",
     "assets:android": "node scripts/gen-android-icons.js && node scripts/gen-android-splash.js",
     "web": "node scripts/build-web.js"
   },
@@ -73,18 +74,18 @@
     }
   },
   "dependencies": {
-    "@capacitor/android": "^8.5.2",
-    "@capacitor/app": "^8.1.1",
-    "@capacitor/core": "^8.5.2",
-    "@capacitor/local-notifications": "^8.3.1",
-    "@capacitor/status-bar": "^8.0.3",
     "adhan": "^4.4.3",
     "tz-lookup": "^6.1.25"
   },
   "devDependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/app": "^8.1.1",
     "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^8.5.2",
-    "electron": "^41.1.0",
+    "@capacitor/core": "^8.5.2",
+    "@capacitor/local-notifications": "^8.3.1",
+    "@capacitor/status-bar": "^8.0.3",
+    "electron": "41.1.0",
     "electron-builder": "^26.0.12",
     "esbuild": "^0.28.2",
     "pngjs": "^7.0.0"

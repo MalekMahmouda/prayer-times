@@ -35,7 +35,11 @@ class JsonStore {
     try {
       const dir = this._dirFn();
       fs.mkdirSync(dir, { recursive: true });
-      fs.writeFileSync(this.file, JSON.stringify(this._data, null, 2), 'utf8');
+      // v1.4.0: write to a temp file then rename — a crash mid-write used to
+      // truncate the real file and silently reset every setting.
+      const tmp = `${this.file}.tmp`;
+      fs.writeFileSync(tmp, JSON.stringify(this._data, null, 2), 'utf8');
+      fs.renameSync(tmp, this.file);
     } catch (e) { /* best-effort persistence */ }
   }
 

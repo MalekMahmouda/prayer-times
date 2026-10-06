@@ -6,26 +6,35 @@
  * Computes prayer times with the SHARED contract (window.PT_ENGINE, the same
  * file the desktop scheduler uses) — so method/madhab/offsets/date-convention
  * are identical on Windows, Android and web — and schedules native local
- * notifications for the coming week:
+ * notifications for the coming two weeks:
  *   - at adhan time:          "Dhuhr — It is time for Dhuhr"
  *   - pre-alert (per prayer): "Dhuhr in 10 minutes"  (per-prayer preMin,
  *     falling back to notifMin — same precedence as the desktop scheduler)
+ *
+ * Sound (v1.4.0): the prayer-time notification plays the CHOSEN ADHAN
+ * RECORDING via its notification channel when the azan switch is on:
+ *   - channel id `adhan-<type>` carries the res/raw sound (channel sound is
+ *     immutable on Android, so the type is part of the id; stale adhan-*
+ *     channels are deleted on every reschedule)
+ *   - per-prayer mute = notification still arrives on a SILENT channel
+ *     (desktop parity: mute silences the sound, never the notification)
+ *   - azan off / pre-alerts → plain `prayer` channel (default sound)
+ * Files land in res/raw via scripts/gen-android-raw.js (npm run apk).
  *
  * Reliability rules:
  *   - IDs are ours only: deterministic hash IDs, tracked in localStorage and
  *     cancelled by ID. We never blind-cancel every app notification, and the
  *     notifications-off path removes our stale alarms too.
- *   - Sound: the high-importance channel + vibration → system default sound.
- *     No reference to any bundled sound file (nothing to 404 on-device).
  *   - Reschedules are debounced and serialized; a config signature dedups
  *     no-op pushes (device timezone participates, so a tz/DST change
  *     reschedules even when the app was open the whole time).
- *   - Horizon: 7 days, hard-capped (MAX_NOTIFS) so the 500-alarm OS budget is
- *     never approached; schedule batches stay well under Android limits.
+ *   - Horizon: 14 days (300 h > any app-open gap a real user has),
+ *     hard-capped at 150 notifications so the ~500-alarm OS budget is never
+ *     approached; schedule batches stay well under Android limits.
  *
- * Exposed as window.ptMobile = { setConfig, reschedule, notifStatus, times } —
- * app.js calls setConfig on every relevant config/location change and on
- * every app resume/focus.
+ * Exposed as window.ptMobile = { setConfig, reschedule, notifStatus,
+ * requestExactAlarms, times } — app.js calls setConfig on every relevant
+ * config/location change and on every app resume/focus.
  */
 
 import { LocalNotifications } from '@capacitor/local-notifications';
@@ -33,11 +42,14 @@ import { LocalNotifications } from '@capacitor/local-notifications';
 const PRAYERS = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
 const PRAYER_AR = { Fajr: 'الفجر', Dhuhr: 'الظهر', Asr: 'العصر', Maghrib: 'المغرب', Isha: 'العشاء' };
 
-const DAYS = 7;                 // schedule horizon (days)
-const MAX_NOTIFS = 80;          // hard cap: 5 prayers × 7 days × 2 + margin
+const DAYS = 14;                // schedule horizon (days) — v1.4.0: no 7-day notification cliff
+const MAX_NOTIFS = 150;         // hard cap: 5 prayers × 14 days × 2 + margin (< ~500-alarm OS budget)
 const BATCH = 40;               // per schedule() call (Android-safe)
 const DEBOUNCE_MS = 500;
 const IDS_KEY = 'ptm-notif-ids'; // persisted list of OUR pending notification IDs
+const CH_PREFIX = 'adhan-';     // channel id prefix: adhan-<type>
+// Raw sound names shipped by scripts/gen-android-raw.js (Android res/raw: lowercase, plain type name).
+const ADHAN_TYPES = ['alafasy', 'nafees', 'dubai', 'zahrani', 'turkey', 'classic'];
 
 const isAndroid = () => {
   try { return typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform(); } catch (e) { return false; }
@@ -125,6 +137,37 @@ async function reschedule(cfg) {
     });
   } catch (e) { /* channel exists */ }
 
+  // v1.4.0: per-reciter adhan channel — the sound lives on the CHANNEL
+  // (immutable on Android), so the reciter id is part of the channel id.
+  // `type` is validated against the raw files we actually ship; unknown →
+  // alafasy (the default.mp3 fallback, mirroring the desktop resolver).
+  let adhanChannel = null;
+  if (cfg.adhanEnabled === true) {
+    const type = ADHAN_TYPES.includes(cfg.adhanType) ? cfg.adhanType : 'alafasy';
+    adhanChannel = CH_PREFIX + type;
+    try {
+      await LocalNotifications.createChannel({
+        id: adhanChannel,
+        name: 'Adhan — ' + type,
+        importance: 5,
+        visibility: 'PUBLIC',
+        vibration: true,
+        sound: type + '.mp3', // → android.resource://<pkg>/raw/<type> (plugin strips the extension); file ships as res/raw/<type>.mp3 via scripts/gen-android-raw.js
+      });
+    } catch (e) { adhanChannel = null; /* fall back to default sound */ }
+    // Upgrade hygiene: delete every OTHER adhan-* channel (old reciter or a
+    // v1.3.x leftover). Channels the user customized are not preserved — the
+    // app owns these ids.
+    try {
+      const chans = await LocalNotifications.listChannels();
+      for (const ch of (chans && chans.channels) || []) {
+        if (String(ch.id).startsWith(CH_PREFIX) && ch.id !== adhanChannel) {
+          await LocalNotifications.deleteChannel({ id: ch.id });
+        }
+      }
+    } catch (e) { /* web / older plugin */ }
+  }
+
   const notifications = [];
   // "Today" in the LOCATION's timezone when known (device-local otherwise).
   const locToday = E.zonedToday(cfg.tz || '', new Date());
@@ -137,16 +180,22 @@ async function reschedule(cfg) {
 
     for (const p of PRAYERS) {
       if (notifications.length >= MAX_NOTIFS) break;
-      if (cfg.adhanPerPrayer && cfg.adhanPerPrayer[p] === false) continue;
       const atMs = instants[p];
       if (atMs <= Date.now()) continue;
 
+      // v1.4.0: per-prayer mute matches desktop semantics — the notification
+      // STILL ARRIVES, on a silent channel; mute never deletes the alert.
+      // (The old code `continue`d, skipping the notification entirely.)
+      const muted = !!(cfg.adhanPerPrayer && cfg.adhanPerPrayer[p] === false);
+      // Adhan sound on the prayer-time notification only when the azan switch
+      // is on AND this prayer is unmuted; otherwise the plain channel.
+      const channelId = adhanChannel && !muted ? adhanChannel : 'prayer';
       notifications.push({
         id: notifId(scheduleKey(p, y, m, d, 'adhan')),
         schedule: { at: new Date(atMs), allowWhileIdle: true },
         title: p + (cfg.lang === 'ar' ? ' — ' + PRAYER_AR[p] : ''),
         body: cfg.lang === 'ar' ? `حان الآن وقت صلاة ${PRAYER_AR[p]}` : `It is time for ${p}`,
-        channelId: 'prayer',
+        channelId,
       });
 
       const pre = parsePreMin((cfg.preMin && cfg.preMin[p] != null) ? cfg.preMin[p] : cfg.notifMin);
@@ -201,7 +250,10 @@ window.ptMobile = {
     try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) { /* ignore */ }
     const sig = JSON.stringify([cfg && cfg.lat, cfg && cfg.lon, cfg && cfg.method, cfg && cfg.madhab,
       cfg && cfg.offsets, cfg && cfg.preMin, cfg && cfg.notifMin, cfg && cfg.adhanPerPrayer,
-      cfg && cfg.notif, cfg && cfg.lang, cfg && cfg.tz, tz]);
+      cfg && cfg.notif, cfg && cfg.lang, cfg && cfg.tz, tz,
+      // v1.4.0: the adhan switch + reciter choose the notification channel,
+      // so they must invalidate the signature like every other sound input.
+      cfg && cfg.adhanEnabled, cfg && cfg.adhanType]);
     if (sig === lastSig) return;
     lastSig = sig;
     requestSchedule(cfg);
@@ -215,7 +267,22 @@ window.ptMobile = {
   async notifStatus() {
     const out = { display: 'unknown', exact: window.ptMobile.exactAlarms || 'unknown' };
     try { out.display = (await LocalNotifications.checkPermissions()).display; } catch (e) { /* web */ }
+    // Re-check after the user returns from the system settings screen.
+    try {
+      const s = await LocalNotifications.checkExactNotificationSetting();
+      window.ptMobile.exactAlarms = s.exact;
+      out.exact = s.exact;
+    } catch (e) { /* keep previous */ }
     return out;
+  },
+  // v1.4.0: one-tap fix for "Exact alarms: off" — deep-links the user to the
+  // Android 12+ special-access screen (on older Android it resolves granted).
+  async requestExactAlarms() {
+    try {
+      const s = await LocalNotifications.changeExactNotificationSetting();
+      window.ptMobile.exactAlarms = s.exact;
+      return s.exact;
+    } catch (e) { return undefined; }
   },
 };
 

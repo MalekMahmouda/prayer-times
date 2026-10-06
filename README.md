@@ -8,7 +8,7 @@ A native Windows desktop & Android Islamic companion built with Electron — pra
 
 📥 **Downloads:** latest [releases](https://github.com/MalekMahmouda/prayer-times/releases) — Windows installer + signed Android APK.
 
-![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Android%20%7C%20Web-blue) ![Electron](https://img.shields.io/badge/Electron-41-47848F) ![Version](https://img.shields.io/badge/version-1.3.0-green)
+![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Android%20%7C%20Web-blue) ![Electron](https://img.shields.io/badge/Electron-41-47848F) ![Version](https://img.shields.io/badge/version-1.4.0-green)
 
 ## Features
 
@@ -21,7 +21,7 @@ A native Windows desktop & Android Islamic companion built with Electron — pra
 
 **Islamic content**
 - 📖 Quran reader — bundled verified dataset (Tanzil Uthmani text + Sahih International translation, 114 surahs / 6,236 ayahs), offline search (Arabic + English), bookmarks with notes, font/spacing controls
-- 🎧 Audio player — 5 reciters, background playback across pages
+- 🎧 Audio player — 5 reciters; playback continues while you navigate the app (desktop keeps playing in the tray; Android pauses when the app is backgrounded — a lock-screen service is not implemented yet)
 - 📿 Dhikr library — morning/evening/after-prayer/sleep/general collections, favorites, counter with targets and progress
 - 🌙 99 Names of Allah with search
 - 🕌 Qibla compass with bearing and distance to the Kaaba
@@ -53,7 +53,7 @@ npm start
 ### Build the Windows installer
 
 ```bash
-npm run package:installer   # → dist/Prayer-Times-Setup-1.3.0.exe
+npm run package:installer   # → dist/Prayer-Times-Setup-1.4.0.exe
 npm run release             # → release/ folder with SHA-256 checksums
 ```
 
@@ -87,7 +87,7 @@ Prayer times are computed **locally on your machine** (the same engine powers th
 - **City search** — geocoding via `api.aladhan.com` (coordinates only; times are then computed locally)
 - **Quran audio** — streamed from `cdn.islamic.network`
 - **Adhan audio** — bundled locally in the app; an online copy (`cdn.aladhan.com`) is only an optional fallback if the local file is missing
-- **GPS location** (browser only) and **reverse geocoding** via `nominatim.openstreetmap.org` to label your city
+- **GPS location** (browser and Android; on Windows it depends on system location services) and **reverse geocoding** via `nominatim.openstreetmap.org` to label your city
 
 With no internet: prayer times, notifications, adhan (bundled audio), Quran text/search, Dhikr, Qibla, calendar, and stats all keep working.
 

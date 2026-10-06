@@ -42,7 +42,10 @@ if (!isPrimary) {
 } else {
   if (process.platform === 'win32') {
     // Stable AppUserModelID so Windows toasts show the app name and group in the taskbar.
-    app.setAppUserModelId('com.prayertimes.desktop');
+    // v1.4.0: MUST match electron-builder's appId (com.malek.prayertimes) —
+    // Windows resolves installed-app notifications through this exact id; a
+    // mismatch means toasts may never appear on the installed build.
+    app.setAppUserModelId('com.malek.prayertimes');
   }
 
   // No application menu: the window keeps its native title bar, and the default
@@ -93,7 +96,10 @@ if (!isPrimary) {
 
     win.loadFile(path.join(__dirname, '..', 'prayer-times.html'));
 
-    win.once('ready-to-show', () => win.show());
+    // v1.4.0: --hidden autostart must never flash the window. The old
+    // ready-to-show → show() + 300 ms hide timer could flash on slow machines
+    // (or leave it visible if the timer fired before ready-to-show).
+    win.once('ready-to-show', () => { if (!process.argv.includes('--hidden')) win.show(); });
 
     // Same window-level audio audit for the main window (Quran playback path).
     try { azlog('main window audio config', { audioMuted: win.webContents.isAudioMuted() }); } catch (e) { /* diagnostic only */ }
@@ -301,6 +307,14 @@ if (!isPrimary) {
     });
     if (cfg && cfg.adhanType) store.set('adhanType', String(cfg.adhanType));
     if (cfg && cfg.adhanVol != null) store.set('adhanVol', clampVolume(cfg.adhanVol, 1));
+    // v1.4.0: resolve the timezone MAIN-side when the renderer could not.
+    // The sandboxed preload can require only Electron built-ins, so
+    // window.tzLookup was always undefined on desktop — GPS/typed-city
+    // locations silently fell back to the device timezone. tz-lookup runs
+    // fine here (same pattern pt:get-day already used).
+    if (cfg && cfg.lat != null && !cfg.tz) {
+      try { cfg.tz = require('tz-lookup')(Number(cfg.lat), Number(cfg.lon)) || ''; } catch (err) { /* out of range */ }
+    }
     // v1.3.2 P10 — azan switch normalization, once, at the IPC boundary:
     // adhanEnabled is authoritative; legacy `adhan` is only a fallback.
     const azanRaw = cfg && cfg.adhanEnabled !== undefined ? cfg.adhanEnabled : (cfg ? cfg.adhan : undefined);
@@ -488,8 +502,17 @@ if (!isPrimary) {
     // Short fire loop — main-process timers, immune to renderer throttling.
     // Missed-window detection makes the loop gap-tolerant (sleep, throttle).
     azlog('scheduler started', { tickMs: 30000 });
-    schedulerLoop = setInterval(() => scheduler.tick(), 30 * 1000);
+    // v1.4.0: push the (possibly recomputed) info to tray + widget + mini
+    // after EVERY tick, not only on config changes — the surfaces stayed on a
+    // stale next-prayer name for hours without this.
+    schedulerLoop = setInterval(() => {
+      scheduler.tick();
+      updateTray(scheduler.getInfo());
+      broadcastInfo();
+    }, 30 * 1000);
     scheduler.tick();
+    updateTray(scheduler.getInfo());
+    broadcastInfo();
 
     // System wake → catch up on anything missed while asleep (fires once).
     powerMonitor.on('resume', () => { dlog('System resume'); azlog('system resume — recovering missed window'); scheduler.notifyResumed(); });

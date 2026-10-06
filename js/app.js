@@ -255,6 +255,9 @@ function pushMobile() {
       offsets: S.cfg.offsets, preMin: S.cfg.preMin, notifMin: S.cfg.notifMin,
       adhanPerPrayer: S.cfg.adhanPerPrayer, notif: S.cfg.notif, lang: S.lang,
       tz: resolveTz(),
+      // v1.4.0: the adhan switch + reciter pick the Android notification
+      // channel (per-reciter adhan sound) — previously not sent at all.
+      adhanEnabled: !!S.cfg.adhan, adhanType: S.cfg.adhanType,
     });
   } catch (e) { /* never break the UI */ }
 }
@@ -264,6 +267,13 @@ window.addEventListener('load', pushMobile);
 window.addEventListener('DOMContentLoaded', () => {
   if (!(window.Capacitor && window.Capacitor.isNativePlatform())) return;
   initMobileUI();
+  // v1.4.0: Android adhan honesty — the overlay/volume rows carry the
+  // .only-desktop class (hidden by initMobileUI); here we surface the
+  // plain-language note and the per-prayer mute explanation.
+  const note = document.getElementById('androidAzanNote');
+  if (note) note.style.display = '';
+  const perSub = document.getElementById('slPerPrayer');
+  if (perSub) perSub.insertAdjacentHTML('afterend', '<div class="note" id="androidPerNote">Off = a silent notification — the alert still arrives.</div>');
 });
 
 /* ═══ MOBILE UI (Android / narrow viewport): dedicated home + 5-tab nav + More sheet ═══ */
@@ -775,13 +785,24 @@ function distToKaaba() {
 }
 
 /* ═══ LOCATION ═══ */
+/* Coordinates as `24.7555°N, 46.7804°E` — hemisphere labels remove the
+   ambiguity the bare "46.7804°, 24.7555°" had under the RTL layout. */
+function fmtCoords(prec) {
+  if (S.lat == null || S.lon == null) return '—';
+  const la = `${Math.abs(S.lat).toFixed(prec)}°${S.lat >= 0 ? 'N' : 'S'}`;
+  const lo = `${Math.abs(S.lon).toFixed(prec)}°${S.lon >= 0 ? 'E' : 'W'}`;
+  return `${la}, ${lo}`;
+}
 function updateLocNames() {
   const name = S.city ? `${S.city}${S.country ? ', ' + S.country : ''}` : (S.lat != null ? `${S.lat.toFixed(2)}, ${S.lon.toFixed(2)}` : t('detecting'));
-  $('locName').textContent = name;
-  $('heroLocName').textContent = name;
-  $('setLocName').textContent = name;
-  $('setCoords').textContent = S.lat != null ? `${S.lat.toFixed(4)}, ${S.lon.toFixed(4)}` : '—';
-  const cd = $('coordsDisp'); if (cd) cd.textContent = S.lat != null ? `${S.lat.toFixed(4)}°, ${S.lon.toFixed(4)}°` : '—';
+  // v1.4.0: the top-bar chip ellipsized from the START under RTL, so users
+  // saw ".udi Arabia" and lost the city. Truncate in JS from the END instead.
+  const trunc = (s, n) => (s.length > n ? s.slice(0, n - 1).trimEnd() + '…' : s);
+  $('locName').textContent = trunc(name, 26);
+  $('heroLocName').textContent = trunc(name, 26);
+  $('setLocName').textContent = name; // settings card has room for the full name
+  $('setCoords').textContent = fmtCoords(4);
+  const cd = $('coordsDisp'); if (cd) { cd.textContent = fmtCoords(4); cd.dir = 'ltr'; }
 }
 function openLocModal() { $('locOverlay').classList.add('open'); }
 function closeLocModal() { $('locOverlay').classList.remove('open'); }
@@ -809,7 +830,12 @@ function useGPS() {
         ? `دقة GPS ضعيفة (±${Math.round(acc)} م)`
         : `GPS accuracy poor (±${Math.round(acc)}m)`));
     }
-  }, () => showToast('❌ ' + t('toast.gpsDenied')), { timeout: 10000, maximumAge: 600000 });
+  }, (err) => {
+    // v1.4.0: “denied” was shown for EVERY failure — a missing Windows
+    // location provider or a timeout is not a permission denial.
+    const key = err && err.code === 1 ? 'toast.gpsDenied' : 'toast.gpsFail';
+    showToast('❌ ' + t(key));
+  }, { timeout: 10000, maximumAge: 600000 });
 }
 /* Nominatim reverse geocoding — an OPTIONAL service for a friendly city
    name. Coordinates keep working when it is unavailable. Cache: rounded
@@ -898,6 +924,20 @@ function testAdhan() {
   if (IS_DESKTOP && PT && typeof PT.testOverlay === 'function') {
     showToast('🕌 ' + t('toast.adhanOverlay'));
     PT.testOverlay();
+    return;
+  }
+  // Android (v1.4.0): play the LOCAL bundled recording — the same file the
+  // adhan notification channel uses (copied to res/raw). No CDN, works
+  // offline; at prayer time Android delivers the sound via the channel.
+  const onAndroid = !!(window.Capacitor && window.Capacitor.isNativePlatform());
+  if (onAndroid) {
+    showToast('🕌 ' + t('toast.adhanOverlay'));
+    const a = $('adhanAudio');
+    const type = S.cfg.adhanType;
+    a.src = `./adhans/${type === 'alafasy' ? 'default' : type}.mp3`;
+    a.volume = S.cfg.adhanVol != null ? S.cfg.adhanVol : 1;
+    a.currentTime = 0;
+    a.play().catch(() => showToast('🔇 ' + t('toast.adhanFail')));
     return;
   }
   showToast('🔊 ' + t('toast.adhanPlay'));
@@ -990,6 +1030,7 @@ function applyLang() {
   $('slCttS').textContent = t('set.cttS');
   $('slTestNotif').textContent = t('set.testNotif');
   $('dataNote').textContent = t('set.dataNote');
+  $('creditsNote').textContent = t('set.credits');
   $('slGps').textContent = t('set.gps');
   $('slCitySearch').textContent = t('set.searchCity');
 

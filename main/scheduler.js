@@ -40,6 +40,12 @@ const PRAYERS = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
 // A tick arriving 5 min late (sleep) still owns a prayer that fell 5 min ago.
 const GRACE_MS = 5 * 60 * 1000;
 
+// v1.4.0 recovery cap: an adhan whose moment passed more than this long ago
+// is NOT replayed after sleep/resume — a burst of hours-old adhans is worse
+// than silence. Within the cap the adhan still fires (recovered=true);
+// beyond it the prayer-time notification still fires, the audio does not.
+const RECOVERY_MAX_MS = 15 * 60 * 1000;
+
 // Method/madhab resolution lives in the shared contract (single copy for
 // desktop, Android and web — universal madhab included).
 function paramsFor(cfg) {
@@ -200,7 +206,9 @@ function createScheduler(opts = {}) {
       method: cfg.method,
       lang: cfg.lang || 'en',
       times: sched.map(({ prayer, hhmm: hm }) => ({ prayer, time: hm })),
-      next: { prayer: next.prayer, hhmm: next.hhmm, countdown: hhmmss(next.ms - now) },
+      // v1.4.0: carry the absolute next-prayer instant so tick() can detect
+      // staleness and every surface (tray/widget/mini) can count down live.
+      next: { prayer: next.prayer, hhmm: next.hhmm, countdown: hhmmss(next.ms - now), ms: next.ms },
     };
   }
 
@@ -300,7 +308,9 @@ function createScheduler(opts = {}) {
         // Boundary: the scheduler has decided this prayer is DUE.
         log('prayer window entered', { prayer, time: hhmm(at), dayKey, recovered });
         if (cfg.notif) {
-          bus.emit('prayer-time', { prayer, time: hhmm(at), lang: cfg.lang || 'en', dayKey });
+          // v1.4.0: format in the LOCATION's timezone — a New York device with
+          // a Riyadh location must notify "04:29", not the device-local 21:29.
+          bus.emit('prayer-time', { prayer, time: fmtInTz(at, cfg.tz), lang: cfg.lang || 'en', dayKey });
           dlog('Notification: sent');
         }
         // v1.3.2 P10: adhanEnabled is THE authoritative azan switch; legacy
@@ -309,12 +319,22 @@ function createScheduler(opts = {}) {
         const azanOn = azanFlag === true || azanFlag === 'true';
         const perPrayerMuted = !!(cfg.adhanPerPrayer && cfg.adhanPerPrayer[prayer] === false);
         const adhanOn = azanOn && !perPrayerMuted;
+        // v1.4.0 recovery cap: only replay the adhan if it is recent enough
+        // (`recovered` — already computed above — tells us it IS a recovery).
+        const lateMs = now - atMs;
+        const tooLate = lateMs > RECOVERY_MAX_MS;
         if (adhanOn) {
-          const vol = resolveVolume(prayer);
-          dlog(`Adhan: triggered (volume ${Math.round(vol * 100)}%)`);
-          // Boundary: scheduler → main handoff (main logs 'adhan event' next).
-          log('adhan event emitted', { prayer, time: hhmm(at), volume: vol, dayKey });
-          bus.emit('adhan', { prayer, time: hhmm(at), lang: cfg.lang || 'en', volume: vol, dayKey });
+          if (tooLate) {
+            // Boundary: sleep gap > 15 min → notification already covered the
+            // prayer; replaying hours-old audio would be worse than silence.
+            log('adhan skipped', { prayer, time: hhmm(at), azanOn, perPrayerMuted, azanFlag, reason: 'missed-too-long', lateMs, dayKey });
+          } else {
+            const vol = resolveVolume(prayer);
+            dlog(`Adhan: triggered (volume ${Math.round(vol * 100)}%)${recovered ? ' — recovered after gap' : ''}`);
+            // Boundary: scheduler → main handoff (main logs 'adhan event' next).
+            log('adhan event emitted', { prayer, time: hhmm(at), volume: vol, recovered, dayKey });
+            bus.emit('adhan', { prayer, time: fmtInTz(at, cfg.tz), lang: cfg.lang || 'en', volume: vol, dayKey });
+          }
         } else {
           // Boundary: WHY nothing fired — the #1 "why no azan?" answer.
           log('adhan skipped', { prayer, time: hhmm(at), azanOn, perPrayerMuted, azanFlag, dayKey });
@@ -327,6 +347,16 @@ function createScheduler(opts = {}) {
       const next = state.lastInfo.next;
       const e = sched.find((x) => x.at.getTime() > now);
       if (e) next.countdown = hhmmss(e.at.getTime() - now);
+      // v1.4.0: the countdown number alone kept the STALE prayer name alive —
+      // after Fajr passed, tray/widget/mini still showed "Fajr 04:29" with a
+      // Dhuhr countdown. The day-rollover check above cannot catch this (the
+      // next prayer is usually the SAME day), so recompute when the stored
+      // next-prayer instant has passed. recompute() emits 'times-updated',
+      // which main.js forwards to tray + renderer surfaces.
+      if (now >= next.ms) {
+        dlog(`Next prayer ${next.prayer} ${next.hhmm} has passed — recomputing next`);
+        recompute();
+      }
     }
   }
 

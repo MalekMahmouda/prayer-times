@@ -364,10 +364,11 @@
               <select class="select" id="setReciterSel"></select></div>
             <div class="row"><span class="lbl" id="slAdhanStyle">Adhan style</span>
               <select class="select" id="setAdhanType"></select></div>
-            <div class="row"><span class="lbl" id="slOverlay">Fullscreen Adhan overlay</span>
+            <div class="row only-desktop"><span class="lbl" id="slOverlay">Fullscreen Adhan overlay</span>
               <button class="toggle" id="tgOverlay"></button></div>
-            <div class="row"><span class="lbl" id="slVol">Volume</span>
+            <div class="row only-desktop"><span class="lbl" id="slVol">Volume</span>
               <input type="range" id="setVol" min="0" max="1" step="0.05" value="1" style="width:130px"></div>
+            <div class="note" id="androidAzanNote" style="display:none">On Android the adhan plays as the notification sound of the prayer-time alert. Per-prayer off = a silent notification (the alert still arrives).</div>
             <div class="row"><span class="lbl" id="slImsak">Imsak estimate offset</span>
               <div class="stepper"><button id="imsakMinus">−</button><div class="val" id="imsakVal">10</div><button id="imsakPlus">+</button></div></div>
             <div class="note" id="imsakNote">Imsak is shown as an estimate (Fajr minus this many minutes). Adjust to follow your local practice.</div>
@@ -387,6 +388,7 @@
             <div class="row"><span class="lbl" id="slTestNotif">Test Notification</span>
               <button class="btn sm" id="btnTestNotif">🔔 Test</button></div>
             <div class="note" id="dataNote">All data is stored locally on this device. No account, no analytics.</div>
+            <div class="note" id="creditsNote">Quran text: Tanzil (quran-uthmani) · Translation: Saheeh International · Adhan recordings: courtesy of AlAdhan.com · Prayer engine: adhan-js</div>
             <div class="note" style="border-top:none;padding-top:6px" id="aboutLine">Prayer Times</div>
           </div>
 

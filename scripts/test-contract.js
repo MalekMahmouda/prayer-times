@@ -480,6 +480,8 @@ function runMobileRegressions() {
         async cancel({ notifications }) { state.cancelled.push(...notifications.map((n) => n.id)); state.pending = state.pending.filter((id) => !notifications.some((n) => n.id === id)); },
         async getPending() { return { notifications: state.pending.map((id) => ({ id })) }; },
         async checkExactNotificationSetting() { return { exact: true }; },
+        async listChannels() { return { channels: state.channels }; },
+        async deleteChannel({ id }) { state.channels = state.channels.filter((c) => c.id !== id); },
       };
     };
 
@@ -500,8 +502,8 @@ function runMobileRegressions() {
 
     ms.setConfig(CFG); await sleep(750); // debounce 500ms + schedule
     const first = LN1.state.scheduled.length;
-    ok(first > 10, `weekly horizon scheduled (${first} notifications, ≤80 cap)`);
-    ok(LN1.state.scheduled.length <= 80, 'hard cap MAX_NOTIFS respected');
+    ok(first > 10, `14-day horizon scheduled (${first} notifications, ≤150 cap)`);
+    ok(LN1.state.scheduled.length <= 150, 'hard cap MAX_NOTIFS respected (150 < ~500-alarm OS budget)');
     ok(LN1.state.channels.every((ch) => !('sound' in ch)), 'channel has NO nonexistent sound reference (system default)');
     // Pre-alert honors per-prayer preMin with notifMin fallback.
     ok(LN1.state.scheduled.some((n) => /is in 5 minutes/.test(n.body)), 'per-prayer preMin (Fajr 5min) honored');
@@ -532,8 +534,23 @@ function runMobileRegressions() {
     const LN2 = makeLN(); const ms2 = runMobile(LN2);
     for (let i = 0; i < 6; i++) ms2.setConfig({ ...CFG, lon: 39.8579 + i * 1e-9 });
     await sleep(750);
+
+    // v1.4.0: per-reciter adhan channel + per-prayer mute parity (R9/R10).
+    const LN3 = makeLN(); const ms3 = runMobile(LN3);
+    await ms3.setConfig({ ...CFG, adhanEnabled: true, adhanType: 'nafees', adhanPerPrayer: { Dhuhr: false } }); await sleep(750);
+    const adhanChan = LN3.state.channels.find((c) => c.id === 'adhan-nafees');
+    ok(!!adhanChan && adhanChan.sound === 'nafees.mp3', 'adhan-nafees channel created with the bundled raw sound');
+    const ptNotifs = LN3.state.scheduled.filter((n) => /is time for/.test(n.body));
+    ok(ptNotifs.length > 0 && ptNotifs.every((n) => n.channelId === (n.title === 'Dhuhr' ? 'prayer' : 'adhan-nafees')),
+      'prayer-time notifications route: unmuted → adhan channel, muted → plain channel');
+    const preNotifs = LN3.state.scheduled.filter((n) => /is in \d+ minutes/.test(n.body));
+    ok(preNotifs.length > 0 && preNotifs.every((n) => n.channelId === 'prayer'), 'pre-alerts never use the adhan channel');
+    // Reciter switch → new channel created, stale one deleted.
+    await ms3.setConfig({ ...CFG, adhanEnabled: true, adhanType: 'classic', adhanPerPrayer: {} }); await sleep(750);
+    ok(LN3.state.channels.some((c) => c.id === 'adhan-classic') && !LN3.state.channels.some((c) => c.id === 'adhan-nafees'),
+      'reciter switch creates the new channel and deletes the stale one');
     const schedBatches = LN2.state.scheduled.length;
-    ok(schedBatches > 0 && schedBatches <= 80, `storm of 6 changes → ONE scheduled batch (${schedBatches})`);
+    ok(schedBatches > 0 && schedBatches <= 150, `storm of 6 changes → ONE scheduled batch (${schedBatches})`);
 
     // Shared engine parity: mobile times == contract instants (universal madhab).
     const today = Engine.zonedToday(CFG.tz || '', new Date());
@@ -684,6 +701,76 @@ function runArtifactChecks() {
   ok(/url: 'https:\/\/cdn\.islamic\.network[^']*\{n\}\.mp3'/.test(recSrc) && /url: 'https:\/\/[^']*mp3quran\.net[^']*\{n3\}\.mp3'/.test(recSrc),
     'RECITERS carry islamic.network + mp3quran URL templates ({n}/{n3})');
   ok(read('js/pages.js').includes('padStart(3'), 'qrUrl expands {n3} zero-padded');
+  // v1.4.0: REVIEW.docx fixes — Qibla geometry, tray/AMID, tz resolution,
+  // recovery cap, Android adhan channels, packaging hygiene.
+  section('12. v1.4.0 review fixes: geometry, tray, AMID, channels, packaging');
+  const compassSrc = read('js/compass.js');
+  const qpagesSrc = read('js/pages.js');
+  const traySrc = read('main/tray.js');
+  const mainSrc2 = read('main/main.js');
+  const schedSrc2 = read('main/scheduler.js');
+  const jsonSrc = read('main/json-store.js');
+  const mobileSrc = read('www-build/mobile-scheduler.js');
+  const entrySrc = read('www-build/entry.js');
+  const gradleSrc = read('android/app/build.gradle');
+  const manifestSrc = read('android/app/src/main/AndroidManifest.xml');
+  const overlayHtml = read('adhan.html');
+  const dataSrc2 = read('js/data.js');
+  const pkgJson = JSON.parse(read('package.json'));
+
+  // R6: the Qibla marker must move along the UNROTATED up axis.
+  ok(/mark\.style\.transform = `rotate\(\$\{b\}deg\) translateY\(-78px\) rotate\(\$\{-b\}deg\)`/.test(compassSrc)
+    && !/mark\.style\.transform[^\n]*translate\(78px\)/.test(compassSrc),
+    'live compass marker: rotate(b) translateY(-78px) rotate(-b) (no +x translate)');
+  ok(/kaabaMark'\)\.style\.transform[^\n]*translateY\(-78px\)/.test(qpagesSrc), 'static qibla render uses the corrected transform');
+  {
+    // Numeric check: R(b)·(0,-78) must land at azimuth b (CSS rotate = CW, y down).
+    const azOf = (b) => {
+      const r = 78, rad = (d) => d * Math.PI / 180;
+      const x = r * Math.sin(rad(b)), y = -r * Math.cos(rad(b));
+      return ((Math.atan2(x, -y) * 180 / Math.PI) + 360) % 360;
+    };
+    for (const b of [0, 90, 244, 359.9]) ok(Math.abs(azOf(b) - b) < 1e-9, `marker lands at bearing ${b} (numeric geometry)`);
+  }
+
+  // R1/R2/R7: scheduler advance + tz payloads + recovery cap.
+  ok(schedSrc2.includes('ms: next.ms') && schedSrc2.includes('now >= next.ms'),
+    'scheduler advances the next-prayer pointer within the same tick');
+  ok(schedSrc2.includes('time: fmtInTz(at, cfg.tz)'), 'event payloads use the location timezone');
+  ok(schedSrc2.includes('RECOVERY_MAX_MS = 15 * 60 * 1000') && schedSrc2.includes("'missed-too-long'"),
+    '15-min adhan recovery cap logged as missed-too-long');
+
+  // R3/R4/R5: tray, AppUserModelId, main-side tz.
+  ok(!traySrc.includes('try { rebuild(null)'), 'tray click handler no longer wipes the menu');
+  ok(mainSrc2.includes("setAppUserModelId('com.malek.prayertimes')"), 'AppUserModelId matches the electron-builder appId');
+  ok(mainSrc2.includes("require('tz-lookup')") && mainSrc2.includes('!cfg.tz'), 'empty cfg.tz is resolved in MAIN (sandboxed preload cannot require)');
+  ok(!/require\('tz-lookup'\)/.test(read('preload.js')) && !/exposeInMainWorld\('tzLookup'/.test(read('preload.js')), 'preload no longer bridges tz-lookup (no require, no expose)');
+  ok(mainSrc2.includes("!process.argv.includes('--hidden')) win.show()"), '--hidden autostart never shows the window');
+
+  // R8: atomic settings writes.
+  ok(jsonSrc.includes('.tmp') && jsonSrc.includes('renameSync'), 'settings store writes atomically (tmp + rename)');
+
+  // R9/R10/R11/R12: Android channels + mute parity + horizon + exact alarms.
+  ok(mobileSrc.includes("CH_PREFIX = 'adhan-'") && mobileSrc.includes('adhanChannel && !muted ? adhanChannel'),
+    'Android per-reciter adhan channel wired to the prayer-time notification');
+  ok(!/adhanPerPrayer\[p\] === false\) continue/.test(mobileSrc), 'muted prayers no longer SKIP the Android notification');
+  ok(mobileSrc.includes('DAYS = 14') && mobileSrc.includes('MAX_NOTIFS = 150'), '14-day horizon with a 150-notification cap');
+  ok(mobileSrc.includes('changeExactNotificationSetting'), 'exact-alarms settings path wired (requestExactAlarms)');
+  ok(entrySrc.includes("App.addListener('backButton'"), 'Android back button closes overlays before exiting');
+  ok(read('js/app.js').includes('adhanEnabled: !!S.cfg.adhan, adhanType: S.cfg.adhanType'), 'pushMobile sends the adhan switch + reciter');
+  ok(read('prayer-times.html').includes('androidAzanNote'), 'Android azan honesty note present');
+
+  // Packaging / privacy / licensing.
+  ok(manifestSrc.includes('allowBackup="false"'), 'allowBackup=false (prayer history stays on-device)');
+  ok(gradleSrc.includes('verifyReleaseKeystore') && gradleSrc.includes('versionCode 8'), 'keystore guard active; versionCode 8');
+  ok(Object.keys(pkgJson.dependencies).join(',') === 'adhan,tz-lookup', 'runtime deps = adhan + tz-lookup only (capacitor moved to dev)');
+  ok(pkgJson.devDependencies.electron === '41.1.0', 'electron pinned to the exact 41.1.0');
+  ok(typeof pkgJson.scripts.test === 'string' && pkgJson.scripts.test.includes('test-scheduler'), 'npm test wired');
+  ok(fs.existsSync(path.join(ROOT, '.github', 'workflows', 'ci.yml')), 'CI workflow runs the suites');
+  ok(!/media-src[^"]*file: cdn\./.test(overlayHtml) && overlayHtml.includes('file: https://cdn.aladhan.com'), 'overlay CSP hosts are scheme-prefixed');
+  ok(dataSrc2.includes('credits:') && dataSrc2.includes('AlAdhan.com'), 'in-app credits + third-party attribution present');
+  ok(fs.existsSync(path.join(ROOT, 'LICENSE')) && read('LICENSE').includes('ISC License'), 'LICENSE (ISC) present');
+
 
 
 

@@ -17,3 +17,6 @@ tmp/
 www/
 dist-web/
 release-apk/
+
+# Generated at build time by scripts/gen-android-raw.js (see npm run apk)
+android/app/src/main/res/raw/*.mp3

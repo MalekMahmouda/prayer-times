@@ -6,7 +6,7 @@
 
 📥 **التنزيلات:** أحدث [الإصدارات](https://github.com/MalekMahmouda/prayer-times/releases) — مثبّت ويندوز + حزمة أندرويد موقّعة.
 
-![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Android%20%7C%20Web-blue) ![Electron](https://img.shields.io/badge/Electron-41-47848F) ![Version](https://img.shields.io/badge/version-1.3.0-green)
+![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Android%20%7C%20Web-blue) ![Electron](https://img.shields.io/badge/Electron-41-47848F) ![Version](https://img.shields.io/badge/version-1.4.0-green)
 
 > 🇬🇧 English readme: [README.md](README.md)
 
@@ -58,7 +58,7 @@ npm start
 ### بناء مثبّت ويندوز
 
 ```bash
-npm run package:installer   # → dist/Prayer-Times-Setup-1.3.0.exe
+npm run package:installer   # → dist/Prayer-Times-Setup-1.4.0.exe
 npm run release             # → مجلد release/ مع بصمات SHA-256
 ```
 
@@ -99,7 +99,7 @@ data/quran.json     نص القرآن الموثق + الترجمة (مضمّن)
 - **البحث عن مدينة** — ترميز جغرافي عبر `api.aladhan.com` (إحداثيات فقط؛ الأوقات تُحسب محليًا بعدها)
 - **صوت القرآن** — بث من `cdn.islamic.network`
 - **صوت الأذان** — مرفق داخل التطبيق؛ النسخة الإلكترونية من `cdn.aladhan.com` بديل اختياري فقط إن غاب الملف المحلي
-- **GPS** (في المتصفح) و**الترميز الجغرافي العكسي** عبر `nominatim.openstreetmap.org` لعرض اسم مدينتك
+- **GPS** (في المتصفح وأندرويد؛ على ويندوز يعتمد على خدمة الموقع في النظام) و**الترميز الجغرافي العكسي** عبر `nominatim.openstreetmap.org` لعرض اسم مدينتك
 
 بدون إنترنت: أوقات الصلاة والإشعارات والأذان (الملف المرفق) ونص القرآن والبحث والأذكار والقبلة والتقويم والإحصاءات تعمل كلها.
 

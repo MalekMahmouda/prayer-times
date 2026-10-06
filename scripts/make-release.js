@@ -45,39 +45,50 @@ Highlights
 
 What's new in ${version}
 ------------------------
-Azan & audio
-- Test Adhan on Windows now plays through the REAL pipeline — the same
-  bundled recording, configured volume and fullscreen overlay used at
-  prayer time, fully offline. Previously the test streamed from a CDN
-  inside the app window; when that silently failed the app showed the
-  cryptic "🔇 🔊" toast. The CDN preview remains for the web/PWA build.
-- Fixed the renderer Content-Security-Policy: host rules without an
-  explicit scheme never matched on desktop (file://) pages, silently
-  blocking the adhan preview, streaming Quran audio and the Arabic web
-  fonts. Hosts are now scheme-prefixed and match everywhere.
-- Repaired the streaming Quran reciters: cdn.islamic.network now serves
-  only two editions (Alafasy, Abdul Basid); As-Sudais, Al-Husary and
-  Al-Minshawi moved to their mp3quran.net full-surah servers.
+This release is a full hardening pass driven by an external code review —
+24 findings fixed, two deferred with notes (see docs/BUG-AUDIT.md, section
+"v1.4.0 — REVIEW.docx fix pass").
 
 Qibla
-- Map-rose rendering: the dial rotates by the device heading, so the
-  Kaaba marker on the rim always sits at the TRUE qibla direction
-  (previously the Kaaba spun decoratively in the dial's center)
-- Compass hardening: if the primary orientation channel stays silent
-  for 3 s the fallback channel opens automatically; both listeners are
-  removed together when the Qibla page closes
+- FIXED the Kaaba marker landing 90° clockwise on the map rose (it moved
+  along the rotated x-axis instead of the up axis, so facing the Qibla put
+  the marker at 3 o'clock). Live compass AND the static desktop map.
+- Compass debug readout is now opt-in (localStorage.ptCompassDebug=1)
 
-Azan reliability
-- One authoritative adhanEnabled switch: OFF stays OFF and ON stays ON
-  after restarts (the earlier adhan:false state confusion)
-- The overlay toggle now controls visibility only — disabling the
-  fullscreen overlay no longer silences the azan audio
-- Every azan event leaves a complete boundary-by-boundary trace in
-  azan-debug.log, and all six bundled mu'adhdhin recordings are
-  verified end-to-end (file, size, packaging, resolver)
-- Audio output hardening: the overlay re-binds to the default output
-  device when it changes mid-playback (setSinkId), and window/element
-  audio state is diagnosable via azan-debug.log
+Prayer times & alerts (desktop)
+- The tray, widget and mini mode now ADVANCE to the next prayer the moment
+  one passes (previously they kept showing the passed prayer until midnight)
+- Prayer notifications show the time in your LOCATION's timezone, not the
+  device's (New York device + Riyadh location now says 04:29, not 21:29)
+- Waking from sleep no longer replays stale adhans: a prayer missed by more
+  than 15 minutes sends the notification only
+- Timezone detection for GPS/manual locations fixed (resolved in the main
+  process — the sandboxed renderer could never do it)
+- Windows toasts now group under the app correctly (AppUserModelId match)
+- Tray left-click no longer wipes the prayer list from its menu
+- Settings survive a crash mid-write (atomic write + rename)
+- Auto-start with Windows never flashes the window
+
+Android
+- The azan now PLAYS: prayer-time notifications carry the chosen bundled
+  adhan recording (new per-reciter notification channels, works offline).
+  Per-prayer "off" = a silent notification (the alert still arrives).
+- Notifications now cover 14 days ahead instead of 7
+- "Enable exact alarms" button when Android shows them off
+- Test Adhan plays the bundled recording offline (no CDN needed)
+- Hardware Back closes sheets/modals before exiting the app
+- Privacy: app data excluded from Google backups (allowBackup=false)
+
+Web / PWA
+- Offline install now includes the calculation engine + compass (full
+  offline after the first visit, as documented)
+
+Housekeeping
+- ISC LICENSE + in-app credits (Quran text: Tanzil, translation: Saheeh
+  International, adhan recordings courtesy of AlAdhan.com)
+- Runtime dependencies slimmed (installer size), electron pinned to an
+  exact version, npm test script + GitHub Actions CI
+- Android release builds fail loudly if the signing keystore is missing
 
 Data & Privacy
 --------------
