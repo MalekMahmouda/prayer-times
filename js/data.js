@@ -100,14 +100,15 @@ const T = {
     dhikr: { title: 'Dhikr Counter', target: 'Target', custom: 'Custom', reset: 'Reset', daily: 'Today', total: 'All time', tapHint: 'Tap the counter or press Space', done: 'Target reached — Alhamdulillah!' },
     set: {
       title: 'Settings', general: 'General', language: 'Language', theme: 'Theme', h24: '24-Hour Format',
-      calc: 'Prayer Calculation', method: 'Method', madhab: 'Asr school', madhabS: 'Used by ISNA and custom methods', shafi: 'Shafi (standard)', hanafi: 'Hanafi',
+      calc: 'Prayer Calculation', method: 'Method', madhab: 'Asr school', madhabS: 'Asr shadow-length school — applies to every method', shafi: 'Shafi (standard)', hanafi: 'Hanafi',
       adhanSec: 'Adhan', reciter: 'Reciter', volume: 'Volume', perPrayer: 'Per-prayer Adhan', overlay: 'Fullscreen Adhan overlay', testAdhan: 'Test Adhan',
       desktop: 'Desktop', sww: 'Start with Windows', swwS: 'Launch automatically at login', ctt: 'Close to Tray', cttS: 'Keep running in the system tray when closed', testNotif: 'Test Notification',
       location: 'Location', gps: 'Use GPS / Current Location', searchCity: 'Search city', city: 'City', country: 'Country', setLoc: 'Search & Set Location', cancel: 'Cancel', coords: 'Coordinates',
       notif: 'Prayer Alerts', notifS: 'Notify before each prayer', minutesBefore: 'Minutes before', beep: 'Pre-prayer beep', adhanSound: 'Play adhan at prayer time',
       adjust: 'Time Adjustments (min)', dataNote: 'All data is stored locally on this device. No account, no analytics.',
+      credits: 'Quran text: Tanzil (quran-uthmani) · Translation: Saheeh International · Adhan recordings: courtesy of AlAdhan.com · Prayer engine: adhan-js',
     },
-    toast: { locSet: 'Location updated!', locFail: 'City not found. Try again.', noCity: 'Please enter a city', gpsDenied: 'Location denied. Set manually.', gpsNo: 'Geolocation not supported', switchedEn: 'Switched to English 🌙', switchedAr: 'تم التبديل للعربية 🌙', testIn3: 'Test notification in 3s…', deskOnly: 'Desktop mode only', adhanPlay: 'Playing adhan preview…', adhanOverlay: 'Playing adhan — fullscreen overlay', adhanFail: 'Could not play the adhan preview' },
+    toast: { locSet: 'Location updated!', locFail: 'City not found. Try again.', noCity: 'Please enter a city', gpsDenied: 'Location denied. Set manually.', gpsNo: 'Geolocation not supported', gpsFail: 'Location unavailable — set your city manually', switchedEn: 'Switched to English 🌙', switchedAr: 'تم التبديل للعربية 🌙', testIn3: 'Test notification in 3s…', deskOnly: 'Desktop mode only', adhanPlay: 'Playing adhan preview…', adhanOverlay: 'Playing adhan — fullscreen overlay', adhanFail: 'Could not play the adhan preview' },
     dh: { subhan: 'SubhanAllah', subhanAr: 'سُبْحَانَ اللَّه', alhamd: 'Alhamdulillah', alhamdAr: 'الْحَمْدُ لِلَّه', akbar: 'Allahu Akbar', akbarAr: 'اللَّهُ أَكْبَر', tahlil: 'La ilaha illa Allah', tahlilAr: 'لَا إِلَٰهَ إِلَّا اللَّه', istighfar: 'Astaghfirullah', istighfarAr: 'أَسْتَغْفِرُ اللَّه', salawat: 'Salawat', salawatAr: 'صَلَّى اللَّهُ عَلَيْهِ وَسَلَّمَ' },
   },
   ar: {
@@ -136,8 +137,9 @@ const T = {
       location: 'الموقع', gps: 'استخدام الموقع الحالي (GPS)', searchCity: 'بحث عن مدينة', city: 'المدينة', country: 'الدولة', setLoc: 'بحث وتحديد الموقع', cancel: 'إلغاء', coords: 'الإحداثيات',
       notif: 'تنبيهات الصلاة', notifS: 'إشعار قبل كل صلاة', minutesBefore: 'دقائق قبل', beep: 'تنبيه قبل الصلاة', adhanSound: 'تشغيل الأذان عند وقت الصلاة',
       adjust: 'تعديل الأوقات (د)', dataNote: 'جميع البيانات محفوظة محلياً على هذا الجهاز. لا حسابات ولا تحليلات.',
+      credits: 'النص القرآني: تنزيل (قرآن عثماني) · الترجمة: سعد الدولعة (صحيح إنترناشونال) · تسجيلات الأذان: من AlAdhan.com · محرك المواقيت: adhan-js',
     },
-    toast: { locSet: 'تم تحديث الموقع!', locFail: 'لم يتم العثور على المدينة. حاول مجدداً.', noCity: 'الرجاء إدخال مدينة', gpsDenied: 'تم رفض الموقع. حدد يدوياً.', gpsNo: 'تحديد الموقع غير مدعوم', switchedEn: 'Switched to English 🌙', switchedAr: 'تم التبديل للعربية 🌙', testIn3: 'تنبيه تجريبي بعد ٣ ثوان…', deskOnly: 'يعمل في وضع سطح المكتب فقط', adhanPlay: 'تجربة الأذان…', adhanOverlay: 'تشغيل الأذان — شاشة كاملة', adhanFail: 'تعذر تشغيل معاينة الأذان' },
+    toast: { locSet: 'تم تحديث الموقع!', locFail: 'لم يتم العثور على المدينة. حاول مجدداً.', noCity: 'الرجاء إدخال مدينة', gpsDenied: 'تم رفض الموقع. حدد يدوياً.', gpsNo: 'تحديد الموقع غير مدعوم', gpsFail: 'تعذر تحديد الموقع — حدد مدينتك يدوياً', switchedEn: 'Switched to English 🌙', switchedAr: 'تم التبديل للعربية 🌙', testIn3: 'تنبيه تجريبي بعد ٣ ثوان…', deskOnly: 'يعمل في وضع سطح المكتب فقط', adhanPlay: 'تجربة الأذان…', adhanOverlay: 'تشغيل الأذان — شاشة كاملة', adhanFail: 'تعذر تشغيل معاينة الأذان' },
     dh: { subhan: 'سبحان الله', subhanAr: 'سُبْحَانَ اللَّه', alhamd: 'الحمد لله', alhamdAr: 'الْحَمْدُ لِلَّه', akbar: 'الله أكبر', akbarAr: 'اللَّهُ أَكْبَر', tahlil: 'لا إله إلا الله', tahlilAr: 'لَا إِلَٰهَ إِلَّا اللَّه', istighfar: 'أستغفر الله', istighfarAr: 'أَسْتَغْفِرُ اللَّه', salawat: 'الصلاة على النبي', salawatAr: 'صَلَّى اللَّهُ عَلَيْهِ وَسَلَّمَ' },
   },
 };

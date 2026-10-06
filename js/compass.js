@@ -65,7 +65,9 @@
     webHandler: null,     // the ONE web handler (added on start, removed on stop)
     watchdog: null,
     lastRender: 0,
-    debug: true, // v1.3.2 P8: diagnostic readout ON by default (honest on desktop)
+    // v1.4.0: the diagnostic readout is OPT-IN for release (was on by default
+    // during the v1.3.2 investigation). Enable with localStorage.ptCompassDebug=1.
+    debug: (() => { try { return localStorage.getItem('ptCompassDebug') === '1'; } catch (e) { return false; } })(),
   };
 
   const STALE_MS = 3000;      // no updates for this long → unreliable
@@ -175,14 +177,19 @@
     const b = norm360(qiblaBearing());
     if (deg) deg.textContent = `${Math.round(b)}°`;
     if (dbg && state.debug) dbg.textContent = debugLine();
-    // MAP-ROSE GEOMETRY (v1.3.2 fix): the dial is a compass rose that must
-    // align with the world, so it rotates by −heading (rose-N lands on true
-    // north on screen). The Kaaba sits ON THE RIM at its geographic bearing
-    // (dial-local), so its screen angle = b − h = the true qibla direction;
-    // the inner rotate(−b) keeps the glyph upright. With no heading (static)
-    // the dial stays a map with north up and the Kaaba at bearing b.
+    // MAP-ROSE GEOMETRY (v1.3.2 fix, corrected v1.4.0): the dial is a
+    // compass rose that must align with the world, so it rotates by −heading
+    // (rose-N lands on true north on screen). The Kaaba sits ON THE RIM at
+    // its geographic bearing: rotate(b) points the element's local −y axis
+    // (up) at bearing b, translateY(−78px) then moves it 78px along that
+    // direction (bearings are measured FROM north = up, so the offset must
+    // run along the unrotated up-axis — the old translate(78px) moved along
+    // the rotated +x axis and landed the marker 90° clockwise, at 3 o'clock
+    // when the phone faced Qibla). The inner rotate(−b) keeps the glyph
+    // upright. Marker screen angle = b − h = the true qibla direction.
+    // With no heading (static) the dial stays a map, north up.
     if (needle) needle.style.transform = `rotate(${state.heading == null ? 0 : -state.heading}deg)`;
-    if (mark) mark.style.transform = `rotate(${b}deg) translate(78px) rotate(${-b}deg)`;
+    if (mark) mark.style.transform = `rotate(${b}deg) translateY(-78px) rotate(${-b}deg)`;
     if (state.heading == null) {
       renderStatus(state.denied ? 'qibla.denied' : 'qibla.noSensor', state.denied);
     } else {

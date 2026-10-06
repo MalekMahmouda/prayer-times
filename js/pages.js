@@ -16,11 +16,13 @@ window.renderQibla = function renderQibla() {
   // Deliberate source (Phase 13): the ACTIVE location — never silently mixed
   // with device GPS. The location modal's GPS button is the explicit way to
   // make coordinates current.
-  $('qSub').textContent = `${t('qibla.from')} ${S.city || `${S.lat.toFixed(2)}, ${S.lon.toFixed(2)}`}`;
-  // Map-rose static render (v1.3.2): north up, Kaaba on the rim at its
-  // bearing. The live compass (if any) takes over the dial from here.
+  $('qSub').textContent = `${t('qibla.from')} ${S.city || fmtCoords(2)}`;
+  // Map-rose static render (v1.3.2, corrected v1.4.0): north up, Kaaba on
+  // the rim at its bearing — rotate(b) + translateY(−78px) moves along the
+  // UNROTATED up-axis (bearings start at north = up; a +x translate lands
+  // 90° clockwise). The live compass (if any) takes over the dial from here.
   $('compassIn').style.transform = 'rotate(0deg)';
-  $('kaabaMark').style.transform = `rotate(${b}deg) translate(78px) rotate(${-b}deg)`;
+  $('kaabaMark').style.transform = `rotate(${b}deg) translateY(-78px) rotate(${-b}deg)`;
   // Live heading (Android/web sensors) rotates the dial by −heading so the
   // rose matches the world; desktop keeps the static map, honestly labeled —
   // it never pretends to have a live compass sensor (Phase 8).
@@ -355,6 +357,25 @@ function updateAndroidNotifStatus() {
         : s.exact === false ? (L ? 'التنبيهات الدقيقة: غير مفعّلة — قد تتأخر الإشعارات' : 'Exact alarms: off — alarms may be delayed by the system')
         : (L ? 'التنبيهات الدقيقة: غير معروفة' : 'Exact alarms: unknown');
       el.textContent = disp + ' · ' + exact;
+      // v1.4.0: one-tap fix when exact alarms are off (Android 12+ opens the
+      // special-access screen; older Android resolves to granted).
+      let btn = $('andExactBtn');
+      if (s.exact === false) {
+        if (!btn) {
+          btn = document.createElement('button');
+          btn.id = 'andExactBtn';
+          btn.className = 'btn sm';
+          btn.style.cssText = 'margin-top:6px';
+          el.insertAdjacentElement('afterend', btn);
+          btn.onclick = async () => {
+            if (window.ptMobile && window.ptMobile.requestExactAlarms) {
+              await window.ptMobile.requestExactAlarms();
+              updateAndroidNotifStatus();
+            }
+          };
+        }
+        btn.textContent = S.lang === 'ar' ? 'تفعيل التنبيهات الدقيقة' : 'Enable exact alarms';
+      } else if (btn) btn.remove();
     }).catch(() => { el.textContent = ''; });
   }
 }
@@ -388,10 +409,21 @@ window.renderSettings = function renderSettings() {
     };
   });
 
-  // Per-prayer adhan: enable + reciter profile + volume (additive profiles; adhanType stays default)
+  // Per-prayer adhan: mute toggle + reciter profile + volume (additive
+  // profiles; adhanType stays default). v1.4.0: on Android the notification
+  // channel carries ONE global reciter + sound — per-prayer reciter/volume
+  // cannot be honored, so those controls are hidden and the row keeps only
+  // the honest mute toggle (silent notification, alert still arrives).
+  const isAndroid = !!(window.Capacitor && window.Capacitor.isNativePlatform());
   $('adhanPerRows').innerHTML = PRAYERS.map((p) => {
     const on = S.cfg.adhanPerPrayer[p] !== false;
     const prof = (S.cfg.adhanProfiles && S.cfg.adhanProfiles[p]) || {};
+    if (isAndroid) {
+      return `<div class="row">
+        <span class="lbl">${S.lang === 'ar' ? AR_PRAYER[p] : p}</span>
+        <button class="toggle${on ? ' on' : ''}" data-adp="${p}" title="Adhan enabled"></button>
+      </div>`;
+    }
     return `<div class="row" style="flex-wrap:wrap">
       <span class="lbl" style="min-width:70px">${S.lang === 'ar' ? AR_PRAYER[p] : p}</span>
       <button class="toggle${on ? ' on' : ''}" data-adp="${p}" title="Adhan enabled"></button>
