@@ -337,14 +337,14 @@ line.
 ```
 npm run web                     → dist-web/ built            exit 0
 node scripts/test-scheduler.js   → 74/74   ALL GREEN          exit 0
-node scripts/test-contract.js    → 283/283 ALL GREEN          exit 0   (+20, was 263)
+node scripts/test-contract.js    → 284/284 ALL GREEN          exit 0   (+21, was 263)
 node scripts/check-dist.js       → runtime asset validation passed   exit 0
 ```
 
 The **guards were themselves tested** — a guard that cannot fail is worthless.
 Removing the countdown fix, reverting the gold token, or deleting the boot-time
 mode derivation each makes the suite **exit 1** with the specific check failing;
-restoring the file returns it to 281/281.
+restoring the file returns the suite to 284/284 (removing the countdown fix fails exactly 1 check).
 
 Rendered verification — all 42 shots of the final build, recorded in
 `after/_capture-report.json`:

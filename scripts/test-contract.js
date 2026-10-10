@@ -863,7 +863,18 @@ function runArtifactChecks() {
 
   // Packaging / privacy / licensing.
   ok(manifestSrc.includes('allowBackup="false"'), 'allowBackup=false (prayer history stays on-device)');
-  ok(gradleSrc.includes('verifyReleaseKeystore') && gradleSrc.includes('versionCode 8'), 'keystore guard active; versionCode 8');
+  // The Android manifest must stay in LOCKSTEP with the desktop version. A
+  // hardcoded versionCode forced a test edit on every release bump; asserting
+  // the real invariant (versionName === package.json version, versionCode a
+  // positive integer) is both stronger and self-maintaining — it catches the
+  // exact drift class this release had to fix by hand (a bumped package.json
+  // with a stale versionName/versionCode).
+  const gradleVersionName = (gradleSrc.match(/versionName "([^"]+)"/) || [])[1];
+  const gradleVersionCode = parseInt((gradleSrc.match(/versionCode (\d+)/) || [])[1] || '0', 10);
+  ok(gradleSrc.includes('verifyReleaseKeystore') && gradleVersionCode > 0,
+    `keystore guard active; Android versionCode is a positive integer (${gradleVersionCode})`);
+  ok(gradleVersionName === pkgJson.version,
+    `Android versionName (${gradleVersionName}) mirrors package.json (${pkgJson.version})`);
   ok(Object.keys(pkgJson.dependencies).join(',') === 'adhan,tz-lookup', 'runtime deps = adhan + tz-lookup only (capacitor moved to dev)');
   ok(pkgJson.devDependencies.electron === '41.1.0', 'electron pinned to the exact 41.1.0');
   ok(typeof pkgJson.scripts.test === 'string' && pkgJson.scripts.test.includes('test-scheduler'), 'npm test wired');

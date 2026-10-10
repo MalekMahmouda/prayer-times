@@ -87,7 +87,7 @@ Outputs land in `android/app/build/outputs/apk/` and are copied to `release-apk/
 
 ## Versioning
 
-`versionName` mirrors the desktop release (1.1.0); `versionCode` is an integer that must increase with every distributed build.
+`versionName` mirrors the desktop release version in `package.json` (currently 1.5.0); `versionCode` is an integer that must increase with every distributed build (8 at v1.4.0, 9 at v1.5.0).
 
 ## Tested here (build-level)
 

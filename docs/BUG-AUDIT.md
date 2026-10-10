@@ -152,3 +152,27 @@ GitHub Actions CI, ISC LICENSE + in-app credits, stale README/label fixes.
 ## Test totals after v1.4.0
 `scheduler 74/74`, `contract 205/205 with dist present (200 on a fresh clone — the §10 packaging checks summarize as one placeholder without dist/)`, `check-dist` green.
 Artifacts: desktop Setup-1.4.0.exe, Android versionCode 8 / versionName 1.4.0.
+
+## v1.5.0 — expert visual design pass (2026-10-10)
+
+Method: the app was RENDERED and looked at — 42 screenshots across three
+viewports, 8 themes, EN/AR — rather than only measuring computed styles. Six
+defects were found this way and fixed; the countdown one is a P0 (unreadable
+in five of eight themes). Full report: docs/DESIGN-REVIEW.md.
+
+| # | Defect | Evidence | Fix |
+|---|--------|----------|-----|
+| F1 | Hero countdown invisible in all 5 light themes (~1.4:1) — inherited `#fff` onto a near-white `--glass` | before/60 vs after/60 | `.hero-cd { color: var(--text) }` |
+| F2 | A phone's first paint was an empty screen — m-mode derived only on resize | before/39 vs after/39 | derive mode at boot |
+| F3 | `--gold` failed AA as small text on a light surface (islamic 3.20:1) | before/05 vs after/05 | new `--gold-ink` token in all 8 themes |
+| F4 | Dashboard icon row was six unrelated emoji, two illegible at 21px | before/63 vs after/63 | one 23-glyph stroke set, extended to all navigation chrome |
+| F5 | Past prayer cards dimmed to 42% | after/01 | 58%, hover 90% |
+| F11 | Mobile hero + prayer strip painted only on the countdown's 30th tick | after/40, after/70 | repaint from `renderAll()` and `gotoPage('mhome')` |
+
+Open, documented, not fixed: F6 (no content-page headings), F7 (empty states),
+F8–F10 (composition / redundancy / minor inconsistencies).
+
+## Test totals after v1.5.0
+`scheduler 74/74`, `contract 284/284` (+20 §16 guards, +1 §12 Android version-lockstep guard), `check-dist` green.
+Artifacts: desktop Setup-1.5.0.exe, Android versionCode 9 / versionName 1.5.0.
+

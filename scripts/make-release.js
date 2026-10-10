@@ -45,50 +45,46 @@ Highlights
 
 What's new in ${version}
 ------------------------
-This release is a full hardening pass driven by an external code review —
-24 findings fixed, two deferred with notes (see docs/BUG-AUDIT.md, section
-"v1.4.0 — REVIEW.docx fix pass").
+This is a legibility and design-consistency pass driven by an expert visual
+review of the RENDERED app (42 screenshots, 8 themes, EN/AR) rather than by
+measured styles alone. Full report: docs/DESIGN-REVIEW.md.
 
-Qibla
-- FIXED the Kaaba marker landing 90° clockwise on the map rose (it moved
-  along the rotated x-axis instead of the up axis, so facing the Qibla put
-  the marker at 3 o'clock). Live compass AND the static desktop map.
-- Compass debug readout is now opt-in (localStorage.ptCompassDebug=1)
+Readability
+- FIXED: the hero countdown was invisible in all five LIGHT themes (~1.4:1 —
+  white digits inherited onto a near-white glass chip). It now takes its ink
+  from the theme's text colour and is legible in every theme.
+- FIXED: the gold accent failed AA as small text on a light surface (islamic
+  measured 3.20:1). A new --gold-ink token, defined in all eight themes, is
+  now used for text on surfaces; --gold stays for on-gradient accents.
+- Past prayer cards were dimmed to 42%; now 58% (90% on hover), so their
+  times stay readable.
 
-Prayer times & alerts (desktop)
-- The tray, widget and mini mode now ADVANCE to the next prayer the moment
-  one passes (previously they kept showing the passed prayer until midnight)
-- Prayer notifications show the time in your LOCATION's timezone, not the
-  device's (New York device + Riyadh location now says 04:29, not 21:29)
-- Waking from sleep no longer replays stale adhans: a prayer missed by more
-  than 15 minutes sends the notification only
-- Timezone detection for GPS/manual locations fixed (resolved in the main
-  process — the sandboxed renderer could never do it)
-- Windows toasts now group under the app correctly (AppUserModelId match)
-- Tray left-click no longer wipes the prayer list from its menu
-- Settings survive a crash mid-write (atomic write + rename)
-- Auto-start with Windows never flashes the window
+Consistency
+- FIXED: the dashboard icon row used six unrelated emoji styles, two of them
+  illegible at 21px. One 23-glyph stroke icon set now covers the dashboard
+  AND the whole navigation frame (sidebar, bottom nav, More sheet, topbar).
 
-Android
-- The azan now PLAYS: prayer-time notifications carry the chosen bundled
-  adhan recording (new per-reciter notification channels, works offline).
-  Per-prayer "off" = a silent notification (the alert still arrives).
-- Notifications now cover 14 days ahead instead of 7
-- "Enable exact alarms" button when Android shows them off
-- Test Adhan plays the bundled recording offline (no CDN needed)
-- Hardware Back closes sheets/modals before exiting the app
-- Privacy: app data excluded from Google backups (allowBackup=false)
-
-Web / PWA
-- Offline install now includes the calculation engine + compass (full
-  offline after the first visit, as documented)
+Mobile
+- FIXED: a phone's first paint was an empty screen — mobile mode was derived
+  only on a resize event. It is now derived from the viewport at boot.
+- FIXED: the mobile home's next-prayer name, its time and the prayer strip
+  were painted only every 30th countdown tick, so a phone showed a live
+  countdown under an unnamed prayer for up to half a minute. They now paint
+  as soon as data arrives and on navigation to the page.
+- A dedicated mobile home: gradient hero, live countdown, scrollable prayer
+  strip, and a five-tab bottom bar with a More sheet.
 
 Housekeeping
-- ISC LICENSE + in-app credits (Quran text: Tanzil, translation: Saheeh
-  International, adhan recordings courtesy of AlAdhan.com)
-- Runtime dependencies slimmed (installer size), electron pinned to an
-  exact version, npm test script + GitHub Actions CI
-- Android release builds fail loudly if the signing keystore is missing
+- The hero decoration is a soft bloom rather than a hard-edged 320px disc.
+- 20 new contract guards pin every fix above so it cannot silently return.
+
+Known limitations (documented, unchanged)
+- No physical-device or screen-reader verification: touch targets and page
+  heading semantics remain declaration / DOM-inspected only.
+- Content-level emoji remain (settings card headers, the Quran tab strip,
+  in-button glyphs, toast prefixes).
+- Two of the eight themes (blue, emerald) were measured programmatically,
+  not screenshotted — they are structural near-duplicates.
 
 Data & Privacy
 --------------
