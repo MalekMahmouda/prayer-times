@@ -42,6 +42,11 @@
    Desktop shows the geographic bearing only and never pretends to
    have a live sensor. PTCompass.snapshot() exposes the same values
    for the contract tests.
+
+   v1.5 audit: the rim 🕋 marker is GONE. One centered needle points at
+   the qibla on screen (angle = bearing − heading, tracked unwrapped for
+   smooth motion across 0°/360°), with ±2° alignment detection and a
+   single haptic buzz when alignment is ENTERED (re-armed on leaving).
    ════════════════════════════════════════════════════════════ */
 
 (function () {
@@ -65,6 +70,8 @@
     webHandler: null,     // the ONE web handler (added on start, removed on stop)
     watchdog: null,
     lastRender: 0,
+    aligned: false,       // |turn| ≤ ALIGNED_TOL on a fresh heading
+    contAngle: null,      // unwrapped needle angle — smooth, no 359↔0 spin
     // v1.4.0: the diagnostic readout is OPT-IN for release (was on by default
     // during the v1.3.2 investigation). Enable with localStorage.ptCompassDebug=1.
     debug: (() => { try { return localStorage.getItem('ptCompassDebug') === '1'; } catch (e) { return false; } })(),
@@ -74,11 +81,13 @@
   const JITTER_LIMIT = 25;    // deg/s smoothed — above = uncalibrated
   const RENDER_MIN_MS = 100;  // throttle DOM updates (~10fps)
   const ABSURD_MAX = 1e6;     // "impossible" magnitude → reject the reading
+  const ALIGNED_TOL = 2;      // deg — |turn| ≤ 2 counts as facing the Qibla
+  const VIBRATE_MS = 80;      // one short buzz on ENTERING alignment (once)
 
   function els() {
     return {
-      needle: $('compassIn'),
-      mark: $('kaabaMark'),
+      dial: $('compassIn'),
+      needle: $('qNeedle'),
       status: $('compassStatus'),
       deg: $('qDeg'),
       dbg: $('qDbg'),
@@ -119,6 +128,12 @@
     state.lastRaw = adjusted;
     state.heading = adjusted;
     state.lastAcceptedAt = now;
+    // Alignment (v1.5): shortest angular difference, so 359↔1 wraps
+    // correctly. ONE buzz on ENTERING the aligned state; leaving re-arms.
+    const turn = signedTurn(qiblaBearing(), adjusted);
+    const nowAligned = Math.abs(turn) <= ALIGNED_TOL && !isUnreliable();
+    if (nowAligned && !state.aligned) hapticBuzz();
+    state.aligned = nowAligned;
     if (now - state.lastRender >= RENDER_MIN_MS) render();
     return true;
   }
@@ -170,28 +185,40 @@
     return state.jitter > JITTER_LIMIT;
   }
 
+  // One short buzz when the needle ENTERS the aligned state. Graceful on
+  // devices without vibration (desktop Electron, iOS PWA): silent no-op.
+  function hapticBuzz() {
+    try {
+      if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+        navigator.vibrate(VIBRATE_MS);
+      }
+    } catch (e) { /* vibration API missing/blocked → stay silent */ }
+  }
+
   function render() {
     if (!state.active) return;
     const now = Date.now();
-    const { needle, mark, deg, dbg } = els();
+    const { dial, needle, deg, dbg } = els();
     const b = norm360(qiblaBearing());
     if (deg) deg.textContent = `${Math.round(b)}°`;
     if (dbg && state.debug) dbg.textContent = debugLine();
-    // MAP-ROSE GEOMETRY (v1.3.2 fix, corrected v1.4.0): the dial is a
-    // compass rose that must align with the world, so it rotates by −heading
-    // (rose-N lands on true north on screen). The Kaaba sits ON THE RIM at
-    // its geographic bearing: rotate(b) points the element's local −y axis
-    // (up) at bearing b, translateY(−78px) then moves it 78px along that
-    // direction (bearings are measured FROM north = up, so the offset must
-    // run along the unrotated up-axis — the old translate(78px) moved along
-    // the rotated +x axis and landed the marker 90° clockwise, at 3 o'clock
-    // when the phone faced Qibla). The inner rotate(−b) keeps the glyph
-    // upright. Marker screen angle = b − h = the true qibla direction.
-    // With no heading (static) the dial stays a map, north up.
-    if (needle) needle.style.transform = `rotate(${state.heading == null ? 0 : -state.heading}deg)`;
-    if (mark) mark.style.transform = `rotate(${b}deg) translateY(-78px) rotate(${-b}deg)`;
+    // DIAL (map-rose, v1.3.2): the rose rotates by −heading so its N mark
+    // sits on true north. With no heading (static) the dial stays north-up.
+    if (dial) dial.style.transform = `rotate(${state.heading == null ? 0 : -state.heading}deg)`;
+    // NEEDLE (v1.5): one centered needle replaces the rim 🕋 marker. Its
+    // screen angle is bearing − heading, so the tip points at the qibla and
+    // rests straight up when the device faces the Qibla. The angle is
+    // tracked UNWRAPPED and advanced by the shortest-path delta each frame:
+    // motion stays smooth across the 0°/360° seam and never spins the long
+    // way round. No heading (static desktop) → rests at the bare bearing.
+    const target = state.heading == null ? b : norm360(b - state.heading);
+    if (state.contAngle == null) state.contAngle = target;
+    else state.contAngle += signedTurn(target, norm360(state.contAngle));
+    if (needle) needle.style.transform = `rotate(${state.contAngle}deg)`;
     if (state.heading == null) {
       renderStatus(state.denied ? 'qibla.denied' : 'qibla.noSensor', state.denied);
+    } else if (state.aligned && !isUnreliable()) {
+      renderStatus('qibla.aligned', false);
     } else {
       renderStatus('qibla.live', isUnreliable());
     }
@@ -311,6 +338,8 @@
       state.lastRaw = null;
       state.denied = false;
       state.sensor = null;
+      state.aligned = false;   // haptic re-arms on every visit
+      state.contAngle = null;  // needle re-seeds without spinning
       state.webType = null;
       (async () => {
         const ok = (await startNative()) || startWeb(epoch);
@@ -331,6 +360,8 @@
       state.jitter = 0;
       state.denied = false;
       state.sensor = null;
+      state.aligned = false;
+      state.contAngle = null;
       if (state.watchdog) { clearInterval(state.watchdog); state.watchdog = null; }
       if (state.source === 'web') {
         // Remove the SAME handler(s) with the SAME capture flag they were
@@ -360,6 +391,7 @@
         bearing: b,
         heading: state.heading,
         turn: state.heading == null ? null : signedTurn(b, state.heading),
+        aligned: state.aligned,
         sensor: sensorLabel(),
         screenAngle: screenAngle(),
         unreliable: isUnreliable(),

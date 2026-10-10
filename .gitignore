@@ -1,4 +1,12 @@
 
+# Agent tooling (local only)
+.agent/
+.agents/
+.codex/
+.gemini/
+.playwright-mcp/
+skills-lock.json
+
 # Android signing (never commit)
 *.log
 .freebuff/

@@ -45,6 +45,10 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
+    <!-- Qibla alignment haptic: navigator.vibrate() in the Android WebView
+         requires VIBRATE; without it the API silently no-ops. -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+
     <!-- Added by @capacitor/local-notifications (see its plugin manifest):
          POST_NOTIFICATIONS, SCHEDULE_EXACT_ALARM, RECEIVE_BOOT_COMPLETED, WAKE_LOCK -->
 </manifest>

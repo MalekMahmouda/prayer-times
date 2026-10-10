@@ -1,0 +1,1304 @@
+[
+  {
+    "name": "01-desktop-prayers-islamic-en",
+    "vp": {
+      "w": 1440,
+      "h": 900,
+      "dpr": 1,
+      "mobile": false
+    },
+    "theme": "islamic",
+    "lang": "en",
+    "requestedPage": "prayers",
+    "requestedMMode": null,
+    "azan": false,
+    "clipSel": null,
+    "result": {
+      "problems": [],
+      "theme": "islamic",
+      "lang": "en",
+      "dir": "ltr",
+      "mMode": false,
+      "activePage": "page-prayers",
+      "azanOpen": false,
+      "docOverflowX": false,
+      "contentScroll": {
+        "top": 0,
+        "h": 1169,
+        "client": 838
+      }
+    },
+    "bytes": 393050
+  },
+  {
+    "name": "02-desktop-calendar-islamic-en",
+    "vp": {
+      "w": 1440,
+      "h": 900,
+      "dpr": 1,
+      "mobile": false
+    },
+    "theme": "islamic",
+    "lang": "en",
+    "requestedPage": "calendar",
+    "requestedMMode": null,
+    "azan": false,
+    "clipSel": null,
+    "result": {
+      "problems": [],
+      "theme": "islamic",
+      "lang": "en",
+      "dir": "ltr",
+      "mMode": false,
+      "activePage": "page-calendar",
+      "azanOpen": false,
+      "docOverflowX": false,
+      "contentScroll": {
+        "top": 0,
+        "h": 838,
+        "client": 838
+      }
+    },
+    "bytes": 216649
+  },
+  {
+    "name": "03-desktop-qibla-islamic-en",
+    "vp": {
+      "w": 1440,
+      "h": 900,
+      "dpr": 1,
+      "mobile": false
+    },
+    "theme": "islamic",
+    "lang": "en",
+    "requestedPage": "qibla",
+    "requestedMMode": null,
+    "azan": false,
+    "clipSel": null,
+    "result": {
+      "problems": [],
+      "theme": "islamic",
+      "lang": "en",
+      "dir": "ltr",
+      "mMode": false,
+      "activePage": "page-qibla",
+      "azanOpen": false,
+      "docOverflowX": false,
+      "contentScroll": {
+        "top": 0,
+        "h": 838,
+        "client": 838
+      }
+    },
+    "bytes": 236480
+  },
+  {
+    "name": "04-desktop-quran-islamic-en",
+    "vp": {
+      "w": 1440,
+      "h": 900,
+      "dpr": 1,
+      "mobile": false
+    },
+    "theme": "islamic",
+    "lang": "en",
+    "requestedPage": "quran",
+    "requestedMMode": null,
+    "azan": false,
+    "clipSel": null,
+    "result": {
+      "problems": [],
+      "theme": "islamic",
+      "lang": "en",
+      "dir": "ltr",
+      "mMode": false,
+      "activePage": "page-quran",
+      "azanOpen": false,
+      "docOverflowX": false,
+      "contentScroll": {
+        "top": 0,
+        "h": 8473,
+        "client": 838
+      }
+    },
+    "bytes": 234793
+  },
+  {
+    "name": "05-desktop-names-islamic-en",
+    "vp": {
+      "w": 1440,
+      "h": 900,
+      "dpr": 1,
+      "mobile": false
+    },
+    "theme": "islamic",
+    "lang": "en",
+    "requestedPage": "names",
+    "requestedMMode": null,
+    "azan": false,
+    "clipSel": null,
+    "result": {
+      "problems": [],
+      "theme": "islamic",
+      "lang": "en",
+      "dir": "ltr",
+      "mMode": false,
+      "activePage": "page-names",
+      "azanOpen": false,
+      "docOverflowX": false,
+      "contentScroll": {
+        "top": 0,
+        "h": 2626,
+        "client": 838
+      }
+    },
+    "bytes": 380813
+  },
+  {
+    "name": "06-desktop-dhikr-islamic-en",
+    "vp": {
+      "w": 1440,
+      "h": 900,
+      "dpr": 1,
+      "mobile": false
+    },
+    "theme": "islamic",
+    "lang": "en",
+    "requestedPage": "dhikr",
+    "requestedMMode": null,
+    "azan": false,
+    "clipSel": null,
+    "result": {
+      "problems": [],
+      "theme": "islamic",
+      "lang": "en",
+      "dir": "ltr",
+      "mMode": false,
+      "activePage": "page-dhikr",
+      "azanOpen": false,
+      "docOverflowX": false,
+      "contentScroll": {
+        "top": 0,
+        "h": 1217,
+        "client": 838
+      }
+    },
+    "bytes": 244549
+  },
+  {
+    "name": "07-desktop-stats-islamic-en",
+    "vp": {
+      "w": 1440,
+      "h": 900,
+      "dpr": 1,
+      "mobile": false
+    },
+    "theme": "islamic",
+    "lang": "en",
+    "requestedPage": "stats",
+    "requestedMMode": null,
+    "azan": false,
+    "clipSel": null,
+    "result": {
+      "problems": [],
+      "theme": "islamic",
+      "lang": "en",
+      "dir": "ltr",
+      "mMode": false,
+      "activePage": "page-stats",
+      "azanOpen": false,
+      "docOverflowX": false,
+      "contentScroll": {
+        "top": 0,
+        "h": 888,
+        "client": 838
+      }
+    },
+    "bytes": 192921
+  },
+  {
+    "name": "08-desktop-settings-islamic-en",
+    "vp": {
+      "w": 1440,
+      "h": 900,
+      "dpr": 1,
+      "mobile": false
+    },
+    "theme": "islamic",
+    "lang": "en",
+    "requestedPage": "settings",
+    "requestedMMode": null,
+    "azan": false,
+    "clipSel": null,
+    "result": {
+      "problems": [],
+      "theme": "islamic",
+      "lang": "en",
+      "dir": "ltr",
+      "mMode": false,
+      "activePage": "page-settings",
+      "azanOpen": false,
+      "docOverflowX": false,
+      "contentScroll": {
+        "top": 0,
+        "h": 2059,
+        "client": 838
+      }
+    },
+    "bytes": 284608
+  },
+  {
+    "name": "10-desktop-prayers-midnight-en",
+    "vp": {
+      "w": 1440,
+      "h": 900,
+      "dpr": 1,
+      "mobile": false
+    },
+    "theme": "midnight",
+    "lang": "en",
+    "requestedPage": "prayers",
+    "requestedMMode": null,
+    "azan": false,
+    "clipSel": null,
+    "result": {
+      "problems": [],
+      "theme": "midnight",
+      "lang": "en",
+      "dir": "ltr",
+      "mMode": false,
+      "activePage": "page-prayers",
+      "azanOpen": false,
+      "docOverflowX": false,
+      "contentScroll": {
+        "top": 0,
+        "h": 1169,
+        "client": 838
+      }
+    },
+    "bytes": 402132
+  },
+  {
+    "name": "11-desktop-prayers-royal-en",
+    "vp": {
+      "w": 1440,
+      "h": 900,
+      "dpr": 1,
+      "mobile": false
+    },
+    "theme": "royal",
+    "lang": "en",
+    "requestedPage": "prayers",
+    "requestedMMode": null,
+    "azan": false,
+    "clipSel": null,
+    "result": {
+      "problems": [],
+      "theme": "royal",
+      "lang": "en",
+      "dir": "ltr",
+      "mMode": false,
+      "activePage": "page-prayers",
+      "azanOpen": false,
+      "docOverflowX": false,
+      "contentScroll": {
+        "top": 0,
+        "h": 1169,
+        "client": 838
+      }
+    },
+    "bytes": 394715
+  },
+  {
+    "name": "12-desktop-prayers-oled-en",
+    "vp": {
+      "w": 1440,
+      "h": 900,
+      "dpr": 1,
+      "mobile": false
+    },
+    "theme": "oled",
+    "lang": "en",
+    "requestedPage": "prayers",
+    "requestedMMode": null,
+    "azan": false,
+    "clipSel": null,
+    "result": {
+      "problems": [],
+      "theme": "oled",
+      "lang": "en",
+      "dir": "ltr",
+      "mMode": false,
+      "activePage": "page-prayers",
+      "azanOpen": false,
+      "docOverflowX": false,
+      "contentScroll": {
+        "top": 0,
+        "h": 1169,
+        "client": 838
+      }
+    },
+    "bytes": 338325
+  },
+  {
+    "name": "13-desktop-prayers-sahara-en",
+    "vp": {
+      "w": 1440,
+      "h": 900,
+      "dpr": 1,
+      "mobile": false
+    },
+    "theme": "sahara",
+    "lang": "en",
+    "requestedPage": "prayers",
+    "requestedMMode": null,
+    "azan": false,
+    "clipSel": null,
+    "result": {
+      "problems": [],
+      "theme": "sahara",
+      "lang": "en",
+      "dir": "ltr",
+      "mMode": false,
+      "activePage": "page-prayers",
+      "azanOpen": false,
+      "docOverflowX": false,
+      "contentScroll": {
+        "top": 0,
+        "h": 1169,
+        "client": 838
+      }
+    },
+    "bytes": 402478
+  },
+  {
+    "name": "14-desktop-prayers-ocean-en",
+    "vp": {
+      "w": 1440,
+      "h": 900,
+      "dpr": 1,
+      "mobile": false
+    },
+    "theme": "ocean",
+    "lang": "en",
+    "requestedPage": "prayers",
+    "requestedMMode": null,
+    "azan": false,
+    "clipSel": null,
+    "result": {
+      "problems": [],
+      "theme": "ocean",
+      "lang": "en",
+      "dir": "ltr",
+      "mMode": false,
+      "activePage": "page-prayers",
+      "azanOpen": false,
+      "docOverflowX": false,
+      "contentScroll": {
+        "top": 0,
+        "h": 1169,
+        "client": 838
+      }
+    },
+    "bytes": 392847
+  },
+  {
+    "name": "20-desktop-prayers-islamic-ar",
+    "vp": {
+      "w": 1440,
+      "h": 900,
+      "dpr": 1,
+      "mobile": false
+    },
+    "theme": "islamic",
+    "lang": "ar",
+    "requestedPage": "prayers",
+    "requestedMMode": null,
+    "azan": false,
+    "clipSel": null,
+    "result": {
+      "problems": [],
+      "theme": "islamic",
+      "lang": "ar",
+      "dir": "rtl",
+      "mMode": false,
+      "activePage": "page-prayers",
+      "azanOpen": false,
+      "docOverflowX": false,
+      "contentScroll": {
+        "top": 0,
+        "h": 1169,
+        "client": 838
+      }
+    },
+    "bytes": 361964
+  },
+  {
+    "name": "21-desktop-settings-islamic-ar",
+    "vp": {
+      "w": 1440,
+      "h": 900,
+      "dpr": 1,
+      "mobile": false
+    },
+    "theme": "islamic",
+    "lang": "ar",
+    "requestedPage": "settings",
+    "requestedMMode": null,
+    "azan": false,
+    "clipSel": null,
+    "result": {
+      "problems": [],
+      "theme": "islamic",
+      "lang": "ar",
+      "dir": "rtl",
+      "mMode": false,
+      "activePage": "page-settings",
+      "azanOpen": false,
+      "docOverflowX": false,
+      "contentScroll": {
+        "top": 0,
+        "h": 2059,
+        "client": 838
+      }
+    },
+    "bytes": 234254
+  },
+  {
+    "name": "22-desktop-settings-islamic-ar-bottom",
+    "vp": {
+      "w": 1440,
+      "h": 900,
+      "dpr": 1,
+      "mobile": false
+    },
+    "theme": "islamic",
+    "lang": "ar",
+    "requestedPage": "settings",
+    "requestedMMode": null,
+    "azan": false,
+    "clipSel": null,
+    "result": {
+      "problems": [],
+      "theme": "islamic",
+      "lang": "ar",
+      "dir": "rtl",
+      "mMode": false,
+      "activePage": "page-settings",
+      "azanOpen": false,
+      "docOverflowX": false,
+      "contentScroll": {
+        "top": 1169,
+        "h": 2059,
+        "client": 838
+      }
+    },
+    "bytes": 255010
+  },
+  {
+    "name": "23-desktop-calendar-islamic-ar",
+    "vp": {
+      "w": 1440,
+      "h": 900,
+      "dpr": 1,
+      "mobile": false
+    },
+    "theme": "islamic",
+    "lang": "ar",
+    "requestedPage": "calendar",
+    "requestedMMode": null,
+    "azan": false,
+    "clipSel": null,
+    "result": {
+      "problems": [],
+      "theme": "islamic",
+      "lang": "ar",
+      "dir": "rtl",
+      "mMode": false,
+      "activePage": "page-calendar",
+      "azanOpen": false,
+      "docOverflowX": false,
+      "contentScroll": {
+        "top": 0,
+        "h": 838,
+        "client": 838
+      }
+    },
+    "bytes": 197992
+  },
+  {
+    "name": "24-desktop-names-midnight-ar",
+    "vp": {
+      "w": 1440,
+      "h": 900,
+      "dpr": 1,
+      "mobile": false
+    },
+    "theme": "midnight",
+    "lang": "ar",
+    "requestedPage": "names",
+    "requestedMMode": null,
+    "azan": false,
+    "clipSel": null,
+    "result": {
+      "problems": [],
+      "theme": "midnight",
+      "lang": "ar",
+      "dir": "rtl",
+      "mMode": false,
+      "activePage": "page-names",
+      "azanOpen": false,
+      "docOverflowX": false,
+      "contentScroll": {
+        "top": 0,
+        "h": 2626,
+        "client": 838
+      }
+    },
+    "bytes": 370455
+  },
+  {
+    "name": "30-desktop-azan-islamic-en",
+    "vp": {
+      "w": 1440,
+      "h": 900,
+      "dpr": 1,
+      "mobile": false
+    },
+    "theme": "islamic",
+    "lang": "en",
+    "requestedPage": null,
+    "requestedMMode": null,
+    "azan": true,
+    "clipSel": null,
+    "result": {
+      "problems": [],
+      "theme": "islamic",
+      "lang": "en",
+      "dir": "ltr",
+      "mMode": false,
+      "activePage": "page-prayers",
+      "azanOpen": true,
+      "docOverflowX": false,
+      "contentScroll": {
+        "top": 0,
+        "h": 1026,
+        "client": 838
+      }
+    },
+    "bytes": 163421
+  },
+  {
+    "name": "31-desktop-azan-midnight-ar",
+    "vp": {
+      "w": 1440,
+      "h": 900,
+      "dpr": 1,
+      "mobile": false
+    },
+    "theme": "midnight",
+    "lang": "ar",
+    "requestedPage": null,
+    "requestedMMode": null,
+    "azan": true,
+    "clipSel": null,
+    "result": {
+      "problems": [],
+      "theme": "midnight",
+      "lang": "ar",
+      "dir": "rtl",
+      "mMode": false,
+      "activePage": "page-prayers",
+      "azanOpen": true,
+      "docOverflowX": false,
+      "contentScroll": {
+        "top": 0,
+        "h": 1026,
+        "client": 838
+      }
+    },
+    "bytes": 151914
+  },
+  {
+    "name": "39-mobile-firstpaint-prayers-islamic-en",
+    "vp": {
+      "w": 390,
+      "h": 844,
+      "dpr": 3,
+      "mobile": true
+    },
+    "theme": "islamic",
+    "lang": "en",
+    "requestedPage": "prayers",
+    "requestedMMode": "off",
+    "azan": false,
+    "clipSel": null,
+    "result": {
+      "problems": [],
+      "theme": "islamic",
+      "lang": "en",
+      "dir": "ltr",
+      "mMode": true,
+      "activePage": "page-mhome",
+      "azanOpen": false,
+      "docOverflowX": false,
+      "contentScroll": {
+        "top": 0,
+        "h": 1354,
+        "client": 782
+      }
+    },
+    "bytes": 558453
+  },
+  {
+    "name": "40-mobile-mhome-islamic-en",
+    "vp": {
+      "w": 390,
+      "h": 844,
+      "dpr": 3,
+      "mobile": true
+    },
+    "theme": "islamic",
+    "lang": "en",
+    "requestedPage": "mhome",
+    "requestedMMode": "on",
+    "azan": false,
+    "clipSel": null,
+    "result": {
+      "problems": [],
+      "theme": "islamic",
+      "lang": "en",
+      "dir": "ltr",
+      "mMode": true,
+      "activePage": "page-mhome",
+      "azanOpen": false,
+      "docOverflowX": false,
+      "contentScroll": {
+        "top": 0,
+        "h": 1354,
+        "client": 782
+      }
+    },
+    "bytes": 556483
+  },
+  {
+    "name": "41-mobile-mhome-midnight-ar",
+    "vp": {
+      "w": 390,
+      "h": 844,
+      "dpr": 3,
+      "mobile": true
+    },
+    "theme": "midnight",
+    "lang": "ar",
+    "requestedPage": "mhome",
+    "requestedMMode": "on",
+    "azan": false,
+    "clipSel": null,
+    "result": {
+      "problems": [],
+      "theme": "midnight",
+      "lang": "ar",
+      "dir": "rtl",
+      "mMode": true,
+      "activePage": "page-mhome",
+      "azanOpen": false,
+      "docOverflowX": false,
+      "contentScroll": {
+        "top": 0,
+        "h": 1250,
+        "client": 782
+      }
+    },
+    "bytes": 570949
+  },
+  {
+    "name": "42-mobile-calendar-islamic-en",
+    "vp": {
+      "w": 390,
+      "h": 844,
+      "dpr": 3,
+      "mobile": true
+    },
+    "theme": "islamic",
+    "lang": "en",
+    "requestedPage": "calendar",
+    "requestedMMode": "on",
+    "azan": false,
+    "clipSel": null,
+    "result": {
+      "problems": [],
+      "theme": "islamic",
+      "lang": "en",
+      "dir": "ltr",
+      "mMode": true,
+      "activePage": "page-calendar",
+      "azanOpen": false,
+      "docOverflowX": false,
+      "contentScroll": {
+        "top": 0,
+        "h": 782,
+        "client": 782
+      }
+    },
+    "bytes": 228371
+  },
+  {
+    "name": "43-mobile-calendar-islamic-ar",
+    "vp": {
+      "w": 390,
+      "h": 844,
+      "dpr": 3,
+      "mobile": true
+    },
+    "theme": "islamic",
+    "lang": "ar",
+    "requestedPage": "calendar",
+    "requestedMMode": "on",
+    "azan": false,
+    "clipSel": null,
+    "result": {
+      "problems": [],
+      "theme": "islamic",
+      "lang": "ar",
+      "dir": "rtl",
+      "mMode": true,
+      "activePage": "page-calendar",
+      "azanOpen": false,
+      "docOverflowX": false,
+      "contentScroll": {
+        "top": 0,
+        "h": 782,
+        "client": 782
+      }
+    },
+    "bytes": 223981
+  },
+  {
+    "name": "44-mobile-settings-islamic-en",
+    "vp": {
+      "w": 390,
+      "h": 844,
+      "dpr": 3,
+      "mobile": true
+    },
+    "theme": "islamic",
+    "lang": "en",
+    "requestedPage": "settings",
+    "requestedMMode": "on",
+    "azan": false,
+    "clipSel": null,
+    "result": {
+      "problems": [],
+      "theme": "islamic",
+      "lang": "en",
+      "dir": "ltr",
+      "mMode": true,
+      "activePage": "page-settings",
+      "azanOpen": false,
+      "docOverflowX": false,
+      "contentScroll": {
+        "top": 0,
+        "h": 4350,
+        "client": 782
+      }
+    },
+    "bytes": 210625
+  },
+  {
+    "name": "45-mobile-quran-islamic-ar",
+    "vp": {
+      "w": 390,
+      "h": 844,
+      "dpr": 3,
+      "mobile": true
+    },
+    "theme": "islamic",
+    "lang": "ar",
+    "requestedPage": "quran",
+    "requestedMMode": "on",
+    "azan": false,
+    "clipSel": null,
+    "result": {
+      "problems": [],
+      "theme": "islamic",
+      "lang": "ar",
+      "dir": "rtl",
+      "mMode": true,
+      "activePage": "page-quran",
+      "azanOpen": false,
+      "docOverflowX": false,
+      "contentScroll": {
+        "top": 0,
+        "h": 8620,
+        "client": 782
+      }
+    },
+    "bytes": 319025
+  },
+  {
+    "name": "46-mobile-qibla-midnight-en",
+    "vp": {
+      "w": 390,
+      "h": 844,
+      "dpr": 3,
+      "mobile": true
+    },
+    "theme": "midnight",
+    "lang": "en",
+    "requestedPage": "qibla",
+    "requestedMMode": "on",
+    "azan": false,
+    "clipSel": null,
+    "result": {
+      "problems": [],
+      "theme": "midnight",
+      "lang": "en",
+      "dir": "ltr",
+      "mMode": true,
+      "activePage": "page-qibla",
+      "azanOpen": false,
+      "docOverflowX": false,
+      "contentScroll": {
+        "top": 0,
+        "h": 866,
+        "client": 782
+      }
+    },
+    "bytes": 293878
+  },
+  {
+    "name": "47-mobile-azan-islamic-en",
+    "vp": {
+      "w": 390,
+      "h": 844,
+      "dpr": 3,
+      "mobile": true
+    },
+    "theme": "islamic",
+    "lang": "en",
+    "requestedPage": null,
+    "requestedMMode": "on",
+    "azan": true,
+    "clipSel": null,
+    "result": {
+      "problems": [],
+      "theme": "islamic",
+      "lang": "en",
+      "dir": "ltr",
+      "mMode": true,
+      "activePage": "page-mhome",
+      "azanOpen": true,
+      "docOverflowX": false,
+      "contentScroll": {
+        "top": 0,
+        "h": 1354,
+        "client": 782
+      }
+    },
+    "bytes": 412106
+  },
+  {
+    "name": "50-narrow320-calendar-islamic-en",
+    "vp": {
+      "w": 320,
+      "h": 844,
+      "dpr": 3,
+      "mobile": true
+    },
+    "theme": "islamic",
+    "lang": "en",
+    "requestedPage": "calendar",
+    "requestedMMode": "on",
+    "azan": false,
+    "clipSel": null,
+    "result": {
+      "problems": [],
+      "theme": "islamic",
+      "lang": "en",
+      "dir": "ltr",
+      "mMode": true,
+      "activePage": "page-calendar",
+      "azanOpen": false,
+      "docOverflowX": false,
+      "contentScroll": {
+        "top": 0,
+        "h": 782,
+        "client": 782
+      }
+    },
+    "bytes": 210152
+  },
+  {
+    "name": "51-narrow320-prayers-islamic-ar",
+    "vp": {
+      "w": 320,
+      "h": 844,
+      "dpr": 3,
+      "mobile": true
+    },
+    "theme": "islamic",
+    "lang": "ar",
+    "requestedPage": "mhome",
+    "requestedMMode": "on",
+    "azan": false,
+    "clipSel": null,
+    "result": {
+      "problems": [],
+      "theme": "islamic",
+      "lang": "ar",
+      "dir": "rtl",
+      "mMode": true,
+      "activePage": "page-mhome",
+      "azanOpen": false,
+      "docOverflowX": false,
+      "contentScroll": {
+        "top": 0,
+        "h": 1411,
+        "client": 782
+      }
+    },
+    "bytes": 477756
+  },
+  {
+    "name": "60-zoom-hero-chip-islamic-en",
+    "vp": {
+      "w": 1440,
+      "h": 900,
+      "dpr": 1,
+      "mobile": false
+    },
+    "theme": "islamic",
+    "lang": "en",
+    "requestedPage": "prayers",
+    "requestedMMode": null,
+    "azan": false,
+    "clipSel": ".hero-glass",
+    "result": {
+      "problems": [],
+      "theme": "islamic",
+      "lang": "en",
+      "dir": "ltr",
+      "mMode": false,
+      "activePage": "page-prayers",
+      "azanOpen": false,
+      "docOverflowX": false,
+      "contentScroll": {
+        "top": 0,
+        "h": 1169,
+        "client": 838
+      }
+    },
+    "bytes": 47091
+  },
+  {
+    "name": "61-zoom-hero-chip-sahara-en",
+    "vp": {
+      "w": 1440,
+      "h": 900,
+      "dpr": 1,
+      "mobile": false
+    },
+    "theme": "sahara",
+    "lang": "en",
+    "requestedPage": "prayers",
+    "requestedMMode": null,
+    "azan": false,
+    "clipSel": ".hero-glass",
+    "result": {
+      "problems": [],
+      "theme": "sahara",
+      "lang": "en",
+      "dir": "ltr",
+      "mMode": false,
+      "activePage": "page-prayers",
+      "azanOpen": false,
+      "docOverflowX": false,
+      "contentScroll": {
+        "top": 0,
+        "h": 1169,
+        "client": 838
+      }
+    },
+    "bytes": 50531
+  },
+  {
+    "name": "62-zoom-hero-chip-midnight-en",
+    "vp": {
+      "w": 1440,
+      "h": 900,
+      "dpr": 1,
+      "mobile": false
+    },
+    "theme": "midnight",
+    "lang": "en",
+    "requestedPage": "prayers",
+    "requestedMMode": null,
+    "azan": false,
+    "clipSel": ".hero-glass",
+    "result": {
+      "problems": [],
+      "theme": "midnight",
+      "lang": "en",
+      "dir": "ltr",
+      "mMode": false,
+      "activePage": "page-prayers",
+      "azanOpen": false,
+      "docOverflowX": false,
+      "contentScroll": {
+        "top": 0,
+        "h": 1169,
+        "client": 838
+      }
+    },
+    "bytes": 55256
+  },
+  {
+    "name": "63-zoom-sunnight-islamic-en",
+    "vp": {
+      "w": 1440,
+      "h": 900,
+      "dpr": 1,
+      "mobile": false
+    },
+    "theme": "islamic",
+    "lang": "en",
+    "requestedPage": "prayers",
+    "requestedMMode": null,
+    "azan": false,
+    "clipSel": "#sunGrid",
+    "result": {
+      "problems": [],
+      "theme": "islamic",
+      "lang": "en",
+      "dir": "ltr",
+      "mMode": false,
+      "activePage": "page-prayers",
+      "azanOpen": false,
+      "docOverflowX": false,
+      "contentScroll": {
+        "top": 0,
+        "h": 1169,
+        "client": 838
+      }
+    },
+    "bytes": 25903
+  },
+  {
+    "name": "64-zoom-glance-islamic-en",
+    "vp": {
+      "w": 1440,
+      "h": 900,
+      "dpr": 1,
+      "mobile": false
+    },
+    "theme": "islamic",
+    "lang": "en",
+    "requestedPage": "prayers",
+    "requestedMMode": null,
+    "azan": false,
+    "clipSel": "#page-prayers .glance",
+    "result": {
+      "problems": [],
+      "theme": "islamic",
+      "lang": "en",
+      "dir": "ltr",
+      "mMode": false,
+      "activePage": "page-prayers",
+      "azanOpen": false,
+      "docOverflowX": false,
+      "contentScroll": {
+        "top": 0,
+        "h": 1169,
+        "client": 838
+      }
+    },
+    "bytes": 31975
+  },
+  {
+    "name": "65-zoom-prayercards-islamic-en",
+    "vp": {
+      "w": 1440,
+      "h": 900,
+      "dpr": 1,
+      "mobile": false
+    },
+    "theme": "islamic",
+    "lang": "en",
+    "requestedPage": "prayers",
+    "requestedMMode": null,
+    "azan": false,
+    "clipSel": "#page-prayers .prayer-cards",
+    "result": {
+      "problems": [],
+      "theme": "islamic",
+      "lang": "en",
+      "dir": "ltr",
+      "mMode": false,
+      "activePage": "page-prayers",
+      "azanOpen": false,
+      "docOverflowX": false,
+      "contentScroll": {
+        "top": 0,
+        "h": 1169,
+        "client": 838
+      }
+    },
+    "bytes": 39254
+  },
+  {
+    "name": "66-zoom-sidebar-islamic-en",
+    "vp": {
+      "w": 1440,
+      "h": 900,
+      "dpr": 1,
+      "mobile": false
+    },
+    "theme": "islamic",
+    "lang": "en",
+    "requestedPage": "prayers",
+    "requestedMMode": null,
+    "azan": false,
+    "clipSel": ".sb",
+    "result": {
+      "problems": [],
+      "theme": "islamic",
+      "lang": "en",
+      "dir": "ltr",
+      "mMode": false,
+      "activePage": "page-prayers",
+      "azanOpen": false,
+      "docOverflowX": false,
+      "contentScroll": {
+        "top": 0,
+        "h": 1169,
+        "client": 838
+      }
+    },
+    "bytes": 346095
+  },
+  {
+    "name": "67-zoom-bottomnav-islamic-en",
+    "vp": {
+      "w": 390,
+      "h": 844,
+      "dpr": 3,
+      "mobile": true
+    },
+    "theme": "islamic",
+    "lang": "en",
+    "requestedPage": "prayers",
+    "requestedMMode": "on",
+    "azan": false,
+    "clipSel": ".bnav",
+    "result": {
+      "problems": [],
+      "theme": "islamic",
+      "lang": "en",
+      "dir": "ltr",
+      "mMode": true,
+      "activePage": "page-mhome",
+      "azanOpen": false,
+      "docOverflowX": false,
+      "contentScroll": {
+        "top": 0,
+        "h": 1354,
+        "client": 782
+      }
+    },
+    "bytes": 119569
+  },
+  {
+    "name": "68-zoom-moresheet-islamic-en",
+    "vp": {
+      "w": 390,
+      "h": 844,
+      "dpr": 3,
+      "mobile": true
+    },
+    "theme": "islamic",
+    "lang": "en",
+    "requestedPage": "prayers",
+    "requestedMMode": "on",
+    "azan": false,
+    "clipSel": ".msheet",
+    "result": {
+      "problems": [],
+      "theme": "islamic",
+      "lang": "en",
+      "dir": "ltr",
+      "mMode": true,
+      "activePage": "page-mhome",
+      "azanOpen": false,
+      "docOverflowX": false,
+      "contentScroll": {
+        "top": 0,
+        "h": 1354,
+        "client": 782
+      }
+    },
+    "bytes": 169518
+  },
+  {
+    "name": "69-zoom-topbar-islamic-en",
+    "vp": {
+      "w": 1440,
+      "h": 900,
+      "dpr": 1,
+      "mobile": false
+    },
+    "theme": "islamic",
+    "lang": "en",
+    "requestedPage": "prayers",
+    "requestedMMode": null,
+    "azan": false,
+    "clipSel": ".topbar",
+    "result": {
+      "problems": [],
+      "theme": "islamic",
+      "lang": "en",
+      "dir": "ltr",
+      "mMode": false,
+      "activePage": "page-prayers",
+      "azanOpen": false,
+      "docOverflowX": false,
+      "contentScroll": {
+        "top": 0,
+        "h": 1169,
+        "client": 838
+      }
+    },
+    "bytes": 49930
+  },
+  {
+    "name": "70-zoom-mobile-hero-islamic-en",
+    "vp": {
+      "w": 390,
+      "h": 844,
+      "dpr": 3,
+      "mobile": true
+    },
+    "theme": "islamic",
+    "lang": "en",
+    "requestedPage": "mhome",
+    "requestedMMode": "on",
+    "azan": false,
+    "clipSel": ".mhero",
+    "result": {
+      "problems": [],
+      "theme": "islamic",
+      "lang": "en",
+      "dir": "ltr",
+      "mMode": true,
+      "activePage": "page-mhome",
+      "azanOpen": false,
+      "docOverflowX": false,
+      "contentScroll": {
+        "top": 0,
+        "h": 1354,
+        "client": 782
+      }
+    },
+    "bytes": 1102133
+  }
+]

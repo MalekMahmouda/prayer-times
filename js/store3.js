@@ -228,9 +228,14 @@ function streaks(db) {
     .sort();
   let longest = 0, run = 0, prev = null;
   for (const k of days) {
-    const d = new Date(k + 'T12:00:00');
-    if (prev && (d - prev) === 86400000) run++; else run = 1;
-    prev = d;
+    // Consecutive CALENDAR days — never exact-ms diffs: local-noon dates are
+    // 23 h/25 h apart across DST transitions, which broke streaks at the    // first DST boundary of the run.
+    if (prev) {
+      const exp = new Date(prev);
+      exp.setDate(exp.getDate() + 1);
+      if (localDateKey(exp) === k) run++; else run = 1;
+    } else run = 1;
+    prev = new Date(k + 'T12:00:00');
     if (run > longest) longest = run;
   }
   return { current, longest: Math.max(longest, current) };

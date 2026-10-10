@@ -23,19 +23,19 @@
   <!-- ══ SIDEBAR ══ -->
   <aside class="sb">
     <div class="sb-logo">
-      <div class="sb-logo-title"><span class="lg">🕌</span><span class="t" id="sbTitle">Prayer Times</span></div>
+      <div class="sb-logo-title"><span class="lg" data-icon="mosque"></span><span class="t" id="sbTitle">Prayer Times</span></div>
       <div class="sb-sub sb-logo-sub" id="sbSub">Islamic Companion</div>
     </div>
     <nav class="sb-nav">
-      <button class="nav-item active" data-page="prayers"><span class="ni">🕌</span><span class="t">Prayers</span></button>
-      <button class="nav-item" data-page="calendar"><span class="ni">📅</span><span class="t">Calendar</span></button>
-      <button class="nav-item" data-page="qibla"><span class="ni">🧭</span><span class="t">Qibla</span></button>
-      <button class="nav-item" data-page="quran"><span class="ni">📖</span><span class="t">Quran</span></button>
-      <button class="nav-item" data-page="names"><span class="ni">🌙</span><span class="t">99 Names</span></button>
-      <button class="nav-item" data-page="dhikr"><span class="ni">📿</span><span class="t">Dhikr</span></button>
-      <button class="nav-item" data-page="stats"><span class="ni">📊</span><span class="t">Stats</span></button>
+      <button class="nav-item active" data-page="prayers"><span class="ni" data-icon="mosque"></span><span class="t">Prayers</span></button>
+      <button class="nav-item" data-page="calendar"><span class="ni" data-icon="calendar"></span><span class="t">Calendar</span></button>
+      <button class="nav-item" data-page="qibla"><span class="ni" data-icon="compass"></span><span class="t">Qibla</span></button>
+      <button class="nav-item" data-page="quran"><span class="ni" data-icon="book"></span><span class="t">Quran</span></button>
+      <button class="nav-item" data-page="names"><span class="ni" data-icon="star"></span><span class="t">99 Names</span></button>
+      <button class="nav-item" data-page="dhikr"><span class="ni" data-icon="beads"></span><span class="t">Dhikr</span></button>
+      <button class="nav-item" data-page="stats"><span class="ni" data-icon="chart"></span><span class="t">Stats</span></button>
       <div style="flex:1"></div>
-      <button class="nav-item" data-page="settings"><span class="ni">⚙️</span><span class="t">Settings</span></button>
+      <button class="nav-item" data-page="settings"><span class="ni" data-icon="sliders"></span><span class="t">Settings</span></button>
     </nav>
     <div class="sb-foot">
       <div class="lbl">Theme</div>
@@ -48,13 +48,13 @@
 
     <header class="topbar">
       <div class="tb-loc" id="tbLoc">
-        <span>📍</span><span class="loc-name" id="locName">Detecting…</span><span style="font-size:11px">✏️</span>
+        <span data-icon="pin"></span><span class="loc-name" id="locName">Detecting…</span><span style="font-size:11px" data-icon="pencil"></span>
       </div>
       <span class="tb-date" id="tbDate">—</span>
       <span class="tb-spacer"></span>
       <span class="badge-off" id="offBadge">Offline</span>
-      <button class="icon-btn" id="langBtn" title="Language / اللغة">🌐</button>
-      <button class="icon-btn nav-jump" data-page="settings" title="Settings">⚙️</button>
+      <button class="icon-btn" id="langBtn" title="Language / اللغة"><span data-icon="globe"></span></button>
+      <button class="icon-btn nav-jump" data-page="settings" title="Settings"><span data-icon="sliders"></span></button>
     </header>
 
     <main class="content" id="content">
@@ -63,7 +63,7 @@
       <section class="page mhome" id="page-mhome">
         <div class="mhero">
           <div class="mh-top">
-            <button class="mh-loc" id="mLocChip">📍 <span id="mLocName">—</span></button>
+            <button class="mh-loc" id="mLocChip"><span data-icon="pin"></span> <span id="mLocName">—</span></button>
             <span class="mh-hijri" id="mHijri">—</span>
           </div>
           <div class="mh-next-lbl" id="mNextLbl">Next Prayer</div>
@@ -74,8 +74,8 @@
         </div>
         <div class="mstrip" id="mStrip"></div>
         <div class="mquick">
-          <button class="mq" id="mQiblaBtn"><span>🧭</span><span id="mQiblaLbl">Qibla</span></button>
-          <button class="mq" id="mHomeMore"><span>⋯</span><span id="mHomeMoreLbl">More</span></button>
+          <button class="mq" id="mQiblaBtn"><span data-icon="compass"></span><span id="mQiblaLbl">Qibla</span></button>
+          <button class="mq" id="mHomeMore"><span data-icon="more"></span><span id="mHomeMoreLbl">More</span></button>
         </div>
         <div class="sec-lbl" id="lblSunM">Sun &amp; Night</div>
         <div class="sun-grid" id="sunGridM"></div>
@@ -95,7 +95,7 @@
             <div class="hero-dates">
               <span id="heroGreg">—</span>
               <span class="hero-hijri" id="heroHijri">—</span>
-              <span class="hero-loc" id="heroLoc">📍 <span id="heroLocName">—</span></span>
+              <span class="hero-loc" id="heroLoc"><span data-icon="pin"></span> <span id="heroLocName">—</span></span>
             </div>
             <div class="hero-next-lbl" id="heroNextLbl">Next Prayer</div>
             <div class="hero-name" id="heroName">—</div>
@@ -162,8 +162,8 @@
               <div class="compass">
                 <div class="compass-in" id="compassIn">
                   <span class="n-mark">N</span>
-                  <span class="kaaba" id="kaabaMark">🕋</span>
                 </div>
+                <span class="q-needle" id="qNeedle" aria-hidden="true"></span>
               </div>
               <div class="qibla-info">
                 <div class="qibla-deg" id="qDeg">—°</div>
@@ -217,7 +217,7 @@
             <button class="icon-btn" id="rdFontMinus" title="Smaller text">A−</button>
             <button class="icon-btn" id="rdFontPlus" title="Larger text">A+</button>
             <button class="icon-btn" id="rdLine" title="Line spacing">↕</button>
-            <button class="icon-btn" id="rdTr" title="Translation">🌐</button>
+            <button class="icon-btn" id="rdTr" title="Translation"><span data-icon="globe"></span></button>
             <button class="icon-btn" id="rdDark" title="Night mode">◑</button>
           </div>
           <div class="mushaf-wrap">
@@ -427,10 +427,22 @@
           <div class="card set-card">
             <div class="card-h">📍 <span id="shLocation">Location</span></div>
             <div style="font-size:15px;font-weight:700;margin-bottom:4px" id="setLocName">—</div>
-            <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px" id="setCoords">—</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px" id="setCoords" dir="ltr">—</div>
             <button class="btn" id="btnGps" style="width:100%;margin-bottom:9px">📍 <span id="slGps">Use GPS / Current Location</span></button>
             <button class="btn" id="btnCitySearch" style="width:100%">🔍 <span id="slCitySearch">Search city</span></button>
           </div>
+
+          <div class="card set-card" id="aboutCard">
+            <div class="card-h">ℹ️ <span id="shAbout">About</span></div>
+            <div class="about-dua" id="aboutDua" dir="rtl">يرجى الدعاء ليا ولوالدي</div>
+            <div class="about-dev" id="aboutDev" dir="ltr">Developed by Malek Mahmoud</div>
+            <div class="note" id="aboutVersion">Prayer Times</div>
+          </div>
+
+          <footer class="site-foot" id="siteFoot">
+            <span id="footDua" dir="rtl">يرجى الدعاء ليا ولوالدي</span>
+            <span id="footDev" dir="ltr">Developed by Malek Mahmoud</span>
+          </footer>
 
         </div>
       </section>
@@ -442,11 +454,11 @@
 <!-- ══ BOTTOM NAV (mobile: 5 tabs + More sheet) ══ -->
 <nav class="bnav">
   <div class="bnav-inner">
-    <button class="bbtn active" data-page="prayers"><span class="bi">🕌</span><span class="t">Prayers</span></button>
-    <button class="bbtn" data-page="quran"><span class="bi">📖</span><span class="t">Quran</span></button>
-    <button class="bbtn" data-page="qibla"><span class="bi">🧭</span><span class="t">Qibla</span></button>
-    <button class="bbtn" data-page="dhikr"><span class="bi">📿</span><span class="t">Dhikr</span></button>
-    <button class="bbtn" id="mMoreTab"><span class="bi">⋯</span><span class="t" id="mMoreTabLbl">More</span></button>
+    <button class="bbtn active" data-page="prayers"><span class="bi" data-icon="mosque"></span><span class="t">Prayers</span></button>
+    <button class="bbtn" data-page="quran"><span class="bi" data-icon="book"></span><span class="t">Quran</span></button>
+    <button class="bbtn" data-page="qibla"><span class="bi" data-icon="compass"></span><span class="t">Qibla</span></button>
+    <button class="bbtn" data-page="dhikr"><span class="bi" data-icon="beads"></span><span class="t">Dhikr</span></button>
+    <button class="bbtn" id="mMoreTab"><span class="bi" data-icon="more"></span><span class="t" id="mMoreTabLbl">More</span></button>
   </div>
 </nav>
 
@@ -456,14 +468,14 @@
     <div class="msheet-grab"></div>
     <div class="msheet-title" id="mMoreTitle">More</div>
     <div class="msheet-grid">
-      <button class="msq" data-page="calendar"><span class="msi">📅</span><span class="mst">Calendar</span></button>
-      <button class="msq" data-page="names"><span class="msi">🌙</span><span class="mst">Names</span></button>
-      <button class="msq" data-page="stats"><span class="msi">📊</span><span class="mst">Stats</span></button>
-      <button class="msq" data-page="settings"><span class="msi">⚙️</span><span class="mst">Settings</span></button>
+      <button class="msq" data-page="calendar"><span class="msi" data-icon="calendar"></span><span class="mst">Calendar</span></button>
+      <button class="msq" data-page="names"><span class="msi" data-icon="star"></span><span class="mst">Names</span></button>
+      <button class="msq" data-page="stats"><span class="msi" data-icon="chart"></span><span class="mst">Stats</span></button>
+      <button class="msq" data-page="settings"><span class="msi" data-icon="sliders"></span><span class="mst">Settings</span></button>
     </div>
     <div class="msheet-row">
-      <button class="msq" id="mLang"><span class="msi">🌐</span><span class="mst" id="mLangLbl">Language</span></button>
-      <button class="msq" id="mLoc"><span class="msi">📍</span><span class="mst" id="mLocLbl">Location</span></button>
+      <button class="msq" id="mLang"><span class="msi" data-icon="globe"></span><span class="mst" id="mLangLbl">Language</span></button>
+      <button class="msq" id="mLoc"><span class="msi" data-icon="pin"></span><span class="mst" id="mLocLbl">Location</span></button>
     </div>
     <div class="msheet-theme">
       <div class="lbl" id="mThemeLbl">Theme</div>
@@ -533,6 +545,21 @@
     <div style="display:flex;gap:9px;justify-content:flex-end">
       <button class="btn" id="txtModalCancel">Cancel</button>
       <button class="btn primary" id="txtModalOk">OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ FULL-SCREEN AZAN (mobile Test Adhan + foreground prayer time) ══ -->
+<div class="azan-screen" id="azanOverlay" role="dialog" aria-modal="true" aria-labelledby="azanArName" aria-hidden="true">
+  <div class="azan-inner">
+    <div class="azan-city" id="azanCity">—</div>
+    <div class="azan-ar" id="azanArName">الفجر</div>
+    <div class="azan-en" id="azanEnName">Fajr</div>
+    <div class="azan-clock" id="azanClock">--:--</div>
+    <div class="azan-status" id="azanStatus">الأذان قيد التشغيل…</div>
+    <div class="azan-controls">
+      <button class="btn primary" id="azanStop">■ <span id="azanStopLbl">Stop</span></button>
+      <button class="btn" id="azanClose"><span id="azanCloseLbl">Close</span></button>
     </div>
   </div>
 </div>

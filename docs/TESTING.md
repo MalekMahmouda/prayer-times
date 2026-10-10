@@ -1,6 +1,6 @@
 # Manual & Real-Device Test Checklist (v1.3.2)
 
-Automated coverage: `node scripts/test-scheduler.js` (53/53), `node scripts/test-contract.js` (155/155), `node scripts/check-dist.js` (all green after builds). The items below **require a real device or OS event** and cannot be automated here.
+Automated coverage: `node scripts/test-scheduler.js` (74/74), `node scripts/test-contract.js` (255/255), `node scripts/check-dist.js` (all green after builds). The items below **require a real device or OS event** and cannot be automated here.
 
 ## Windows (Electron)
 - [ ] **Online**: times render; no offline badge.
@@ -19,7 +19,7 @@ Automated coverage: `node scripts/test-scheduler.js` (53/53), `node scripts/test
 - [ ] **Battery saver / Doze**: notifications may be batched — confirm they still arrive reasonably close; the Settings page shows the honest exact-alarm status ("alarms may be delayed by the system" when not granted).
 - [ ] **Do Not Disturb**: channel behaves per system policy; no crash.
 - [ ] **Exact alarm grant** (Settings → Apps → Special access → Alarms & reminders): grant it, then confirm the Settings page reports exact alarms enabled.
-- [ ] **Compass**: on the Qibla page the dial rotates with the device (turn until the 🕋 marker points forward); numeric bearing matches desktop; calibration hint appears when moving erratically; static-bearing hint shows on devices without a magnetometer.
+- [ ] **Compass**: on the Qibla page the dial rotates with the device and the centered needle points at the Qibla (turn until the needle points to the top of the dial); entering the ±2° window shows "Aligned" and buzzes ONCE; numeric bearing matches desktop; calibration hint appears when moving erratically; static-bearing hint shows on devices without a magnetometer.
 - [ ] **Notification ID isolation**: change city/method/offsets → old alarms replaced, no duplicates (check with `adb shell dumpsys alarm | grep -i prayer` if handy).
 - [ ] **GPS accuracy**: indoors (poor fix) with a previous location → warning shown, previous location kept.
 - [ ] **Offline (airplane mode)**: times still correct; saved locations switch instantly.
@@ -34,9 +34,9 @@ Automated coverage: `node scripts/test-scheduler.js` (53/53), `node scripts/test
 ### v1.3.2 additions (Qibla + Azan reliability release)
 **Qibla — real device (do these in order; the debug readout makes failures self-explaining):**
 - [ ] **Debug readout visible**: under the compass status you should see `Qibla bearing: … | Device heading: … | Turn: … | Sensor: …`. If `Sensor:` stays `none` or `permission denied`, that is the defect — note it.
-- [ ] **Riyadh flat test (the headline check)**: stand facing any direction, lay the phone flat, note `Qibla bearing` (Riyadh ≈ 244°). Rotate the phone 360° on the table — the dial must keep the 🕋 marker pointing at the true geographic direction at every angle, and `Turn:` must read ±180..0..−180 smoothly (0 exactly when the top of the phone aims at the Kaaba).
+- [ ] **Riyadh flat test (the headline check)**: stand facing any direction, lay the phone flat, note `Qibla bearing` (Riyadh ≈ 244°). Rotate the phone 360° on the table — the needle must keep pointing at the true geographic direction at every angle (no 0°/360° jumps, no long-way spins across the seam), and `Turn:` must read ±180..0..−180 smoothly (0 exactly when the top of the phone aims at the Kaaba).
 - [ ] **Bearing vs arrow agreement**: the numeric bearing and the physical arrow must agree (device held flat, top edge = the direction you'd walk). Try a second city (Cairo ≈ 136°, London ≈ 119°, New York ≈ 59°) via a location switch.
-- [ ] **Portrait → landscape → portrait (P6)**: rotate the device upright/flat — the 🕋 must keep pointing at the SAME geographic direction (the debug line's `Device heading` shifts by exactly the screen angle when you rotate).
+- [ ] **Portrait → landscape → portrait (P6)**: rotate the device upright/flat — the needle must keep pointing at the SAME geographic direction (the debug line's `Device heading` shifts by exactly the screen angle when you rotate).
 - [ ] **Leave/re-enter ×3 (P7)**: open/close the Qibla page three times fast — dial must stay responsive (no stacked listeners), heading returns instantly.
 - [ ] **Calibration figure-∞** when `Compass unreliable` appears; the readout's `Sensor:` line should read `deviceorientationabsolute` on modern Android, `webkitCompassHeading` on iOS, `deviceorientation` at worst.
 
@@ -145,7 +145,7 @@ problem; `Sensor: permission denied` = iOS/Android permission problem.
 ## Regression commands (must stay green before any release)
 ```bash
 node scripts/test-scheduler.js   # 74/74 (v1.4.0: +tick-advance / tz / recovery-boundary)
-node scripts/test-contract.js    # 205/205 with dist (200 on a fresh clone; §10 packaging checks need dist/)
+node scripts/test-contract.js    # 255/255 with dist (250 on a fresh clone; §10 packaging checks need dist/) — includes the v1.5 Qibla needle/alignment/haptic suite and §14 full-screen azan + attribution
 node scripts/check-dist.js       # exit 0 after builds (regenerate tmp/asar-list.txt first)
 ```
 The contract prints a different total depending on `dist/` presence: the
@@ -154,13 +154,38 @@ summarized as one pending check when it does not (a fresh CI clone).
 
 ## v1.4.0 review-fix verification (third-party REVIEW.docx pass)
 
-### Qibla map-rose geometry (BLOCKER — fixed)
-The v1.3.3 marker transform moved along the rotated +x axis, landing the
-Kaaba 90° clockwise (3 o'clock when the phone faced Qibla). Fixed to
-`rotate(b) translateY(-78px) rotate(-b)` in BOTH the live compass
-(compass.js) and the static render (pages.js). **Device check:** face the
-Qibla (status line Turn ≈ 0°) — the Kaaba must sit at the TOP of the ring;
-then rotate the phone 90° — the marker must slide a quarter turn on the rim.
+### Qibla needle (v1.5 audit — rim 🕋 marker replaced)
+The v1.4.0 rim marker (`rotate(b) translateY(-78px) rotate(-b)`) is GONE.
+One centered needle now points at the qibla on screen: angle =
+bearing − heading, tracked unwrapped so motion stays smooth across the
+0°/360° seam; the rose dial still keeps its N mark on true north. The
+static render (pages.js) rests the needle at the bare bearing, north-up.
+**Device checks:** face the Qibla (status line Turn ≈ 0°) — the needle
+must rest straight UP and the status must read "Aligned" with exactly ONE
+vibration; rotate the phone 90° — the needle swings a quarter turn with
+it; leave and re-enter the ±2° window — exactly one more buzz per entry,
+none while holding; status returns to "Live compass" when outside the window.
+
+### Full-screen Azan surface + attribution (v1.4.0)
+One presentation surface (`#azanOverlay`) is shared by the Test Adhan button
+and the automatic prayer-time event on Android and the web build. The desktop
+app keeps its own always-on-top Electron overlay window (`adhan.html`).
+- **Test Adhan (Android)**: Settings → Test Adhan must open the full-screen
+  Azan screen (Arabic prayer heading, live clock, "Adhan is playing…", Stop and
+  Close) AND play the bundled recording offline; Close/Stop stops the audio and
+  returns to Settings with the bottom nav intact. No prayer alarm is created and
+  the next-prayer countdown is unchanged.
+- **Automatic (Android, app in the FOREGROUND)**: with a prayer time passing,
+  the delivered notification must also present the same full-screen Azan screen.
+  Pre-alerts ("… in N minutes") must NOT open it.
+- **Automatic (Android, screen locked / app backgrounded)**: only the system
+  notification + channel sound — the app must NOT launch over the lock screen.
+  This is a platform restriction, not a defect.
+- **Hardware Back** while the azan screen is open closes the screen first, then
+  walks page history, then exits — never exits on the first press.
+- **Attribution**: Settings shows an About card with the Arabic supplication
+  `يرجى الدعاء ليا ولوالدي` (RTL) and `Developed by Malek Mahmoud`, plus the same
+  credit in the page footer; the Arabic UI shows `تطوير: Malek Mahmoud`.
 
 ### Android adhan sound matrix (physical device — user-run)
 | # | Config | Expected notification |

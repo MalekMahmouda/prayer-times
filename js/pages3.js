@@ -304,7 +304,7 @@ window.renderDailyCard = function renderDailyCard(elId) {
     const ay = QURAN_DATA ? (QURAN_DATA.surahs[ref.s - 1] || {}).ayahs : null;
     const a = ay ? ay[ref.a - 1] : null;
     if (!a) { el.style.display = 'none'; return; }
-    html = `<div style="font-size:11px;color:var(--gold);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">${S.lang === 'ar' ? 'آية' : 'Ayah'} · ${ref.s}:${ref.a}</div>
+    html = `<div style="font-size:11px;color:var(--gold-ink);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">${S.lang === 'ar' ? 'آية' : 'Ayah'} · ${ref.s}:${ref.a}</div>
       <div style="font-family:var(--font-ar);font-size:21px;line-height:2" dir="rtl">${a.ar}</div>
       <div style="font-size:12.5px;color:var(--text-muted);margin-top:6px;line-height:1.6">${escHtml(a.en)}</div>`;
   } else {

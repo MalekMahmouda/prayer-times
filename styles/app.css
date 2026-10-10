@@ -26,7 +26,7 @@
   --grad:linear-gradient(140deg,#1e3a8a 0%,#0b1030 100%);
   --shadow-lg:0 18px 50px rgba(0,0,0,.55); --shadow:0 8px 26px rgba(0,0,0,.4); --shadow-sm:0 2px 10px rgba(0,0,0,.35);
   --glass:rgba(14,21,38,.72); --glass-brd:rgba(255,255,255,.08);
-  --gold:#f0cc70; --on-primary:#fff;
+  --gold:#f0cc70; --gold-ink:#f0cc70; --on-primary:#fff;
   --h-fajr:#7aa5ff; --h-dhuhr:#f0cc70; --h-asr:#f59e6b; --h-maghrib:#e06a9c; --h-isha:#8fa8ff;
 }
 [data-theme="royal"]{
@@ -37,7 +37,7 @@
   --grad:linear-gradient(140deg,#4c1d95 0%,#1a0f3c 100%);
   --shadow-lg:0 18px 50px rgba(0,0,0,.5); --shadow:0 8px 26px rgba(30,10,70,.45); --shadow-sm:0 2px 10px rgba(30,10,70,.35);
   --glass:rgba(23,18,51,.72); --glass-brd:rgba(255,255,255,.08);
-  --gold:#e9d5ff; --on-primary:#1a0f3c;
+  --gold:#e9d5ff; --gold-ink:#e9d5ff; --on-primary:#1a0f3c;
   --h-fajr:#b9a5ff; --h-dhuhr:#ffd98a; --h-asr:#ff9d76; --h-maghrib:#f47ab5; --h-isha:#9db4ff;
 }
 [data-theme="oled"]{
@@ -48,7 +48,7 @@
   --grad:linear-gradient(140deg,#0c2417 0%,#020403 100%);
   --shadow-lg:none; --shadow:none; --shadow-sm:none;
   --glass:rgba(10,10,10,.8); --glass-brd:rgba(121,255,176,.12);
-  --gold:#79ffb0; --on-primary:#04140b;
+  --gold:#79ffb0; --gold-ink:#79ffb0; --on-primary:#04140b;
   --h-fajr:#79d6ff; --h-dhuhr:#79ffb0; --h-asr:#ffe079; --h-maghrib:#ff9e79; --h-isha:#b9ffe1;
 }
 [data-theme="blue"]{
@@ -59,7 +59,7 @@
   --grad:linear-gradient(140deg,#0a6aaa 0%,#063f68 100%);
   --shadow-lg:0 18px 44px rgba(10,64,110,.16); --shadow:0 8px 24px rgba(10,64,110,.1); --shadow-sm:0 2px 10px rgba(10,64,110,.07);
   --glass:rgba(255,255,255,.78); --glass-brd:rgba(255,255,255,.65);
-  --gold:#b45309; --on-primary:#fff;
+  --gold:#b45309; --gold-ink:#b45309; --on-primary:#fff;
   --h-fajr:#4c7dd0; --h-dhuhr:#d9a416; --h-asr:#e0803a; --h-maghrib:#c0508a; --h-isha:#46609e;
 }
 [data-theme="emerald"]{
@@ -70,7 +70,7 @@
   --grad:linear-gradient(140deg,#1d7a44 0%,#0b4a27 100%);
   --shadow-lg:0 18px 44px rgba(16,80,45,.15); --shadow:0 8px 24px rgba(16,80,45,.1); --shadow-sm:0 2px 10px rgba(16,80,45,.07);
   --glass:rgba(255,255,255,.78); --glass-brd:rgba(255,255,255,.65);
-  --gold:#a16207; --on-primary:#fff;
+  --gold:#a16207; --gold-ink:#a16207; --on-primary:#fff;
   --h-fajr:#5178b8; --h-dhuhr:#cf9d1d; --h-asr:#d97b3a; --h-maghrib:#bb5085; --h-isha:#4d6aa0;
 }
 [data-theme="islamic"]{
@@ -81,7 +81,11 @@
   --grad:linear-gradient(140deg,#146b47 0%,#093f28 100%);
   --shadow-lg:0 18px 44px rgba(15,75,48,.15); --shadow:0 8px 24px rgba(15,75,48,.1); --shadow-sm:0 2px 10px rgba(15,75,48,.07);
   --glass:rgba(255,253,247,.8); --glass-brd:rgba(255,255,255,.7);
-  --gold:#b8860b; --on-primary:#fff;
+  /* v1.5: --gold (#b8860b) measured 3.20:1 as 11px text on --surface — below the
+     4.5:1 AA floor. --gold now means "bright accent for on-gradient/on-brand
+     surfaces" only; --gold-ink is the legible variant for text on a light
+     surface (5.32:1 on --surface). */
+  --gold:#b8860b; --gold-ink:#8f6208; --on-primary:#fff;
   --h-fajr:#5b7db4; --h-dhuhr:#c99a1e; --h-asr:#cf7c38; --h-maghrib:#b4517f; --h-isha:#4f6b9e;
 }
 [data-theme="ocean"]{
@@ -92,18 +96,22 @@
   --grad:linear-gradient(140deg,#0a4a7c 0%,#052e50 100%);
   --shadow-lg:0 18px 44px rgba(8,55,95,.16); --shadow:0 8px 24px rgba(8,55,95,.1); --shadow-sm:0 2px 10px rgba(8,55,95,.07);
   --glass:rgba(255,255,255,.78); --glass-brd:rgba(255,255,255,.65);
-  --gold:#b45309; --on-primary:#fff;
+  --gold:#b45309; --gold-ink:#b45309; --on-primary:#fff;
   --h-fajr:#4a7cc4; --h-dhuhr:#d4a018; --h-asr:#d97c40; --h-maghrib:#bd4f8c; --h-isha:#4563a6;
 }
 [data-theme="sahara"]{
   --bg:#f8f1e4; --surface:#fffaf0; --surface2:#f4ecdd;
   --primary:#b45309; --primary-soft:rgba(180,83,9,.1);
-  --text:#33200c; --text-muted:#8a6f52; --border:#e8d8bd;
+  /* v1.5: --text-muted was #8a6f52 → 4.00:1 on --surface2 and 4.18:1 on --bg,
+     i.e. below the 4.5:1 AA floor for the small muted labels that use it
+     (.sec-lbl, .tb-date, .sub, .note). Darkened by ~14% luminance: same warm
+     brown, now 4.93:1 on --surface2 and 5.15:1 on --bg. */
+  --text:#33200c; --text-muted:#7a6146; --border:#e8d8bd;
   --success:#15803d; --warning:#b45309; --danger:#b91c1c;
   --grad:linear-gradient(140deg,#c06514 0%,#7c3a06 100%);
   --shadow-lg:0 18px 44px rgba(120,70,15,.16); --shadow:0 8px 24px rgba(120,70,15,.11); --shadow-sm:0 2px 10px rgba(120,70,15,.08);
   --glass:rgba(255,250,240,.8); --glass-brd:rgba(255,255,255,.7);
-  --gold:#92610a; --on-primary:#fff;
+  --gold:#92610a; --gold-ink:#92610a; --on-primary:#fff;
   --h-fajr:#6b7fc0; --h-dhuhr:#c08a10; --h-asr:#c25f22; --h-maghrib:#a63d6e; --h-isha:#54618f;
 }
 
@@ -126,8 +134,30 @@ button{cursor:pointer;border:none;background:none}
 ::-webkit-scrollbar-thumb:hover{background:var(--text-muted);background-clip:padding-box}
 ::selection{background:var(--primary-soft)}
 a{color:var(--primary)}
+/* Reduced motion = a gentler equivalent, not a blanket kill (Apple §14).
+   Movement (transform / keyframes / smooth scroll) is neutralised, but short
+   opacity + colour fades survive so state changes still read as feedback
+   instead of snapping. */
 @media (prefers-reduced-motion: reduce){
-  *,*::before,*::after{animation-duration:.01ms !important;transition-duration:.01ms !important}
+  *,*::before,*::after{
+    animation-duration:.01ms !important;animation-iteration-count:1 !important;
+    transition-property:opacity,color,background-color,border-color,box-shadow,fill,stroke !important;
+    transition-duration:.15s !important;
+  }
+  html{scroll-behavior:auto}
+  .page.active{animation:none}
+}
+/* Translucency is a preference too: swap the glass layers for solid ones. */
+@media (prefers-reduced-transparency: reduce){
+  .topbar,.bnav,.toast,.hero-glass{background:var(--surface) !important;backdrop-filter:none !important;-webkit-backdrop-filter:none !important}
+  .overlay{backdrop-filter:none !important;-webkit-backdrop-filter:none !important;background:rgba(0,0,0,.66)}
+}
+/* Higher contrast: near-solid panes with a defined border. */
+@media (prefers-contrast: more){
+  .topbar,.bnav,.toast,.hero-glass,.overlay{backdrop-filter:none !important;-webkit-backdrop-filter:none !important}
+  .topbar,.bnav{background:var(--surface) !important}
+  .card,.set-card,.modal,.hchip,.cal-cell,.surah-item,.bm-item{border-color:var(--text) !important}
+  .sub,.note,.muted,.hero-hijri,.cal-cell .hj{color:var(--text) !important}
 }
 
 /* ── App shell ── */
@@ -188,7 +218,7 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:14px 0}
 /* ── Buttons / inputs / toggles ── */
 .btn{padding:10px 18px;border-radius:12px;font-size:13.5px;font-weight:650;background:var(--surface2);color:var(--text);border:1px solid var(--border);transition:all var(--dur) var(--ease);display:inline-flex;align-items:center;gap:7px}
 .btn:hover{border-color:var(--primary);color:var(--primary);transform:translateY(-1px);box-shadow:var(--shadow-sm)}
-.btn:active{transform:translateY(0)}
+.btn:active{transform:translateY(0) scale(.97);transition-duration:80ms}
 .btn.primary{background:var(--grad);color:var(--on-primary);border-color:transparent;box-shadow:var(--shadow-sm)}
 .btn.primary:hover{color:var(--on-primary);filter:brightness(1.12)}
 .btn.sm{padding:6px 13px;font-size:12.5px;border-radius:10px}
@@ -213,18 +243,28 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:14px 0}
 
 /* ── Dashboard: hero ── */
 .hero{background:var(--grad);border-radius:var(--r-xl);padding:30px 34px;color:#fff;position:relative;overflow:hidden;box-shadow:var(--shadow-lg);margin-bottom:20px;isolation:isolate}
-.hero::before{content:'';position:absolute;top:-100px;inset-inline-end:-90px;width:320px;height:320px;border-radius:50%;background:rgba(255,255,255,.06);filter:blur(2px)}
-.hero::after{content:'';position:absolute;bottom:-130px;inset-inline-start:30%;width:340px;height:340px;border-radius:50%;background:rgba(255,255,255,.045);filter:blur(2px)}
+/* Decoration: heavily blurred light blooms, not hard-edged discs. At blur(2px)
+   the 320px circles read as dirty smudges on the card (clearly visible in the
+   sahara/oled captures); a wide blur turns them into a soft glow. */
+.hero::before{content:'';position:absolute;top:-110px;inset-inline-end:-100px;width:340px;height:340px;border-radius:50%;background:rgba(255,255,255,.1);filter:blur(34px)}
+.hero::after{content:'';position:absolute;bottom:-140px;inset-inline-start:30%;width:360px;height:360px;border-radius:50%;background:rgba(255,255,255,.075);filter:blur(40px)}
 .hero .hz{position:relative;z-index:1}
 .hero-dates{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px;color:rgba(255,255,255,.72);margin-bottom:10px;align-items:baseline}
 .hero-hijri{font-size:17px;font-weight:750;color:#fff}
 .hero-loc{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:rgba(255,255,255,.75);cursor:pointer;padding:4px 11px;border-radius:20px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.14);transition:background var(--dur)}
 .hero-loc:hover{background:rgba(255,255,255,.2)}
 .hero-next-lbl{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.55);margin-top:20px;font-weight:700}
-.hero-name{font-size:46px;font-weight:800;line-height:1.12;letter-spacing:.5px;text-shadow:0 2px 18px rgba(0,0,0,.25)}
+/* Large display type takes NEGATIVE tracking and tight leading (Apple §15):
+   letters read too far apart as they grow, so positive tracking on a 40–52px
+   heading is wrong in a way that is invisible at body sizes. */
+.hero-name{font-size:46px;font-weight:800;line-height:1.06;letter-spacing:-.02em;text-shadow:0 2px 18px rgba(0,0,0,.25)}
 .hero-time{font-size:17px;color:var(--gold);font-weight:650;margin-top:2px;font-variant-numeric:tabular-nums}
 .hero-glass{position:relative;z-index:1;display:inline-flex;flex-direction:column;align-items:flex-end;background:var(--glass);border:1px solid var(--glass-brd);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:18px;padding:12px 22px;margin-top:10px;box-shadow:var(--shadow-sm)}
-.hero-cd{font-size:52px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:2px;line-height:1.15}
+/* The chip behind this is --glass, which is near-white in all five light themes
+   while .hero inherits color:#fff — so the countdown rendered white-on-white
+   (measured ~1.4:1) in blue/emerald/islamic/ocean/sahara. --text tracks the
+   glass polarity in every theme: ~10:1 light, ~14:1 dark. */
+.hero-cd{font-size:52px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.01em;line-height:1.04;color:var(--text)}
 .hero-cd-lbl{font-size:10.5px;color:var(--text-muted);letter-spacing:1.2px;text-transform:uppercase;font-weight:650}
 
 /* ── Prayer cards ── */
@@ -233,15 +273,17 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:14px 0}
 .pcard::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--pc,var(--primary));opacity:0;transition:opacity var(--dur)}
 .pcard:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
 .pcard:hover::before{opacity:.9}
-.pcard .ic{font-size:27px;line-height:1;filter:drop-shadow(0 3px 8px var(--pc-soft,rgba(0,0,0,.15)))}
+.pcard .ic{font-size:27px;line-height:1;color:var(--primary)}
 .pcard .nm{font-size:13.5px;font-weight:650;margin-top:8px}
 .pcard .nm-ar{font-size:11.5px;color:var(--text-muted);margin-top:1px}
 .pcard .tm{font-size:21px;font-weight:800;margin-top:9px;font-variant-numeric:tabular-nums;letter-spacing:.3px}
 .pcard .sr{font-size:11px;color:var(--text-muted);margin-top:9px;border-top:1px dashed var(--border);padding-top:7px}
 .pcard.next{border-color:var(--pc,var(--primary));background:linear-gradient(180deg,var(--pc-soft,var(--primary-soft)),var(--surface) 70%);box-shadow:0 0 0 3px var(--pc-soft,var(--primary-soft)),var(--shadow)}
 .pcard.next::before{opacity:1}
-.pcard.past{opacity:.42}
-.pcard.past:hover{opacity:.75}
+/* .42 washed the past prayers' times out to ~4:1 effective, which is worse in
+   the dark themes; .58 keeps the de-emphasis while the time stays readable. */
+.pcard.past{opacity:.58}
+.pcard.past:hover{opacity:.9}
 .pcard .ribbon{position:absolute;top:11px;inset-inline-end:11px;background:var(--pc,var(--primary));color:var(--on-primary);font-size:8.5px;font-weight:800;letter-spacing:1px;padding:3px 9px;border-radius:20px;box-shadow:0 2px 6px var(--pc-soft,rgba(0,0,0,.25))}
 .pt-fajr{--pc:var(--h-fajr);--pc-soft:color-mix(in srgb,var(--h-fajr) 14%,transparent)}
 .pt-dhuhr{--pc:var(--h-dhuhr);--pc-soft:color-mix(in srgb,var(--h-dhuhr) 14%,transparent)}
@@ -253,7 +295,7 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:14px 0}
 .sun-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:11px}
 .sun-cell{background:var(--surface);border:1px solid var(--border);border-radius:15px;padding:14px 8px;text-align:center;transition:transform .18s var(--ease),box-shadow var(--dur)}
 .sun-cell:hover{transform:translateY(-2px);box-shadow:var(--shadow-sm)}
-.sun-cell .ic{font-size:21px}
+.sun-cell .ic{font-size:21px;color:var(--primary)}
 .sun-cell .lbl{font-size:10.5px;color:var(--text-muted);margin-top:6px;font-weight:600}
 .sun-cell .tm{font-size:15px;font-weight:750;margin-top:3px;font-variant-numeric:tabular-nums}
 
@@ -264,15 +306,32 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:14px 0}
 .gcell .gi{font-size:21px;width:40px;height:40px;border-radius:12px;background:var(--primary-soft);display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .gcell .gv{font-size:14.5px;font-weight:750;line-height:1.2}
 .gcell .gl{font-size:10.5px;color:var(--text-muted);margin-top:2px}
+/* ── Icon set ──
+   One stroke language (24px grid, 1.75 stroke, currentColor) shared by the
+   prayer cards, sun & night and glance rows. The glyphs size from the existing
+   font-size, so no layout value had to change. */
+.pcard .ic svg,.sun-cell .ic svg,.gcell .gi svg{width:1em;height:1em;display:block;margin:0 auto}
+.gcell .gi{color:var(--primary)}
+
+/* ── App-chrome icons (nav, topbar, sheets) — same stroke set as the dashboard.
+   They size from the host's existing font-size (1em), so no layout value changed
+   when the colour emoji were replaced. */
+[data-icon]{display:inline-flex;align-items:center;justify-content:center;vertical-align:-.14em}
+[data-icon] svg{width:1em;height:1em;display:block}
 
 /* ── Calendar ── */
 .cal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px;flex-wrap:wrap}
 .cal-title{font-size:20px;font-weight:800;letter-spacing:.2px}
 .cal-title .hj{font-size:12.5px;color:var(--text-muted);font-weight:500;margin-inline-start:10px}
 .cal-nav{display:flex;gap:7px;align-items:center}
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:7px}
+/* minmax(0,1fr) + min-width:0 on the cells is load-bearing: with plain 1fr the
+   grid items' default `min-width:auto` floor wins, the 7 columns resolve to
+   their min-content width (~62.5px each) and every week row becomes ~483px wide
+   inside a ~362px box on a phone — the leading columns then fall outside the
+   viewport and .content{overflow-x:hidden} clips them with no way to scroll. */
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:7px}
 .cal-dow{font-size:10.5px;text-transform:uppercase;letter-spacing:.7px;color:var(--text-muted);text-align:center;padding:5px 0;font-weight:750}
-.cal-cell{aspect-ratio:1/.8;background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:8px 9px;cursor:pointer;transition:all var(--dur) var(--ease);display:flex;flex-direction:column;gap:2px;position:relative}
+.cal-cell{aspect-ratio:1/.8;min-width:0;overflow:hidden;background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:8px 9px;cursor:pointer;transition:all var(--dur) var(--ease);display:flex;flex-direction:column;gap:2px;position:relative}
 .cal-cell:hover{border-color:var(--primary);transform:translateY(-2px);box-shadow:var(--shadow-sm)}
 .cal-cell .dg{font-size:13.5px;font-weight:750;font-variant-numeric:tabular-nums}
 .cal-cell .hj{font-size:9.5px;color:var(--text-muted)}
@@ -286,9 +345,12 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:14px 0}
 
 /* ── Qibla ── */
 .qibla-wrap{display:flex;gap:30px;align-items:center;justify-content:center;flex-wrap:wrap;padding:14px 0}
-.compass{width:200px;height:200px;border-radius:50%;background:conic-gradient(from 0deg,var(--primary),var(--gold),var(--primary-soft),var(--gold),var(--primary));display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);flex-shrink:0}
+.compass{width:200px;height:200px;border-radius:50%;position:relative;background:conic-gradient(from 0deg,var(--primary),var(--gold),var(--primary-soft),var(--gold),var(--primary));display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);flex-shrink:0}
 .compass-in{width:172px;height:172px;border-radius:50%;background:var(--surface);display:flex;align-items:center;justify-content:center;transition:transform 1s var(--ease);position:relative;box-shadow:inset 0 2px 10px rgba(0,0,0,.08)}
-.compass-in .kaaba{font-size:46px;transition:transform 1s var(--ease);display:inline-block;filter:drop-shadow(0 4px 10px rgba(0,0,0,.2))}
+.q-needle{position:absolute;left:50%;top:50%;width:10px;height:148px;margin:-74px 0 0 -5px;pointer-events:none;transition:transform .18s ease-out;filter:drop-shadow(0 2px 5px rgba(0,0,0,.28));z-index:2}
+.q-needle::before{content:'';position:absolute;left:0;top:0;width:10px;height:74px;background:var(--danger);clip-path:polygon(50% 0,100% 100%,0 100%);border-radius:2px}
+.q-needle::after{content:'';position:absolute;left:0;bottom:0;width:10px;height:58px;background:var(--text-muted);opacity:.55;clip-path:polygon(0 0,100% 0,50% 100%);border-radius:2px}
+.compass::after{content:'';position:absolute;left:50%;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:var(--primary);box-shadow:0 0 0 3px var(--surface);z-index:3}
 .compass .n-mark{position:absolute;top:9px;left:50%;transform:translateX(-50%);font-size:11px;font-weight:800;color:var(--text-muted)}
 .qibla-info{text-align:center}
 .qibla-deg{font-size:50px;font-weight:800;color:var(--primary);line-height:1.05;font-variant-numeric:tabular-nums}
@@ -298,7 +360,7 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:14px 0}
 
 /* ── Quran tabs ── */
 .qtabs{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
-.qtab{padding:8px 16px;border-radius:12px;background:var(--surface);border:1.5px solid var(--border);font-size:13px;font-weight:650;transition:all var(--dur) var(--ease)}
+.qtab{padding:8px 16px;min-height:40px;border-radius:12px;background:var(--surface);border:1.5px solid var(--border);font-size:13px;font-weight:650;transition:all var(--dur) var(--ease)}
 .qtab:hover{border-color:var(--primary)}
 .qtab.active{background:var(--grad);color:var(--on-primary);border-color:transparent}
 
@@ -343,7 +405,7 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:14px 0}
 .vpop button{display:flex;align-items:center;gap:9px;padding:10px 14px;border-radius:10px;font-size:13px;font-weight:650;color:var(--text);background:transparent;text-align:start}
 .vpop button:hover{background:var(--primary-soft);color:var(--primary)}
 /* surah list — ornament medallion */
-.surah-item .num{width:42px;height:42px;flex-shrink:0;border-radius:50%;border:1.5px solid var(--gold);color:var(--gold);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;background:radial-gradient(circle at 30% 28%,rgba(255,255,255,.7),transparent 70%);position:relative}
+.surah-item .num{width:42px;height:42px;flex-shrink:0;border-radius:50%;border:1.5px solid var(--gold-ink);color:var(--gold-ink);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;background:radial-gradient(circle at 30% 28%,rgba(255,255,255,.7),transparent 70%);position:relative}
 .surah-item .num::after{content:'';position:absolute;inset:3px;border-radius:50%;border:1px dashed rgba(185,138,47,.4)}
 .qs-hit{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:12px 15px;margin-bottom:8px;cursor:pointer;transition:border-color var(--dur)}
 .qs-hit:hover{border-color:var(--primary)}
@@ -361,7 +423,7 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:14px 0}
 .bm-item .bmm:hover .bm-meta{color:var(--primary)}
 .bm-item .bm-meta{font-size:12px;font-weight:750;transition:color var(--dur)}
 .bm-item .bm-txt{font-size:12px;color:var(--text-muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.bm-item .bm-note{font-size:11px;color:var(--gold);font-style:italic;margin-top:2px}
+.bm-item .bm-note{font-size:11px;color:var(--gold-ink);font-style:italic;margin-top:2px}
 .hs-done{--hc:var(--success)}
 .hs-missed{--hc:var(--warning)}
 .hs-none{--hc:var(--text-muted)}
@@ -427,10 +489,10 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:14px 0}
 .ncard:hover{transform:translateY(-3px);border-color:var(--primary);box-shadow:var(--shadow)}
 .ncard:hover::before{opacity:1}
 .ncard.today{border-color:var(--gold);box-shadow:0 0 0 3px var(--primary-soft),var(--shadow-sm)}
-.ncard.today::after{content:'★';position:absolute;top:7px;inset-inline-end:9px;color:var(--gold);font-size:11px}
+.ncard.today::after{content:'★';position:absolute;top:7px;inset-inline-end:9px;color:var(--gold-ink);font-size:11px}
 .ncard .nn{font-size:10px;color:var(--text-muted);font-weight:750;letter-spacing:.5px}
 .ncard .nar{font-size:22px;font-weight:800;color:var(--primary);font-family:var(--font-ar);margin-top:5px;line-height:1.35}
-.ncard .ntr{font-size:11px;font-weight:700;color:var(--gold);margin-top:4px}
+.ncard .ntr{font-size:11px;font-weight:700;color:var(--gold-ink);margin-top:4px}
 .ncard .nen{font-size:10.5px;color:var(--text-muted);margin-top:5px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 
 /* ── Dhikr ── */
@@ -517,6 +579,12 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:14px 0}
   .glance{grid-template-columns:1fr 1fr}
   .cal-head{flex-direction:column;align-items:stretch;gap:10px}
   .cal-nav{justify-content:center}
+  /* tighter gutters so 7 columns stay legible at 320–390px */
+  .cal-grid{gap:4px}
+  .cal-cell{padding:6px 5px;border-radius:10px;aspect-ratio:1/.92}
+  .cal-cell .dg{font-size:13px}
+  .cal-cell .hj{font-size:10px}
+  .cal-cell.today::after{width:5px;height:5px;bottom:4px;inset-inline-end:5px}
   .player{inset-inline:12px;bottom:84px}
   .player .pmeta{width:108px}
   .pvol{display:none}
@@ -532,9 +600,9 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:14px 0}
   .mh-loc span{overflow:hidden;text-overflow:ellipsis}
   .mh-hijri{font-size:11.5px;color:rgba(255,255,255,.75);text-align:end}
   .mh-next-lbl{position:relative;z-index:1;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.6);margin-top:22px;font-weight:700}
-  .mh-name{position:relative;z-index:1;font-size:40px;font-weight:800;line-height:1.15;letter-spacing:.5px;text-shadow:0 2px 16px rgba(0,0,0,.25)}
+  .mh-name{position:relative;z-index:1;font-size:40px;font-weight:800;line-height:1.06;letter-spacing:-.02em;text-shadow:0 2px 16px rgba(0,0,0,.25)}
   .mh-time{position:relative;z-index:1;font-size:16.5px;color:var(--gold);font-weight:650;margin-top:2px;font-variant-numeric:tabular-nums}
-  .mh-cd{position:relative;z-index:1;font-size:44px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:2px;line-height:1.15;margin-top:6px}
+  .mh-cd{position:relative;z-index:1;font-size:44px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.01em;line-height:1.04;margin-top:6px}
   .mh-cd-lbl{position:relative;z-index:1;font-size:10.5px;color:rgba(255,255,255,.65);letter-spacing:1.2px;text-transform:uppercase;font-weight:650}
   /* ── prayer strip (swipeable) ── */
   .mstrip{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding:14px 0 6px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
@@ -577,3 +645,76 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:14px 0}
 .bnav .bbtn .bi{font-size:20px;transition:transform var(--dur) var(--ease)}
 .bnav .bbtn:hover .bi{transform:translateY(-2px)}
 .bnav .bbtn.active{color:var(--primary);font-weight:750}
+
+/* ── Full-screen Azan screen (mobile: Test Adhan + foreground prayer time) ──
+   Restrained motion: a single fade + slight scale, ease-out, no bouncing.
+   Reduced-motion users get the same screen with the transition removed. */
+.azan-screen{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;
+  padding:calc(env(safe-area-inset-top,0px) + 24px) 22px calc(env(safe-area-inset-bottom,0px) + 24px);
+  background:radial-gradient(120% 90% at 50% -10%,var(--primary-soft),transparent 62%),var(--bg);
+  opacity:0;pointer-events:none;transition:opacity var(--dur) var(--ease)}
+.azan-screen.open{opacity:1;pointer-events:all}
+.azan-inner{width:min(92vw,460px);text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px;
+  transform:scale(.96);transition:transform var(--dur-slow) var(--ease)}
+.azan-screen.open .azan-inner{transform:scale(1)}
+.azan-city{font-size:12px;font-weight:700;letter-spacing:.4px;color:var(--text-muted);text-transform:uppercase}
+.azan-ar{font-family:var(--font-ar);font-size:clamp(52px,16vw,86px);font-weight:800;line-height:1.15;
+  color:var(--primary);margin:6px 0 0}
+.azan-en{font-size:16px;font-weight:650;color:var(--text-muted);margin-top:2px}
+.azan-clock{font-size:clamp(34px,10vw,54px);font-weight:750;letter-spacing:1px;font-variant-numeric:tabular-nums;
+  color:var(--text);margin-top:14px;direction:ltr}
+.azan-status{font-size:14px;font-weight:600;color:var(--gold);margin-top:4px}
+.azan-controls{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:26px}
+.azan-controls .btn{min-height:46px;min-width:120px;justify-content:center}
+.about-dua{font-family:var(--font-ar);font-size:22px;font-weight:750;color:var(--primary);text-align:center;
+  line-height:1.6;margin:4px 0 10px}
+.about-dev{font-size:14px;font-weight:700;text-align:center;color:var(--text);margin-bottom:8px}
+#aboutVersion{text-align:center}
+@media (prefers-reduced-motion: reduce){
+  .azan-screen,.azan-inner{transition:none}
+  .azan-inner{transform:none}
+}
+
+/* ── About footer credit (Settings page) ── */
+.site-foot{display:flex;flex-direction:column;gap:5px;align-items:center;text-align:center;
+  padding:14px 8px 6px;color:var(--text-muted);font-size:12px}
+.site-foot #footDua{font-family:var(--font-ar);font-size:16px;font-weight:750;color:var(--primary);line-height:1.5}
+.site-foot #footDev{font-weight:700;font-size:12.5px;color:var(--text)}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Design pass — measured fixes (see docs/DESIGN-AUDIT.md)
+   Every value below answers a specific measurement, not a preference.
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* ── 1. Touch ergonomics (coarse pointers only) ──
+   Measured before this rule at 390px: quran tabs 36px tall, switches 32px,
+   history chips 43px, theme swatches 40×40 — all under the 44px comfortable
+   touch minimum. Where the geometry carries meaning (the switch knob) the hit
+   area grows via an inset pseudo-element instead of resizing the control. */
+@media (pointer:coarse){
+  .qtab,.chip,.hchip{min-height:44px}
+  .icon-btn{min-width:44px;min-height:44px}
+  .toggle::before{content:'';position:absolute;inset:-7px -6px}
+  .bbtn{min-height:52px}
+}
+
+/* ── 2. Eyebrow labels: one tracking value instead of five ──
+   These are the same visual device (small, uppercase, wide-tracked) but shipped
+   with five different values (1.2 / 1.4 / 1.5 / 1.6 / 2px). All-caps small text
+   does want positive tracking — it just shouldn't be a different amount each
+   place it appears. */
+.sec-lbl,.hero-next-lbl,.mh-next-lbl,.msheet-title,.badge-day,
+.hero-cd-lbl,.mh-cd-lbl,.sb-foot .lbl{letter-spacing:1.5px}
+
+/* ── 3. Micro-type floor ──
+   9px–10px was the smallest tier and the hardest to read; Arabic needs more
+   room than Latin at the same size (taller ascenders/descenders). Raised to a
+   10px floor for eyebrows and 10.5px for body-adjacent micro text, with
+   deliberate leading where the text can wrap. */
+.sb-foot .lbl,.cal-cell .hj,.tag,.ncard .nn,.badge-off{font-size:10.5px}
+.ncard .nen,.qs-hit .qsh-en,.bm-item .bm-txt{line-height:1.55}
+.cal-cell .hj{line-height:1.25}
+
+/* ── 4. Let the platform do its typographic work ── */
+body{font-optical-sizing:auto;text-rendering:optimizeLegibility}
+h1,h2,h3,.card-h,.sec-lbl{text-wrap:balance}

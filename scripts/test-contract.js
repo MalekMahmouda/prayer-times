@@ -77,6 +77,24 @@ for (const g of GOLDEN) {
   ok(Math.abs(Engine.qiblaBearing(g.lat, g.lon) - g.qibla) < 0.05, `${g.name} qibla bearing ≈ ${g.qibla}°`);
 }
 
+// v1.5 audit: spec bearing sweep — great-circle outputs always in [0, 360).
+section('1b. Qibla bearing spec sweep (great-circle, 0 ≤ b < 360)');
+{
+  const cities = [
+    ['Riyadh (spec coords)', 24.7555, 46.7804, 243.8776],
+    ['Makkah city', 21.3891, 39.8579, 318.5409],
+    ['Cairo', 30.0444, 31.2357, 136.1373],
+    ['London', 51.5074, -0.1278, 118.9872],
+    ['New York', 40.7128, -74.0060, 58.4817],
+  ];
+  for (const [name, lat, lon, exp] of cities) {
+    const b = Engine.qiblaBearing(lat, lon);
+    ok(Number.isFinite(b) && b >= 0 && b < 360, `${name}: bearing ${b.toFixed(1)}° in [0, 360)`);
+    ok(Math.abs(b - exp) < 0.01, `${name}: bearing ≈ ${exp.toFixed(1)}° (got ${b.toFixed(4)}°)`);
+  }
+  ok(Engine.qiblaBearing(21.4225, 39.8262) === 0, 'at the Kaaba itself the bearing degenerates to 0 (never NaN)');
+}
+
 /* ═══ 2. Desktop scheduler parity with the shared engine ═════════════════ */
 section('2. Desktop parity (scheduler.getDay == shared engine)');
 {
@@ -195,10 +213,15 @@ section('6. netFetch query-key isolation + per-request timeout');
 {
   // Build one sandbox with the REAL renderer files (shared scope, like the
   // browser's classic scripts), a null-object DOM, and controllable fetch.
+  const lastStyle = { transform: null }; // the LAST transform written by any element (needle geometry asserts)
+  const styleRec = new Proxy({}, {
+    get(t, k) { return k === 'transform' ? lastStyle.transform : undefined; },
+    set(t, k, v) { if (k === 'transform') lastStyle.transform = String(v); return true; },
+  });
   const dummy = new Proxy(function () {}, {
     get(t, k) {
       if (k === 'classList') return { add() {}, remove() {}, toggle() {}, contains: () => false };
-      if (k === 'style') return {};
+      if (k === 'style') return styleRec;
       if (k === 'then') return undefined;
       if (typeof k === 'symbol') return undefined;
       return dummy;
@@ -457,6 +480,70 @@ section('6. netFetch query-key isolation + per-request timeout');
     await pGeo1.catch(() => {});
     await sleep(80); // let any erroneous duplicate request surface
     ok(geoCalls === 1, `revGeo is single-flight per coordinates: exactly one network call (got ${geoCalls})`);
+
+    // 6k. v1.5 Qibla needle: ±2° alignment (wraparound-safe) + ONE-SHOT haptic.
+    {
+      let vib = 0; const vibMs = [];
+      const mkNav = () => ({ onLine: true, vibrate: (ms) => { vib++; vibMs.push(ms); return true; } });
+      const setNav = (v) => Object.defineProperty(globalThis, 'navigator', { value: v, configurable: true });
+      const navDesc = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+      setNav(mkNav());
+      let kHandler = null;
+      globalThis.addEventListener = (t2, fn) => { if (t2 === 'deviceorientation' || t2 === 'deviceorientationabsolute') kHandler = fn; };
+      globalThis.removeEventListener = () => {};
+      const bK = PC.snapshot().bearing; // Riyadh ≈ 243.8 — read live, never hard-coded
+      PC.start(); await sleep(60);
+      ok(kHandler != null && PC.snapshot().heading == null && PC.snapshot().aligned === false && vib === 0,
+        '6k: fresh visit — no heading, NOT aligned, haptic silent');
+      kHandler({ webkitCompassHeading: bK }); await sleep(120);
+      ok(Math.abs(PC.snapshot().turn) <= 2 && PC.snapshot().aligned === true,
+        '6k: heading = bearing → aligned within the ±2° window');
+      ok(vib === 1, `6k: ENTERING alignment vibrates exactly once (got ${vib})`);
+      kHandler({ webkitCompassHeading: (bK + 1.5) % 360 }); await sleep(120);
+      kHandler({ webkitCompassHeading: (bK - 1.5 + 360) % 360 }); await sleep(120);
+      ok(PC.snapshot().aligned === true && vib === 1, '6k: remaining aligned (±1.5° drift) does NOT vibrate again');
+      // Needle DOM: last transform congruent to bearing − heading (mod 360).
+      const hNow = PC.snapshot().heading;
+      const mRot = /rotate\((-?[\d.]+)deg\)/.exec(lastStyle.transform || '');
+      const rotMod = mRot ? ((parseFloat(mRot[1]) % 360) + 360) % 360 : null;
+      const wantMod = ((bK - hNow) % 360 + 360) % 360;
+      ok(rotMod != null && Math.abs(rotMod - wantMod) < 1e-6,
+        `6k: needle transform lands at bearing−heading on screen (got ${rotMod}°, want ${wantMod}°)`);
+      kHandler({ webkitCompassHeading: (bK + 10) % 360 }); await sleep(120);
+      ok(PC.snapshot().aligned === false && vib === 1, '6k: leaving alignment re-arms the haptic (still one buzz)');
+      kHandler({ webkitCompassHeading: (bK - 1 + 360) % 360 }); await sleep(120);
+      ok(Math.abs(PC.snapshot().turn - 1) < 1e-9 && PC.snapshot().aligned === true && vib === 2,
+        '6k: re-entering alignment buzzes again (shortest-path +1°, re-armed)');
+      // TRUE wraparound: due-south of the Kaaba the bearing is exactly 0°, so
+      // heading 359 must align via the shortest path (turn = +1, never −359).
+      X.setLoc(19.5, 39.8262);
+      const bS = PC.snapshot().bearing;
+      ok(bS === 0, '6k: bearing from a due-south point is exactly 0° (0 ≤ b < 360)');
+      kHandler({ webkitCompassHeading: (bS + 3) % 360 }); await sleep(120);
+      ok(PC.snapshot().aligned === false, '6k: 3° off the 0° bearing sits outside the window');
+      kHandler({ webkitCompassHeading: (bS + 359) % 360 }); await sleep(120);
+      ok(PC.snapshot().turn === 1 && PC.snapshot().aligned === true && vib === 3,
+        '6k: 359↔0 wraparound aligns via the shortest path and buzzes once');
+      kHandler({ webkitCompassHeading: (bS + 2) % 360 }); await sleep(120);
+      ok(PC.snapshot().aligned === true && vib === 3, '6k: |turn| = 2 exactly → the boundary is inclusive');
+      kHandler({ webkitCompassHeading: (bS + 2.5) % 360 }); await sleep(120);
+      ok(PC.snapshot().aligned === false, '6k: |turn| = 2.5 → outside the window');
+      // No vibration support → graceful no-op; alignment still detected.
+      setNav({ onLine: true });
+      kHandler({ webkitCompassHeading: bS }); await sleep(120);
+      ok(PC.snapshot().aligned === true && vib === 3, '6k: missing navigator.vibrate → alignment works, no crash');
+      // Remount: armed state resets — a fresh realignment buzzes once more.
+      setNav(mkNav());
+      PC.stop(); PC.start(); await sleep(60);
+      ok(PC.snapshot().aligned === false && PC.snapshot().heading == null, '6k: remount starts disarmed with no heading');
+      kHandler({ webkitCompassHeading: bS }); await sleep(120);
+      ok(PC.snapshot().aligned === true && vib === 4, `6k: remount + realign buzzes once more (got ${vib})`);
+      ok(vibMs.length === vib && vibMs.every((ms) => ms > 0), '6k: every buzz carried a non-zero duration');
+      X.setLoc(24.7136, 46.6753); // restore Riyadh for later sections
+      if (navDesc) Object.defineProperty(globalThis, 'navigator', navDesc); else delete globalThis.navigator;
+      globalThis.addEventListener = origAdd; globalThis.removeEventListener = origRemove;
+      PC.stop();
+    }
 
     runMobileRegressions();
   })().catch((e) => { failures++; console.error('  ✗ renderer sandbox failed:', e.message); finish(); });
@@ -718,19 +805,33 @@ function runArtifactChecks() {
   const dataSrc2 = read('js/data.js');
   const pkgJson = JSON.parse(read('package.json'));
 
-  // R6: the Qibla marker must move along the UNROTATED up axis.
-  ok(/mark\.style\.transform = `rotate\(\$\{b\}deg\) translateY\(-78px\) rotate\(\$\{-b\}deg\)`/.test(compassSrc)
-    && !/mark\.style\.transform[^\n]*translate\(78px\)/.test(compassSrc),
-    'live compass marker: rotate(b) translateY(-78px) rotate(-b) (no +x translate)');
-  ok(/kaabaMark'\)\.style\.transform[^\n]*translateY\(-78px\)/.test(qpagesSrc), 'static qibla render uses the corrected transform');
+  // R6 (v1.5 audit): the rim 🕋 marker is REPLACED by one centered needle.
+  ok(!compassSrc.includes('kaabaMark') && compassSrc.includes("$('qNeedle')"),
+    'live compass drives a centered qNeedle (rim kaaba marker removed)');
+  ok(!qpagesSrc.includes('kaabaMark') && /qNeedle'\)\.style\.transform = `rotate\(\$\{b\}deg\)`/.test(qpagesSrc),
+    'static qibla render points the needle at the bearing (no rim marker)');
+  ok(/ALIGNED_TOL = 2\b/.test(compassSrc), 'alignment tolerance is the specified ±2°');
+  ok(/typeof navigator\.vibrate === 'function'/.test(compassSrc) && /navigator\.vibrate\(/.test(compassSrc),
+    'haptic fires only through a guarded navigator.vibrate (graceful without support)');
+  ok(manifestSrc.includes('android.permission.VIBRATE'), 'Android VIBRATE permission present (alignment haptic can fire)');
   {
-    // Numeric check: R(b)·(0,-78) must land at azimuth b (CSS rotate = CW, y down).
-    const azOf = (b) => {
-      const r = 78, rad = (d) => d * Math.PI / 180;
-      const x = r * Math.sin(rad(b)), y = -r * Math.cos(rad(b));
-      return ((Math.atan2(x, -y) * 180 / Math.PI) + 360) % 360;
+    // Numeric check: the needle rotated by θ points its local up axis (0,−1)
+    // at screen azimuth θ (CSS rotate = CW, y down) — the same convention the
+    // rim marker was pinned to. Live screen angle = norm360(bearing − heading);
+    // static render = the bare bearing.
+    const norm360 = (d) => ((d % 360) + 360) % 360;
+    const tipAzimuth = (theta) => {
+      const rad = theta * Math.PI / 180;
+      const x = Math.sin(rad), y = -Math.cos(rad);
+      return (Math.atan2(x, -y) * 180 / Math.PI + 360) % 360;
     };
-    for (const b of [0, 90, 244, 359.9]) ok(Math.abs(azOf(b) - b) < 1e-9, `marker lands at bearing ${b} (numeric geometry)`);
+    for (const [b, h] of [[244, 0], [244, 244], [1, 359], [359, 1], [0, 90], [359.9, 0]]) {
+      const want = norm360(b - h);
+      ok(Math.abs(tipAzimuth(want) - want) < 1e-9, `needle tip at bearing ${b}° (heading ${h}°) lands on screen at ${want}°`);
+    }
+    const sdiff = (a, c) => ((a - c + 540) % 360) - 180;
+    ok(Math.abs(sdiff(359, 1)) === 2 && Math.abs(sdiff(1, 359)) === 2 && sdiff(0, 359.5) === 0.5,
+      'alignment math: shortest angular difference holds across the 359↔1 wraparound');
   }
 
   // R1/R2/R7: scheduler advance + tz payloads + recovery cap.
@@ -771,8 +872,176 @@ function runArtifactChecks() {
   ok(dataSrc2.includes('credits:') && dataSrc2.includes('AlAdhan.com'), 'in-app credits + third-party attribution present');
   ok(fs.existsSync(path.join(ROOT, 'LICENSE')) && read('LICENSE').includes('ISC License'), 'LICENSE (ISC) present');
 
+  /* ── 14. Full-screen Azan screen + attribution ──
+     One presentation surface for Test Adhan AND the automatic prayer event;
+     the developer credit and the Arabic supplication are present in both
+     languages and on every surface (desktop/Android/web share prayer-times.html). */
+  section('14. Full-screen Azan surface + developer attribution');
+  const readRoot14 = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
+  const azAppSrc = readRoot14('js/app.js');
+  const azHtmlSrc = readRoot14('prayer-times.html');
+  const azDataSrc = readRoot14('js/data.js');
+  const azEntrySrc = readRoot14('www-build/entry.js');
+  const azCssSrc = readRoot14('styles/app.css');
+  const azPkgAuthor = JSON.parse(readRoot14('package.json')).author;
 
+  ok(azHtmlSrc.includes('id="azanOverlay"') && azHtmlSrc.includes('id="azanArName"'),
+    'full-screen azan overlay markup exists (shared by desktop/Android/web)');
+  ok(/function showAzanScreen/.test(azAppSrc) && /window\.ptAzanScreen = \{/.test(azAppSrc),
+    'showAzanScreen + window.ptAzanScreen exposed by app.js');
+  ok(/showAzanScreen\('Test'\)/.test(azAppSrc),
+    'Test Adhan opens the full-screen azan (Android + browser paths)');
+  ok(/function hideAzanScreen/.test(azAppSrc) && /a\.pause\(\)/.test(azAppSrc),
+    'dismissing the azan screen stops the audio (no leak / no orphan playback)');
+  ok(azEntrySrc.includes("'localNotificationReceived'") && azEntrySrc.includes('ADHAN_BODY'),
+    'foreground prayer notification presents the full-screen azan (body-guarded, never pre-alerts)');
+  ok(/azanOverlay/.test(azEntrySrc) && /ptAzanScreen\.hide\(true\)/.test(azEntrySrc),
+    'Android back button closes the azan screen before exiting');
+  ok(azCssSrc.includes('.azan-screen{') && /prefers-reduced-motion/.test(azCssSrc),
+    'azan screen ships safe-area padding + a reduced-motion guard');
+  ok(azDataSrc.includes("developer: 'Developed by Malek Mahmoud'") &&
+     azDataSrc.includes("dua: 'يرجى الدعاء ليا ولوالدي'"),
+    'en+ar developer credit and the exact Arabic supplication are in the i18n table');
+  ok(azHtmlSrc.includes('id="aboutDev"') && azHtmlSrc.includes('id="aboutDua"') && azHtmlSrc.includes('id="siteFoot"'),
+    'About card + footer credit render the attribution');
+  ok(azPkgAuthor === 'Malek Mahmoud', 'package.json author is Malek Mahmoud (no id/signing change)');
 
+  // Every js/*.js the HTML loads must be copied by build-www.js — a missing
+  // entry shipped a 404 (js/stats.js) into the Android + web builds.
+  const buildWwwSrc = readRoot14('scripts/build-www.js');
+  const jsRefs = [...azHtmlSrc.matchAll(/<script src="js\/([A-Za-z0-9_.-]+\.js)"/g)].map((m) => m[1]);
+  const missingCopies = jsRefs.filter((f) => !buildWwwSrc.includes(`'${f}'`));
+  ok(jsRefs.length >= 8 && missingCopies.length === 0,
+    `every js/ script the HTML loads is copied by build-www.js (refs=${jsRefs.length}, missing=${missingCopies.join(',') || 'none'})`);
+
+  /* ── 15. Design-system guards (docs/DESIGN-AUDIT.md) ──
+     Each of these pins a measured defect that was fixed; without the guard a
+     future edit can silently reintroduce it. */
+  section('15. Design-system guards (measured regressions)');
+  const css = readRoot14('styles/app.css');
+
+  // The calendar grid overflowed its container by ~118px on a phone because
+  // `repeat(7,1fr)` let each cell's min-content floor (~62.5px) win; 9 of 34
+  // cells were then clipped by .content{overflow-x:hidden} with no scroll.
+  ok(css.includes('repeat(7,minmax(0,1fr))') && /\.cal-cell\{[^}]*min-width:0/.test(css),
+    'calendar grid cannot overflow: repeat(7,minmax(0,1fr)) + .cal-cell{min-width:0}');
+  ok(!/\.cal-grid\{[^}]*repeat\(7,1fr\)/.test(css),
+    'the min-content-floor form repeat(7,1fr) is gone from .cal-grid');
+
+  // Large display type takes negative tracking; the countdown/hero used +2px.
+  ok(/\.hero-cd\{[^}]*letter-spacing:-/.test(css) && /\.hero-name\{[^}]*letter-spacing:-/.test(css),
+    'display type uses negative tracking (Apple §15), not a fixed positive value');
+
+  // Accessibility media features beyond reduced-motion.
+  ok(/prefers-reduced-transparency:\s*reduce/.test(css), 'prefers-reduced-transparency handled');
+  ok(/prefers-contrast:\s*more/.test(css), 'prefers-contrast: more handled');
+  ok(!/\*,\*::before,\*::after\{animation-duration:\.01ms !important;transition-duration:\.01ms !important\}/.test(css),
+    'reduced-motion keeps short opacity/colour fades instead of the blanket .01ms kill');
+
+  // Touch ergonomics behind (pointer:coarse).
+  ok(/@media \(pointer:coarse\)/.test(css) && /\.toggle::before\{content:'';position:absolute;inset:-7px -6px\}/.test(css),
+    'coarse-pointer block grows sub-44px controls (switch hit area via ::before)');
+
+  // sahara's --text-muted was 4.00:1 on --surface2 (below AA 4.5) before this.
+  ok(/\[data-theme="sahara"\][\s\S]*?--text-muted:#7a6146/.test(css),
+    'sahara --text-muted is the AA-passing #7a6146 (was #8a6f52 at 4.00:1)');
+
+  // ── v1.5 audit fixes: DST-safe streaks + calendar day-panel race + honest fallback ──
+  section('13. v1.5 audit fixes: streak day-arithmetic, calendar race, fallback toast');
+  {
+    const s3pages = read('js/pages.js');
+    const s3app = read('js/app.js');
+    const s3data = read('js/data.js');
+    ok(s3pages.includes('calDaySeq') && s3pages.includes('if (seq !== calDaySeq) return;'),
+      'calendar day panel ignores stale async responses (click race fixed)');
+    ok(s3data.includes('makkahDefault') && s3app.includes("t('toast.makkahDefault')"),
+      'first-run Makkah fallback announces itself (honest default location)');
+    // Behavioral: streaks must compare CALENDAR days, never exact 86400000 ms
+    // diffs — local-noon dates are 23 h/25 h apart across a DST transition.
+    const prevWin = globalThis.window;
+    globalThis.window = globalThis; // store3.js assigns window.Store3
+    try { new Function(s3data + '\n' + read('js/store3.js') + '\n;globalThis.__streaks = Store3.streaks;')(); }
+    finally { globalThis.window = prevWin; }
+    const streaks = globalThis.__streaks;
+    ok(typeof streaks === 'function', 'store3 sandbox booted (Store3.streaks exposed)');
+    // 2026-03-28 → 2026-03-29 straddles the Europe/London spring-forward;
+    // calendar-day counting must still form one run on ANY device timezone.
+    const hist = { '2026-03-27': { Fajr: 'done' }, '2026-03-28': { Dhuhr: 'missed' }, '2026-03-29': { Isha: 'done' } };
+    const s1 = streaks({ history: hist });
+    ok(s1.longest === 3, `three consecutive calendar days form ONE streak (got ${s1.longest}; includes the 2026-03-29 DST pair)`);
+    ok(s1.current === 0, 'a past-only history does not invent a current streak');
+    hist['2026-04-03'] = { Fajr: 'done' }; // 5-day gap
+    hist['2026-04-04'] = { Fajr: '' };     // never recorded → must not count
+    const s2 = streaks({ history: hist });
+    ok(s2.longest === 3, `a gap resets the run; unrecorded days never count (got ${s2.longest})`);
+    delete globalThis.__streaks;
+  }
+
+  /* ── 16. Dashboard icons + light-theme legibility (docs/design-review/) ──
+     Pins the defects found by the rendered-screenshot review. */
+  section('16. Dashboard icons + light-theme legibility');
+
+  // .hero-cd inherited the hero's color:#fff while sitting on --glass, which is
+  // near-white in ALL FIVE light themes — the countdown measured ~1.4:1 there.
+  ok(/\.hero-cd\{[^}]*color:var\(--text\)/.test(css),
+    'hero countdown takes its ink from --text, never the hero\'s inherited #fff');
+
+  // --gold is the on-gradient/on-brand accent; text on a surface uses --gold-ink.
+  // islamic's --gold (#b8860b) measured 3.20:1 as 11px text on --surface.
+  const themeBlocks = css.match(/\[data-theme="[a-z]+"\]\{[\s\S]*?\n\}/g) || [];
+  ok(themeBlocks.length === 8, `all eight themes carry a token block (found ${themeBlocks.length})`);
+  ok(themeBlocks.every((b) => /--gold-ink:/.test(b)),
+    'every theme defines --gold-ink (legible gold for text on a light surface)');
+  ok(/\[data-theme="islamic"\][\s\S]*?--gold-ink:#8f6208/.test(css),
+    'islamic --gold-ink is #8f6208 (AA-passing on --surface; --gold was 3.20:1)');
+  ok(/\.ncard \.ntr\{[^}]*color:var\(--gold-ink\)/.test(css) &&
+     !/\.ncard \.ntr\{[^}]*color:var\(--gold\)/.test(css),
+    '99-names latin name uses --gold-ink on the card surface (not the on-brand --gold)');
+  ok(/--gold-ink/.test(read('js/pages3.js')),
+    'daily-ayah caption uses --gold-ink (was 3.20:1 on --surface)');
+
+  // Past prayers were dimmed to 42%, pushing their times out of comfortable range.
+  const pastOpacity = parseFloat((css.match(/\.pcard\.past\{opacity:([\d.]+)\}/) || [])[1] || '1');
+  ok(pastOpacity >= 0.5,
+    `past prayer cards keep their times readable (opacity ${pastOpacity} >= 0.5)`);
+
+  // The hero decoration was a 320px disc at blur(2px) — a hard-edged smudge.
+  const heroBlur = parseInt((css.match(/\.hero::before\{[^}]*filter:blur\((\d+)px\)/) || [])[1] || '0', 10);
+  ok(heroBlur >= 20, `hero decoration is a soft bloom, not a hard disc (blur ${heroBlur}px >= 20)`);
+
+  // One stroke icon set replaces the emoji on the dashboard (two of the emoji,
+  // the first/last third, were not legible as glyphs at the rendered 21px).
+  const dataSrc16 = read('js/data.js').replace(/\/\*[\s\S]*?\*\//g, '');
+  const appSrc16 = read('js/app.js');
+  ok(/const ICONS = \{/.test(dataSrc16) && /ICON_PRAYER = \{ Fajr: ICONS\./.test(dataSrc16),
+    'prayer-card icons come from the shared ICONS set');
+  ok(!/ICON_PRAYER[^;]*[\u{1F300}-\u{1FAFF}\u{2190}-\u{21FF}\u{2600}-\u{27BF}]/u.test(dataSrc16),
+    'ICON_PRAYER no longer holds emoji or symbol glyphs');
+  ['sunrise', 'sunset', 'midnight', 'firstThird', 'lastThird'].forEach((k) => {
+    ok(appSrc16.includes(`i: ICONS.${k}`), `sun & night row uses ICONS.${k}`);
+  });
+  ok(appSrc16.includes('i: ICONS.mosque') && appSrc16.includes('i: ICONS.compass') && appSrc16.includes('i: ICONS.clock'),
+    'glance row uses the shared icon set');
+  // The svgs are block elements in text-align:center cards; without the auto
+  // margin they sat in the top-left corner (the emoji were inline text).
+  ok(/\.pcard \.ic svg,\.sun-cell \.ic svg,\.gcell \.gi svg\{[^}]*margin:0 auto/.test(css),
+    'dashboard icon svgs are centred inside their cards');
+
+  // m-mode must be derived at BOOT, not only from a resize event. The stylesheet
+  // hides #page-prayers below 768px while m-mode is off, and only applyMMode
+  // routes to the mobile home — so a resize-only trigger left a phone's first
+  // paint with an EMPTY content area between the topbar and the bottom nav.
+  ok(/initMobileUI\(\);[\s\S]{0,500}?applyMMode\(window\.innerWidth <= 768\);/.test(appSrc16),
+    'mobile mode is derived from the viewport at boot (phone first paint is never blank)');
+
+  // The mobile home is its OWN DOM tree, so it has to be repainted by the same
+  // data-arrival events as the desktop dashboard. renderMHome was reachable only
+  // from the countdown's 30-tick branch, so a phone showed a live countdown under
+  // an unnamed, timeless prayer ("—") for up to half a minute.
+  ok(/function renderAll\(\) \{[\s\S]{0,700}?classList\.contains\('m-mode'\)\) renderMHome\(\);/.test(appSrc16),
+    'the mobile home hero + strip repaint when data arrives, not only on the 30th tick');
+  ok(/if \(name === 'mhome'\) \{ renderMHome\(\); renderMHomeCards\(\); \}/.test(appSrc16),
+    'navigating to the mobile home repaints it');
 
   finish();
 }

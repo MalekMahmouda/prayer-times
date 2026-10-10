@@ -1,0 +1,583 @@
+diff --git a/android/app/src/main/AndroidManifest.xml b/android/app/src/main/AndroidManifest.xml
+index a5897ba..6dc857e 100644
+--- a/android/app/src/main/AndroidManifest.xml
++++ b/android/app/src/main/AndroidManifest.xml
+@@ -45,6 +45,10 @@
+     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+ 
++    <!-- Qibla alignment haptic: navigator.vibrate() in the Android WebView
++         requires VIBRATE; without it the API silently no-ops. -->
++    <uses-permission android:name="android.permission.VIBRATE" />
++
+     <!-- Added by @capacitor/local-notifications (see its plugin manifest):
+          POST_NOTIFICATIONS, SCHEDULE_EXACT_ALARM, RECEIVE_BOOT_COMPLETED, WAKE_LOCK -->
+ </manifest>
+diff --git a/docs/TESTING.md b/docs/TESTING.md
+index 91baf65..30932f2 100644
+--- a/docs/TESTING.md
++++ b/docs/TESTING.md
+@@ -19,7 +19,7 @@ Automated coverage: `node scripts/test-scheduler.js` (53/53), `node scripts/test
+ - [ ] **Battery saver / Doze**: notifications may be batched — confirm they still arrive reasonably close; the Settings page shows the honest exact-alarm status ("alarms may be delayed by the system" when not granted).
+ - [ ] **Do Not Disturb**: channel behaves per system policy; no crash.
+ - [ ] **Exact alarm grant** (Settings → Apps → Special access → Alarms & reminders): grant it, then confirm the Settings page reports exact alarms enabled.
+-- [ ] **Compass**: on the Qibla page the dial rotates with the device (turn until the 🕋 marker points forward); numeric bearing matches desktop; calibration hint appears when moving erratically; static-bearing hint shows on devices without a magnetometer.
++- [ ] **Compass**: on the Qibla page the dial rotates with the device and the centered needle points at the Qibla (turn until the needle points to the top of the dial); entering the ±2° window shows "Aligned" and buzzes ONCE; numeric bearing matches desktop; calibration hint appears when moving erratically; static-bearing hint shows on devices without a magnetometer.
+ - [ ] **Notification ID isolation**: change city/method/offsets → old alarms replaced, no duplicates (check with `adb shell dumpsys alarm | grep -i prayer` if handy).
+ - [ ] **GPS accuracy**: indoors (poor fix) with a previous location → warning shown, previous location kept.
+ - [ ] **Offline (airplane mode)**: times still correct; saved locations switch instantly.
+@@ -34,9 +34,9 @@ Automated coverage: `node scripts/test-scheduler.js` (53/53), `node scripts/test
+ ### v1.3.2 additions (Qibla + Azan reliability release)
+ **Qibla — real device (do these in order; the debug readout makes failures self-explaining):**
+ - [ ] **Debug readout visible**: under the compass status you should see `Qibla bearing: … | Device heading: … | Turn: … | Sensor: …`. If `Sensor:` stays `none` or `permission denied`, that is the defect — note it.
+-- [ ] **Riyadh flat test (the headline check)**: stand facing any direction, lay the phone flat, note `Qibla bearing` (Riyadh ≈ 244°). Rotate the phone 360° on the table — the dial must keep the 🕋 marker pointing at the true geographic direction at every angle, and `Turn:` must read ±180..0..−180 smoothly (0 exactly when the top of the phone aims at the Kaaba).
++- [ ] **Riyadh flat test (the headline check)**: stand facing any direction, lay the phone flat, note `Qibla bearing` (Riyadh ≈ 244°). Rotate the phone 360° on the table — the needle must keep pointing at the true geographic direction at every angle (no 0°/360° jumps, no long-way spins across the seam), and `Turn:` must read ±180..0..−180 smoothly (0 exactly when the top of the phone aims at the Kaaba).
+ - [ ] **Bearing vs arrow agreement**: the numeric bearing and the physical arrow must agree (device held flat, top edge = the direction you'd walk). Try a second city (Cairo ≈ 136°, London ≈ 119°, New York ≈ 59°) via a location switch.
+-- [ ] **Portrait → landscape → portrait (P6)**: rotate the device upright/flat — the 🕋 must keep pointing at the SAME geographic direction (the debug line's `Device heading` shifts by exactly the screen angle when you rotate).
++- [ ] **Portrait → landscape → portrait (P6)**: rotate the device upright/flat — the needle must keep pointing at the SAME geographic direction (the debug line's `Device heading` shifts by exactly the screen angle when you rotate).
+ - [ ] **Leave/re-enter ×3 (P7)**: open/close the Qibla page three times fast — dial must stay responsive (no stacked listeners), heading returns instantly.
+ - [ ] **Calibration figure-∞** when `Compass unreliable` appears; the readout's `Sensor:` line should read `deviceorientationabsolute` on modern Android, `webkitCompassHeading` on iOS, `deviceorientation` at worst.
+ 
+@@ -145,7 +145,7 @@ problem; `Sensor: permission denied` = iOS/Android permission problem.
+ ## Regression commands (must stay green before any release)
+ ```bash
+ node scripts/test-scheduler.js   # 74/74 (v1.4.0: +tick-advance / tz / recovery-boundary)
+-node scripts/test-contract.js    # 205/205 with dist (200 on a fresh clone; §10 packaging checks need dist/)
++node scripts/test-contract.js    # 244/244 with dist (239 on a fresh clone; §10 packaging checks need dist/) — includes the v1.5 Qibla needle/alignment/haptic suite
+ node scripts/check-dist.js       # exit 0 after builds (regenerate tmp/asar-list.txt first)
+ ```
+ The contract prints a different total depending on `dist/` presence: the
+@@ -154,13 +154,17 @@ summarized as one pending check when it does not (a fresh CI clone).
+ 
+ ## v1.4.0 review-fix verification (third-party REVIEW.docx pass)
+ 
+-### Qibla map-rose geometry (BLOCKER — fixed)
+-The v1.3.3 marker transform moved along the rotated +x axis, landing the
+-Kaaba 90° clockwise (3 o'clock when the phone faced Qibla). Fixed to
+-`rotate(b) translateY(-78px) rotate(-b)` in BOTH the live compass
+-(compass.js) and the static render (pages.js). **Device check:** face the
+-Qibla (status line Turn ≈ 0°) — the Kaaba must sit at the TOP of the ring;
+-then rotate the phone 90° — the marker must slide a quarter turn on the rim.
++### Qibla needle (v1.5 audit — rim 🕋 marker replaced)
++The v1.4.0 rim marker (`rotate(b) translateY(-78px) rotate(-b)`) is GONE.
++One centered needle now points at the qibla on screen: angle =
++bearing − heading, tracked unwrapped so motion stays smooth across the
++0°/360° seam; the rose dial still keeps its N mark on true north. The
++static render (pages.js) rests the needle at the bare bearing, north-up.
++**Device checks:** face the Qibla (status line Turn ≈ 0°) — the needle
++must rest straight UP and the status must read "Aligned" with exactly ONE
++vibration; rotate the phone 90° — the needle swings a quarter turn with
++it; leave and re-enter the ±2° window — exactly one more buzz per entry,
++none while holding; status returns to "Live compass" when outside the window.
+ 
+ ### Android adhan sound matrix (physical device — user-run)
+ | # | Config | Expected notification |
+diff --git a/js/app.js b/js/app.js
+index 690abd3..0e71b05 100644
+--- a/js/app.js
++++ b/js/app.js
+@@ -57,7 +57,6 @@ function cfgFingerprint(cfg) {
+ function pushCfg() {
+   if (!PT) return;
+   try {    // Active saved location's timezone (empty = system/unknown)
+-    const actLoc = (typeof DB3 !== 'undefined' && DB3) ? DB3.locations.find((l) => l.id === DB3.prefs.activeLoc) : null;
+     if ((S.lat != null && !isFiniteLat(S.lat)) || (S.lon != null && !isFiniteLon(S.lon))) {
+       showToast('⚠️ ' + (S.lang === 'ar' ? 'إحداثيات غير صالحة — تحقق من الموقع' : 'Invalid coordinates — check your location'));
+       return;
+@@ -1202,6 +1201,9 @@ function toggleMiniMode() {
+ function makkahFallback() {
+   S.lat = 21.3891; S.lon = 39.8579; S.city = 'Makkah'; S.country = 'Saudi Arabia';
+   saveLoc(); updateLocNames(); fetchTimes(S.lat, S.lon); refreshTodaySchedule();
++  // Honest default: the location chip alone was easy to miss — say why the
++  // app is showing Makkah so the user can set their own city.
++  showToast('🕌 ' + t('toast.makkahDefault'));
+ }
+ 
+ function scheduleMidnight() {
+diff --git a/js/compass.js b/js/compass.js
+index 4713b48..10d7670 100644
+--- a/js/compass.js
++++ b/js/compass.js
+@@ -42,6 +42,11 @@
+    Desktop shows the geographic bearing only and never pretends to
+    have a live sensor. PTCompass.snapshot() exposes the same values
+    for the contract tests.
++
++   v1.5 audit: the rim 🕋 marker is GONE. One centered needle points at
++   the qibla on screen (angle = bearing − heading, tracked unwrapped for
++   smooth motion across 0°/360°), with ±2° alignment detection and a
++   single haptic buzz when alignment is ENTERED (re-armed on leaving).
+    ════════════════════════════════════════════════════════════ */
+ 
+ (function () {
+@@ -65,6 +70,8 @@
+     webHandler: null,     // the ONE web handler (added on start, removed on stop)
+     watchdog: null,
+     lastRender: 0,
++    aligned: false,       // |turn| ≤ ALIGNED_TOL on a fresh heading
++    contAngle: null,      // unwrapped needle angle — smooth, no 359↔0 spin
+     // v1.4.0: the diagnostic readout is OPT-IN for release (was on by default
+     // during the v1.3.2 investigation). Enable with localStorage.ptCompassDebug=1.
+     debug: (() => { try { return localStorage.getItem('ptCompassDebug') === '1'; } catch (e) { return false; } })(),
+@@ -74,11 +81,13 @@
+   const JITTER_LIMIT = 25;    // deg/s smoothed — above = uncalibrated
+   const RENDER_MIN_MS = 100;  // throttle DOM updates (~10fps)
+   const ABSURD_MAX = 1e6;     // "impossible" magnitude → reject the reading
++  const ALIGNED_TOL = 2;      // deg — |turn| ≤ 2 counts as facing the Qibla
++  const VIBRATE_MS = 80;      // one short buzz on ENTERING alignment (once)
+ 
+   function els() {
+     return {
+-      needle: $('compassIn'),
+-      mark: $('kaabaMark'),
++      dial: $('compassIn'),
++      needle: $('qNeedle'),
+       status: $('compassStatus'),
+       deg: $('qDeg'),
+       dbg: $('qDbg'),
+@@ -119,6 +128,12 @@
+     state.lastRaw = adjusted;
+     state.heading = adjusted;
+     state.lastAcceptedAt = now;
++    // Alignment (v1.5): shortest angular difference, so 359↔1 wraps
++    // correctly. ONE buzz on ENTERING the aligned state; leaving re-arms.
++    const turn = signedTurn(qiblaBearing(), adjusted);
++    const nowAligned = Math.abs(turn) <= ALIGNED_TOL && !isUnreliable();
++    if (nowAligned && !state.aligned) hapticBuzz();
++    state.aligned = nowAligned;
+     if (now - state.lastRender >= RENDER_MIN_MS) render();
+     return true;
+   }
+@@ -170,28 +185,40 @@
+     return state.jitter > JITTER_LIMIT;
+   }
+ 
++  // One short buzz when the needle ENTERS the aligned state. Graceful on
++  // devices without vibration (desktop Electron, iOS PWA): silent no-op.
++  function hapticBuzz() {
++    try {
++      if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
++        navigator.vibrate(VIBRATE_MS);
++      }
++    } catch (e) { /* vibration API missing/blocked → stay silent */ }
++  }
++
+   function render() {
+     if (!state.active) return;
+     const now = Date.now();
+-    const { needle, mark, deg, dbg } = els();
++    const { dial, needle, deg, dbg } = els();
+     const b = norm360(qiblaBearing());
+     if (deg) deg.textContent = `${Math.round(b)}°`;
+     if (dbg && state.debug) dbg.textContent = debugLine();
+-    // MAP-ROSE GEOMETRY (v1.3.2 fix, corrected v1.4.0): the dial is a
+-    // compass rose that must align with the world, so it rotates by −heading
+-    // (rose-N lands on true north on screen). The Kaaba sits ON THE RIM at
+-    // its geographic bearing: rotate(b) points the element's local −y axis
+-    // (up) at bearing b, translateY(−78px) then moves it 78px along that
+-    // direction (bearings are measured FROM north = up, so the offset must
+-    // run along the unrotated up-axis — the old translate(78px) moved along
+-    // the rotated +x axis and landed the marker 90° clockwise, at 3 o'clock
+-    // when the phone faced Qibla). The inner rotate(−b) keeps the glyph
+-    // upright. Marker screen angle = b − h = the true qibla direction.
+-    // With no heading (static) the dial stays a map, north up.
+-    if (needle) needle.style.transform = `rotate(${state.heading == null ? 0 : -state.heading}deg)`;
+-    if (mark) mark.style.transform = `rotate(${b}deg) translateY(-78px) rotate(${-b}deg)`;
++    // DIAL (map-rose, v1.3.2): the rose rotates by −heading so its N mark
++    // sits on true north. With no heading (static) the dial stays north-up.
++    if (dial) dial.style.transform = `rotate(${state.heading == null ? 0 : -state.heading}deg)`;
++    // NEEDLE (v1.5): one centered needle replaces the rim 🕋 marker. Its
++    // screen angle is bearing − heading, so the tip points at the qibla and
++    // rests straight up when the device faces the Qibla. The angle is
++    // tracked UNWRAPPED and advanced by the shortest-path delta each frame:
++    // motion stays smooth across the 0°/360° seam and never spins the long
++    // way round. No heading (static desktop) → rests at the bare bearing.
++    const target = state.heading == null ? b : norm360(b - state.heading);
++    if (state.contAngle == null) state.contAngle = target;
++    else state.contAngle += signedTurn(target, norm360(state.contAngle));
++    if (needle) needle.style.transform = `rotate(${state.contAngle}deg)`;
+     if (state.heading == null) {
+       renderStatus(state.denied ? 'qibla.denied' : 'qibla.noSensor', state.denied);
++    } else if (state.aligned && !isUnreliable()) {
++      renderStatus('qibla.aligned', false);
+     } else {
+       renderStatus('qibla.live', isUnreliable());
+     }
+@@ -311,6 +338,8 @@
+       state.lastRaw = null;
+       state.denied = false;
+       state.sensor = null;
++      state.aligned = false;   // haptic re-arms on every visit
++      state.contAngle = null;  // needle re-seeds without spinning
+       state.webType = null;
+       (async () => {
+         const ok = (await startNative()) || startWeb(epoch);
+@@ -331,6 +360,8 @@
+       state.jitter = 0;
+       state.denied = false;
+       state.sensor = null;
++      state.aligned = false;
++      state.contAngle = null;
+       if (state.watchdog) { clearInterval(state.watchdog); state.watchdog = null; }
+       if (state.source === 'web') {
+         // Remove the SAME handler(s) with the SAME capture flag they were
+@@ -360,6 +391,7 @@
+         bearing: b,
+         heading: state.heading,
+         turn: state.heading == null ? null : signedTurn(b, state.heading),
++        aligned: state.aligned,
+         sensor: sensorLabel(),
+         screenAngle: screenAngle(),
+         unreliable: isUnreliable(),
+diff --git a/js/data.js b/js/data.js
+index a80a615..31a75d5 100644
+--- a/js/data.js
++++ b/js/data.js
+@@ -94,7 +94,7 @@ const T = {
+     offline: 'Offline', cached: 'Using cached times', detecting: 'Detecting…',
+     setDate: 'Date', failedLoad: 'Failed to load. Check connection.',
+     cal: { title: 'Monthly Calendar', prev: 'Previous month', nextM: 'Next month', todayBtn: 'Today', selectDay: 'Select a day to see prayer times', noTimes: 'Times unavailable for this date', exportCsv: 'Export month (CSV)' },
+-    qibla: { title: 'Qibla Direction', from: 'from', distance: 'Distance to Kaaba', km: 'km', yourCoords: 'Your coordinates', kaabaCoords: 'Kaaba coordinates', how: 'How to use', howText: 'Face the direction shown by the bearing. The dial rotates the Kaaba marker to the qibla angle from North.', live: 'Live compass — turn until the 🕋 marker points forward', calibrate: 'Compass unreliable — move the phone in a ∞ figure to calibrate', noSensor: 'No compass data yet — showing static bearing', static: 'Static bearing — this device has no compass', denied: 'Compass permission denied — showing static bearing', turn: 'Turn' },
++    qibla: { title: 'Qibla Direction', from: 'from', distance: 'Distance to Kaaba', km: 'km', yourCoords: 'Your coordinates', kaabaCoords: 'Kaaba coordinates', how: 'How to use', howText: 'The needle points toward the Qibla relative to your device. Turn until the needle points to the top of the dial — the number shown is the Qibla bearing from North.', live: 'Live compass — turn until the needle points to the top of the dial', aligned: 'Aligned — you are facing the Qibla ✓', calibrate: 'Compass unreliable — move the phone in a ∞ figure to calibrate', noSensor: 'No compass data yet — showing static bearing', static: 'Static bearing — this device has no compass', denied: 'Compass permission denied — showing static bearing', turn: 'Turn' },
+     quran: { search: 'Search surah by name or number…', meccan: 'Meccan', medinan: 'Medinan', verses: 'verses', noResults: 'No surahs found.', reciter: 'Reciter', loading: 'Could not load audio. Check connection.' },
+     names: { search: 'Search by name or meaning…', day: 'Name of the Day', all: 'All 99 Names', dhikr: 'Dhikr', noResults: 'No names found.', source: 'Asma Allah al-Husna' },
+     dhikr: { title: 'Dhikr Counter', target: 'Target', custom: 'Custom', reset: 'Reset', daily: 'Today', total: 'All time', tapHint: 'Tap the counter or press Space', done: 'Target reached — Alhamdulillah!' },
+@@ -108,7 +108,7 @@ const T = {
+       adjust: 'Time Adjustments (min)', dataNote: 'All data is stored locally on this device. No account, no analytics.',
+       credits: 'Quran text: Tanzil (quran-uthmani) · Translation: Saheeh International · Adhan recordings: courtesy of AlAdhan.com · Prayer engine: adhan-js',
+     },
+-    toast: { locSet: 'Location updated!', locFail: 'City not found. Try again.', noCity: 'Please enter a city', gpsDenied: 'Location denied. Set manually.', gpsNo: 'Geolocation not supported', gpsFail: 'Location unavailable — set your city manually', switchedEn: 'Switched to English 🌙', switchedAr: 'تم التبديل للعربية 🌙', testIn3: 'Test notification in 3s…', deskOnly: 'Desktop mode only', adhanPlay: 'Playing adhan preview…', adhanOverlay: 'Playing adhan — fullscreen overlay', adhanFail: 'Could not play the adhan preview' },
++    toast: { locSet: 'Location updated!', locFail: 'City not found. Try again.', noCity: 'Please enter a city', gpsDenied: 'Location denied. Set manually.', gpsNo: 'Geolocation not supported', gpsFail: 'Location unavailable — set your city manually', switchedEn: 'Switched to English 🌙', switchedAr: 'تم التبديل للعربية 🌙', testIn3: 'Test notification in 3s…', deskOnly: 'Desktop mode only', adhanPlay: 'Playing adhan preview…', adhanOverlay: 'Playing adhan — fullscreen overlay', adhanFail: 'Could not play the adhan preview', makkahDefault: 'No location set yet — showing Makkah by default. Set your city from Location.' },
+     dh: { subhan: 'SubhanAllah', subhanAr: 'سُبْحَانَ اللَّه', alhamd: 'Alhamdulillah', alhamdAr: 'الْحَمْدُ لِلَّه', akbar: 'Allahu Akbar', akbarAr: 'اللَّهُ أَكْبَر', tahlil: 'La ilaha illa Allah', tahlilAr: 'لَا إِلَٰهَ إِلَّا اللَّه', istighfar: 'Astaghfirullah', istighfarAr: 'أَسْتَغْفِرُ اللَّه', salawat: 'Salawat', salawatAr: 'صَلَّى اللَّهُ عَلَيْهِ وَسَلَّمَ' },
+   },
+   ar: {
+@@ -125,7 +125,7 @@ const T = {
+     offline: 'غير متصل', cached: 'أوقات مخزنة مؤقتاً', detecting: 'جاري التحديد…',
+     setDate: 'التاريخ', failedLoad: 'فشل التحميل. تحقق من الاتصال.',
+     cal: { title: 'التقويم الشهري', prev: 'الشهر السابق', nextM: 'الشهر التالي', todayBtn: 'اليوم', selectDay: 'اختر يوماً لعرض أوقات الصلاة', noTimes: 'الأوقات غير متاحة لهذا التاريخ', exportCsv: 'تصدير الشهر (CSV)' },
+-    qibla: { title: 'اتجاه القبلة', from: 'من', distance: 'المسافة إلى الكعبة', km: 'كم', yourCoords: 'إحداثياتك', kaabaCoords: 'إحداثيات الكعبة', how: 'كيفية الاستخدام', howText: 'اتجه نحو الدرجة المعروضة. تدور البوصلة لتشير علامة الكعبة إلى زاوية القبلة من الشمال.', live: 'بوصلة حية — أدر الهاتف حتى يشير مؤشر 🕋 إلى الأمام', calibrate: 'البوصلة غير مستقرة — حرّك الهاتف على شكل ∞ للمعايرة', noSensor: 'لا توجد بيانات بوصلة بعد — يتم عرض الاتجاه الثابت', static: 'اتجاه ثابت — هذا الجهاز لا يحتوي بوصلة', denied: 'تم رفض إذن البوصلة — يتم عرض الاتجاه الثابت', turn: 'أدر حتى' },
++    qibla: { title: 'اتجاه القبلة', from: 'من', distance: 'المسافة إلى الكعبة', km: 'كم', yourCoords: 'إحداثياتك', kaabaCoords: 'إحداثيات الكعبة', how: 'كيفية الاستخدام', howText: 'يشير المؤشر إلى اتجاه القبلة بالنسبة لاتجاه جهازك. أدر الهاتف حتى يشير المؤشر إلى أعلى القرص — الدرجة المعروضة هي اتجاه القبلة من الشمال.', live: 'بوصلة حية — أدر الهاتف حتى يشير المؤشر إلى أعلى القرص', aligned: 'تم الاستقامة — أنت متجه نحو القبلة ✓', calibrate: 'البوصلة غير مستقرة — حرّك الهاتف على شكل ∞ للمعايرة', noSensor: 'لا توجد بيانات بوصلة بعد — يتم عرض الاتجاه الثابت', static: 'اتجاه ثابت — هذا الجهاز لا يحتوي بوصلة', denied: 'تم رفض إذن البوصلة — يتم عرض الاتجاه الثابت', turn: 'أدر حتى' },
+     quran: { search: 'ابحث عن سورة بالاسم أو الرقم…', meccan: 'مكية', medinan: 'مدنية', verses: 'آية', noResults: 'لا توجد نتائج.', reciter: 'القارئ', loading: 'تعذر تحميل الصوت. تحقق من الاتصال.' },
+     names: { search: 'ابحث عن الاسم أو المعنى…', day: 'اسم اليوم', all: 'أسماء الله الحسنى', dhikr: 'الذكر', noResults: 'لا توجد نتائج.', source: 'أسماء الله الحسنى' },
+     dhikr: { title: 'مسبحة إلكترونية', target: 'الهدف', custom: 'مخصص', reset: 'تصفير', daily: 'اليوم', total: 'الإجمالي', tapHint: 'اضغط على العداد أو مفتاح المسافة', done: 'اكتمل الهدف — الحمد لله!' },
+@@ -139,7 +139,7 @@ const T = {
+       adjust: 'تعديل الأوقات (د)', dataNote: 'جميع البيانات محفوظة محلياً على هذا الجهاز. لا حسابات ولا تحليلات.',
+       credits: 'النص القرآني: تنزيل (قرآن عثماني) · الترجمة: سعد الدولعة (صحيح إنترناشونال) · تسجيلات الأذان: من AlAdhan.com · محرك المواقيت: adhan-js',
+     },
+-    toast: { locSet: 'تم تحديث الموقع!', locFail: 'لم يتم العثور على المدينة. حاول مجدداً.', noCity: 'الرجاء إدخال مدينة', gpsDenied: 'تم رفض الموقع. حدد يدوياً.', gpsNo: 'تحديد الموقع غير مدعوم', gpsFail: 'تعذر تحديد الموقع — حدد مدينتك يدوياً', switchedEn: 'Switched to English 🌙', switchedAr: 'تم التبديل للعربية 🌙', testIn3: 'تنبيه تجريبي بعد ٣ ثوان…', deskOnly: 'يعمل في وضع سطح المكتب فقط', adhanPlay: 'تجربة الأذان…', adhanOverlay: 'تشغيل الأذان — شاشة كاملة', adhanFail: 'تعذر تشغيل معاينة الأذان' },
++    toast: { locSet: 'تم تحديث الموقع!', locFail: 'لم يتم العثور على المدينة. حاول مجدداً.', noCity: 'الرجاء إدخال مدينة', gpsDenied: 'تم رفض الموقع. حدد يدوياً.', gpsNo: 'تحديد الموقع غير مدعوم', gpsFail: 'تعذر تحديد الموقع — حدد مدينتك يدوياً', switchedEn: 'Switched to English 🌙', switchedAr: 'تم التبديل للعربية 🌙', testIn3: 'تنبيه تجريبي بعد ٣ ثوان…', deskOnly: 'يعمل في وضع سطح المكتب فقط', adhanPlay: 'تجربة الأذان…', adhanOverlay: 'تشغيل الأذان — شاشة كاملة', adhanFail: 'تعذر تشغيل معاينة الأذان', makkahDefault: 'لم يتم تحديد موقع بعد — تُعرض مكة افتراضياً. حدد مدينتك من صفحة الموقع.' },
+     dh: { subhan: 'سبحان الله', subhanAr: 'سُبْحَانَ اللَّه', alhamd: 'الحمد لله', alhamdAr: 'الْحَمْدُ لِلَّه', akbar: 'الله أكبر', akbarAr: 'اللَّهُ أَكْبَر', tahlil: 'لا إله إلا الله', tahlilAr: 'لَا إِلَٰهَ إِلَّا اللَّه', istighfar: 'أستغفر الله', istighfarAr: 'أَسْتَغْفِرُ اللَّه', salawat: 'الصلاة على النبي', salawatAr: 'صَلَّى اللَّهُ عَلَيْهِ وَسَلَّمَ' },
+   },
+ };
+diff --git a/js/pages.js b/js/pages.js
+index 52e2a56..eba02a5 100644
+--- a/js/pages.js
++++ b/js/pages.js
+@@ -17,12 +17,11 @@ window.renderQibla = function renderQibla() {
+   // with device GPS. The location modal's GPS button is the explicit way to
+   // make coordinates current.
+   $('qSub').textContent = `${t('qibla.from')} ${S.city || fmtCoords(2)}`;
+-  // Map-rose static render (v1.3.2, corrected v1.4.0): north up, Kaaba on
+-  // the rim at its bearing — rotate(b) + translateY(−78px) moves along the
+-  // UNROTATED up-axis (bearings start at north = up; a +x translate lands
+-  // 90° clockwise). The live compass (if any) takes over the dial from here.
++  // Needle static render (v1.5): north-up map; the centered needle rests at
++  // the bare bearing (screen angle = bearing when no device heading exists).
++  // The live compass takes over dial + needle the moment it starts.
+   $('compassIn').style.transform = 'rotate(0deg)';
+-  $('kaabaMark').style.transform = `rotate(${b}deg) translateY(-78px) rotate(${-b}deg)`;
++  $('qNeedle').style.transform = `rotate(${b}deg)`;
+   // Live heading (Android/web sensors) rotates the dial by −heading so the
+   // rose matches the world; desktop keeps the static map, honestly labeled —
+   // it never pretends to have a live compass sensor (Phase 8).
+@@ -72,11 +71,15 @@ window.renderCalendar = function renderCalendar() {
+ 
+ const PRAYERS_CAL = ['Fajr', 'Sunrise', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+ let calDayCache = {};
++// Monotonic request counter: a SLOW getDay for a previously clicked day must
++// never overwrite the panel of the day selected while it was in flight.
++let calDaySeq = 0;
+ 
+ async function showCalDay(date) {
+   const panel = $('calDayPanel');
+   panel.style.display = 'block';
+   const key = localDateKey(date);
++  const seq = ++calDaySeq;
+   panel.innerHTML = `<b>${fmtDate(date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</b>
+     <div class="muted" style="font-size:12px">${hijriOf(date)}</div>
+     <div class="muted" style="font-size:12px;margin-top:6px">${t('cal.noTimes')}…</div>`;
+@@ -96,7 +99,8 @@ async function showCalDay(date) {
+       } catch (e) { /* offline */ }
+     }
+   }
+-  if (!timings) { panel.querySelector('.muted:last-child').textContent = t('cal.noTimes'); return; }
++  if (!timings) { if (seq !== calDaySeq) return; panel.querySelector('.muted:last-child').textContent = t('cal.noTimes'); return; }
++  if (seq !== calDaySeq) return; // a newer day was selected while loading
+   const labels = { Fajr: AR_PRAYER.Fajr, Sunrise: 'الشروق', Dhuhr: AR_PRAYER.Dhuhr, Asr: AR_PRAYER.Asr, Maghrib: AR_PRAYER.Maghrib, Isha: AR_PRAYER.Isha };
+   panel.innerHTML = `<b>${fmtDate(date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</b>
+     <div class="muted" style="font-size:12px">${hijriOf(date)}</div>
+diff --git a/js/store3.js b/js/store3.js
+index 17057aa..ed6cfc5 100644
+--- a/js/store3.js
++++ b/js/store3.js
+@@ -228,9 +228,14 @@ function streaks(db) {
+     .sort();
+   let longest = 0, run = 0, prev = null;
+   for (const k of days) {
+-    const d = new Date(k + 'T12:00:00');
+-    if (prev && (d - prev) === 86400000) run++; else run = 1;
+-    prev = d;
++    // Consecutive CALENDAR days — never exact-ms diffs: local-noon dates are
++    // 23 h/25 h apart across DST transitions, which broke streaks at the    // first DST boundary of the run.
++    if (prev) {
++      const exp = new Date(prev);
++      exp.setDate(exp.getDate() + 1);
++      if (localDateKey(exp) === k) run++; else run = 1;
++    } else run = 1;
++    prev = new Date(k + 'T12:00:00');
+     if (run > longest) longest = run;
+   }
+   return { current, longest: Math.max(longest, current) };
+diff --git a/prayer-times.html b/prayer-times.html
+index c3fcbc2..482cc35 100644
+--- a/prayer-times.html
++++ b/prayer-times.html
+@@ -162,8 +162,8 @@
+               <div class="compass">
+                 <div class="compass-in" id="compassIn">
+                   <span class="n-mark">N</span>
+-                  <span class="kaaba" id="kaabaMark">🕋</span>
+                 </div>
++                <span class="q-needle" id="qNeedle" aria-hidden="true"></span>
+               </div>
+               <div class="qibla-info">
+                 <div class="qibla-deg" id="qDeg">—°</div>
+@@ -427,7 +427,7 @@
+           <div class="card set-card">
+             <div class="card-h">📍 <span id="shLocation">Location</span></div>
+             <div style="font-size:15px;font-weight:700;margin-bottom:4px" id="setLocName">—</div>
+-            <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px" id="setCoords">—</div>
++            <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px" id="setCoords" dir="ltr">—</div>
+             <button class="btn" id="btnGps" style="width:100%;margin-bottom:9px">📍 <span id="slGps">Use GPS / Current Location</span></button>
+             <button class="btn" id="btnCitySearch" style="width:100%">🔍 <span id="slCitySearch">Search city</span></button>
+           </div>
+diff --git a/scripts/test-contract.js b/scripts/test-contract.js
+index 970d4d2..cb11313 100644
+--- a/scripts/test-contract.js
++++ b/scripts/test-contract.js
+@@ -77,6 +77,24 @@ for (const g of GOLDEN) {
+   ok(Math.abs(Engine.qiblaBearing(g.lat, g.lon) - g.qibla) < 0.05, `${g.name} qibla bearing ≈ ${g.qibla}°`);
+ }
+ 
++// v1.5 audit: spec bearing sweep — great-circle outputs always in [0, 360).
++section('1b. Qibla bearing spec sweep (great-circle, 0 ≤ b < 360)');
++{
++  const cities = [
++    ['Riyadh (spec coords)', 24.7555, 46.7804, 243.8776],
++    ['Makkah city', 21.3891, 39.8579, 318.5409],
++    ['Cairo', 30.0444, 31.2357, 136.1373],
++    ['London', 51.5074, -0.1278, 118.9872],
++    ['New York', 40.7128, -74.0060, 58.4817],
++  ];
++  for (const [name, lat, lon, exp] of cities) {
++    const b = Engine.qiblaBearing(lat, lon);
++    ok(Number.isFinite(b) && b >= 0 && b < 360, `${name}: bearing ${b.toFixed(1)}° in [0, 360)`);
++    ok(Math.abs(b - exp) < 0.01, `${name}: bearing ≈ ${exp.toFixed(1)}° (got ${b.toFixed(4)}°)`);
++  }
++  ok(Engine.qiblaBearing(21.4225, 39.8262) === 0, 'at the Kaaba itself the bearing degenerates to 0 (never NaN)');
++}
++
+ /* ═══ 2. Desktop scheduler parity with the shared engine ═════════════════ */
+ section('2. Desktop parity (scheduler.getDay == shared engine)');
+ {
+@@ -195,10 +213,15 @@ section('6. netFetch query-key isolation + per-request timeout');
+ {
+   // Build one sandbox with the REAL renderer files (shared scope, like the
+   // browser's classic scripts), a null-object DOM, and controllable fetch.
++  const lastStyle = { transform: null }; // the LAST transform written by any element (needle geometry asserts)
++  const styleRec = new Proxy({}, {
++    get(t, k) { return k === 'transform' ? lastStyle.transform : undefined; },
++    set(t, k, v) { if (k === 'transform') lastStyle.transform = String(v); return true; },
++  });
+   const dummy = new Proxy(function () {}, {
+     get(t, k) {
+       if (k === 'classList') return { add() {}, remove() {}, toggle() {}, contains: () => false };
+-      if (k === 'style') return {};
++      if (k === 'style') return styleRec;
+       if (k === 'then') return undefined;
+       if (typeof k === 'symbol') return undefined;
+       return dummy;
+@@ -458,6 +481,70 @@ section('6. netFetch query-key isolation + per-request timeout');
+     await sleep(80); // let any erroneous duplicate request surface
+     ok(geoCalls === 1, `revGeo is single-flight per coordinates: exactly one network call (got ${geoCalls})`);
+ 
++    // 6k. v1.5 Qibla needle: ±2° alignment (wraparound-safe) + ONE-SHOT haptic.
++    {
++      let vib = 0; const vibMs = [];
++      const mkNav = () => ({ onLine: true, vibrate: (ms) => { vib++; vibMs.push(ms); return true; } });
++      const setNav = (v) => Object.defineProperty(globalThis, 'navigator', { value: v, configurable: true });
++      const navDesc = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
++      setNav(mkNav());
++      let kHandler = null;
++      globalThis.addEventListener = (t2, fn) => { if (t2 === 'deviceorientation' || t2 === 'deviceorientationabsolute') kHandler = fn; };
++      globalThis.removeEventListener = () => {};
++      const bK = PC.snapshot().bearing; // Riyadh ≈ 243.8 — read live, never hard-coded
++      PC.start(); await sleep(60);
++      ok(kHandler != null && PC.snapshot().heading == null && PC.snapshot().aligned === false && vib === 0,
++        '6k: fresh visit — no heading, NOT aligned, haptic silent');
++      kHandler({ webkitCompassHeading: bK }); await sleep(120);
++      ok(Math.abs(PC.snapshot().turn) <= 2 && PC.snapshot().aligned === true,
++        '6k: heading = bearing → aligned within the ±2° window');
++      ok(vib === 1, `6k: ENTERING alignment vibrates exactly once (got ${vib})`);
++      kHandler({ webkitCompassHeading: (bK + 1.5) % 360 }); await sleep(120);
++      kHandler({ webkitCompassHeading: (bK - 1.5 + 360) % 360 }); await sleep(120);
++      ok(PC.snapshot().aligned === true && vib === 1, '6k: remaining aligned (±1.5° drift) does NOT vibrate again');
++      // Needle DOM: last transform congruent to bearing − heading (mod 360).
++      const hNow = PC.snapshot().heading;
++      const mRot = /rotate\((-?[\d.]+)deg\)/.exec(lastStyle.transform || '');
++      const rotMod = mRot ? ((parseFloat(mRot[1]) % 360) + 360) % 360 : null;
++      const wantMod = ((bK - hNow) % 360 + 360) % 360;
++      ok(rotMod != null && Math.abs(rotMod - wantMod) < 1e-6,
++        `6k: needle transform lands at bearing−heading on screen (got ${rotMod}°, want ${wantMod}°)`);
++      kHandler({ webkitCompassHeading: (bK + 10) % 360 }); await sleep(120);
++      ok(PC.snapshot().aligned === false && vib === 1, '6k: leaving alignment re-arms the haptic (still one buzz)');
++      kHandler({ webkitCompassHeading: (bK - 1 + 360) % 360 }); await sleep(120);
++      ok(Math.abs(PC.snapshot().turn - 1) < 1e-9 && PC.snapshot().aligned === true && vib === 2,
++        '6k: re-entering alignment buzzes again (shortest-path +1°, re-armed)');
++      // TRUE wraparound: due-south of the Kaaba the bearing is exactly 0°, so
++      // heading 359 must align via the shortest path (turn = +1, never −359).
++      X.setLoc(19.5, 39.8262);
++      const bS = PC.snapshot().bearing;
++      ok(bS === 0, '6k: bearing from a due-south point is exactly 0° (0 ≤ b < 360)');
++      kHandler({ webkitCompassHeading: (bS + 3) % 360 }); await sleep(120);
++      ok(PC.snapshot().aligned === false, '6k: 3° off the 0° bearing sits outside the window');
++      kHandler({ webkitCompassHeading: (bS + 359) % 360 }); await sleep(120);
++      ok(PC.snapshot().turn === 1 && PC.snapshot().aligned === true && vib === 3,
++        '6k: 359↔0 wraparound aligns via the shortest path and buzzes once');
++      kHandler({ webkitCompassHeading: (bS + 2) % 360 }); await sleep(120);
++      ok(PC.snapshot().aligned === true && vib === 3, '6k: |turn| = 2 exactly → the boundary is inclusive');
++      kHandler({ webkitCompassHeading: (bS + 2.5) % 360 }); await sleep(120);
++      ok(PC.snapshot().aligned === false, '6k: |turn| = 2.5 → outside the window');
++      // No vibration support → graceful no-op; alignment still detected.
++      setNav({ onLine: true });
++      kHandler({ webkitCompassHeading: bS }); await sleep(120);
++      ok(PC.snapshot().aligned === true && vib === 3, '6k: missing navigator.vibrate → alignment works, no crash');
++      // Remount: armed state resets — a fresh realignment buzzes once more.
++      setNav(mkNav());
++      PC.stop(); PC.start(); await sleep(60);
++      ok(PC.snapshot().aligned === false && PC.snapshot().heading == null, '6k: remount starts disarmed with no heading');
++      kHandler({ webkitCompassHeading: bS }); await sleep(120);
++      ok(PC.snapshot().aligned === true && vib === 4, `6k: remount + realign buzzes once more (got ${vib})`);
++      ok(vibMs.length === vib && vibMs.every((ms) => ms > 0), '6k: every buzz carried a non-zero duration');
++      X.setLoc(24.7136, 46.6753); // restore Riyadh for later sections
++      if (navDesc) Object.defineProperty(globalThis, 'navigator', navDesc); else delete globalThis.navigator;
++      globalThis.addEventListener = origAdd; globalThis.removeEventListener = origRemove;
++      PC.stop();
++    }
++
+     runMobileRegressions();
+   })().catch((e) => { failures++; console.error('  ✗ renderer sandbox failed:', e.message); finish(); });
+ }
+@@ -718,19 +805,33 @@ function runArtifactChecks() {
+   const dataSrc2 = read('js/data.js');
+   const pkgJson = JSON.parse(read('package.json'));
+ 
+-  // R6: the Qibla marker must move along the UNROTATED up axis.
+-  ok(/mark\.style\.transform = `rotate\(\$\{b\}deg\) translateY\(-78px\) rotate\(\$\{-b\}deg\)`/.test(compassSrc)
+-    && !/mark\.style\.transform[^\n]*translate\(78px\)/.test(compassSrc),
+-    'live compass marker: rotate(b) translateY(-78px) rotate(-b) (no +x translate)');
+-  ok(/kaabaMark'\)\.style\.transform[^\n]*translateY\(-78px\)/.test(qpagesSrc), 'static qibla render uses the corrected transform');
++  // R6 (v1.5 audit): the rim 🕋 marker is REPLACED by one centered needle.
++  ok(!compassSrc.includes('kaabaMark') && compassSrc.includes("$('qNeedle')"),
++    'live compass drives a centered qNeedle (rim kaaba marker removed)');
++  ok(!qpagesSrc.includes('kaabaMark') && /qNeedle'\)\.style\.transform = `rotate\(\$\{b\}deg\)`/.test(qpagesSrc),
++    'static qibla render points the needle at the bearing (no rim marker)');
++  ok(/ALIGNED_TOL = 2\b/.test(compassSrc), 'alignment tolerance is the specified ±2°');
++  ok(/typeof navigator\.vibrate === 'function'/.test(compassSrc) && /navigator\.vibrate\(/.test(compassSrc),
++    'haptic fires only through a guarded navigator.vibrate (graceful without support)');
++  ok(manifestSrc.includes('android.permission.VIBRATE'), 'Android VIBRATE permission present (alignment haptic can fire)');
+   {
+-    // Numeric check: R(b)·(0,-78) must land at azimuth b (CSS rotate = CW, y down).
+-    const azOf = (b) => {
+-      const r = 78, rad = (d) => d * Math.PI / 180;
+-      const x = r * Math.sin(rad(b)), y = -r * Math.cos(rad(b));
+-      return ((Math.atan2(x, -y) * 180 / Math.PI) + 360) % 360;
++    // Numeric check: the needle rotated by θ points its local up axis (0,−1)
++    // at screen azimuth θ (CSS rotate = CW, y down) — the same convention the
++    // rim marker was pinned to. Live screen angle = norm360(bearing − heading);
++    // static render = the bare bearing.
++    const norm360 = (d) => ((d % 360) + 360) % 360;
++    const tipAzimuth = (theta) => {
++      const rad = theta * Math.PI / 180;
++      const x = Math.sin(rad), y = -Math.cos(rad);
++      return (Math.atan2(x, -y) * 180 / Math.PI + 360) % 360;
+     };
+-    for (const b of [0, 90, 244, 359.9]) ok(Math.abs(azOf(b) - b) < 1e-9, `marker lands at bearing ${b} (numeric geometry)`);
++    for (const [b, h] of [[244, 0], [244, 244], [1, 359], [359, 1], [0, 90], [359.9, 0]]) {
++      const want = norm360(b - h);
++      ok(Math.abs(tipAzimuth(want) - want) < 1e-9, `needle tip at bearing ${b}° (heading ${h}°) lands on screen at ${want}°`);
++    }
++    const sdiff = (a, c) => ((a - c + 540) % 360) - 180;
++    ok(Math.abs(sdiff(359, 1)) === 2 && Math.abs(sdiff(1, 359)) === 2 && sdiff(0, 359.5) === 0.5,
++      'alignment math: shortest angular difference holds across the 359↔1 wraparound');
+   }
+ 
+   // R1/R2/R7: scheduler advance + tz payloads + recovery cap.
+@@ -771,8 +872,36 @@ function runArtifactChecks() {
+   ok(dataSrc2.includes('credits:') && dataSrc2.includes('AlAdhan.com'), 'in-app credits + third-party attribution present');
+   ok(fs.existsSync(path.join(ROOT, 'LICENSE')) && read('LICENSE').includes('ISC License'), 'LICENSE (ISC) present');
+ 
+-
+-
++  // ── v1.5 audit fixes: DST-safe streaks + calendar day-panel race + honest fallback ──
++  section('13. v1.5 audit fixes: streak day-arithmetic, calendar race, fallback toast');
++  {
++    const s3pages = read('js/pages.js');
++    const s3app = read('js/app.js');
++    const s3data = read('js/data.js');
++    ok(s3pages.includes('calDaySeq') && s3pages.includes('if (seq !== calDaySeq) return;'),
++      'calendar day panel ignores stale async responses (click race fixed)');
++    ok(s3data.includes('makkahDefault') && s3app.includes("t('toast.makkahDefault')"),
++      'first-run Makkah fallback announces itself (honest default location)');
++    // Behavioral: streaks must compare CALENDAR days, never exact 86400000 ms
++    // diffs — local-noon dates are 23 h/25 h apart across a DST transition.
++    const prevWin = globalThis.window;
++    globalThis.window = globalThis; // store3.js assigns window.Store3
++    try { new Function(s3data + '\n' + read('js/store3.js') + '\n;globalThis.__streaks = Store3.streaks;')(); }
++    finally { globalThis.window = prevWin; }
++    const streaks = globalThis.__streaks;
++    ok(typeof streaks === 'function', 'store3 sandbox booted (Store3.streaks exposed)');
++    // 2026-03-28 → 2026-03-29 straddles the Europe/London spring-forward;
++    // calendar-day counting must still form one run on ANY device timezone.
++    const hist = { '2026-03-27': { Fajr: 'done' }, '2026-03-28': { Dhuhr: 'missed' }, '2026-03-29': { Isha: 'done' } };
++    const s1 = streaks({ history: hist });
++    ok(s1.longest === 3, `three consecutive calendar days form ONE streak (got ${s1.longest}; includes the 2026-03-29 DST pair)`);
++    ok(s1.current === 0, 'a past-only history does not invent a current streak');
++    hist['2026-04-03'] = { Fajr: 'done' }; // 5-day gap
++    hist['2026-04-04'] = { Fajr: '' };     // never recorded → must not count
++    const s2 = streaks({ history: hist });
++    ok(s2.longest === 3, `a gap resets the run; unrecorded days never count (got ${s2.longest})`);
++    delete globalThis.__streaks;
++  }
+ 
+   finish();
+ }
+diff --git a/styles/app.css b/styles/app.css
+index eb3fa40..f8a7427 100644
+--- a/styles/app.css
++++ b/styles/app.css
+@@ -286,9 +286,12 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:14px 0}
+ 
+ /* ── Qibla ── */
+ .qibla-wrap{display:flex;gap:30px;align-items:center;justify-content:center;flex-wrap:wrap;padding:14px 0}
+-.compass{width:200px;height:200px;border-radius:50%;background:conic-gradient(from 0deg,var(--primary),var(--gold),var(--primary-soft),var(--gold),var(--primary));display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);flex-shrink:0}
++.compass{width:200px;height:200px;border-radius:50%;position:relative;background:conic-gradient(from 0deg,var(--primary),var(--gold),var(--primary-soft),var(--gold),var(--primary));display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);flex-shrink:0}
+ .compass-in{width:172px;height:172px;border-radius:50%;background:var(--surface);display:flex;align-items:center;justify-content:center;transition:transform 1s var(--ease);position:relative;box-shadow:inset 0 2px 10px rgba(0,0,0,.08)}
+-.compass-in .kaaba{font-size:46px;transition:transform 1s var(--ease);display:inline-block;filter:drop-shadow(0 4px 10px rgba(0,0,0,.2))}
++.q-needle{position:absolute;left:50%;top:50%;width:10px;height:148px;margin:-74px 0 0 -5px;pointer-events:none;transition:transform .18s ease-out;filter:drop-shadow(0 2px 5px rgba(0,0,0,.28));z-index:2}
++.q-needle::before{content:'';position:absolute;left:0;top:0;width:10px;height:74px;background:var(--danger);clip-path:polygon(50% 0,100% 100%,0 100%);border-radius:2px}
++.q-needle::after{content:'';position:absolute;left:0;bottom:0;width:10px;height:58px;background:var(--text-muted);opacity:.55;clip-path:polygon(0 0,100% 0,50% 100%);border-radius:2px}
++.compass::after{content:'';position:absolute;left:50%;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:var(--primary);box-shadow:0 0 0 3px var(--surface);z-index:3}
+ .compass .n-mark{position:absolute;top:9px;left:50%;transform:translateX(-50%);font-size:11px;font-weight:800;color:var(--text-muted)}
+ .qibla-info{text-align:center}
+ .qibla-deg{font-size:50px;font-weight:800;color:var(--primary);line-height:1.05;font-variant-numeric:tabular-nums}

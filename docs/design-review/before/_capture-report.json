@@ -1,0 +1,219 @@
+[
+  {
+    "name": "60-zoom-hero-chip-islamic-en",
+    "vp": {
+      "w": 1440,
+      "h": 900,
+      "dpr": 1,
+      "mobile": false
+    },
+    "theme": "islamic",
+    "lang": "en",
+    "requestedPage": "prayers",
+    "requestedMMode": null,
+    "azan": false,
+    "clipSel": ".hero-glass",
+    "result": {
+      "problems": [],
+      "theme": "islamic",
+      "lang": "en",
+      "dir": "ltr",
+      "mMode": false,
+      "activePage": "page-prayers",
+      "azanOpen": false,
+      "docOverflowX": false,
+      "contentScroll": {
+        "top": 0,
+        "h": 1176,
+        "client": 838
+      }
+    },
+    "bytes": 26110
+  },
+  {
+    "name": "61-zoom-hero-chip-sahara-en",
+    "vp": {
+      "w": 1440,
+      "h": 900,
+      "dpr": 1,
+      "mobile": false
+    },
+    "theme": "sahara",
+    "lang": "en",
+    "requestedPage": "prayers",
+    "requestedMMode": null,
+    "azan": false,
+    "clipSel": ".hero-glass",
+    "result": {
+      "problems": [],
+      "theme": "sahara",
+      "lang": "en",
+      "dir": "ltr",
+      "mMode": false,
+      "activePage": "page-prayers",
+      "azanOpen": false,
+      "docOverflowX": false,
+      "contentScroll": {
+        "top": 0,
+        "h": 1176,
+        "client": 838
+      }
+    },
+    "bytes": 44481
+  },
+  {
+    "name": "62-zoom-hero-chip-midnight-en",
+    "vp": {
+      "w": 1440,
+      "h": 900,
+      "dpr": 1,
+      "mobile": false
+    },
+    "theme": "midnight",
+    "lang": "en",
+    "requestedPage": "prayers",
+    "requestedMMode": null,
+    "azan": false,
+    "clipSel": ".hero-glass",
+    "result": {
+      "problems": [],
+      "theme": "midnight",
+      "lang": "en",
+      "dir": "ltr",
+      "mMode": false,
+      "activePage": "page-prayers",
+      "azanOpen": false,
+      "docOverflowX": false,
+      "contentScroll": {
+        "top": 0,
+        "h": 1176,
+        "client": 838
+      }
+    },
+    "bytes": 54564
+  },
+  {
+    "name": "63-zoom-sunnight-islamic-en",
+    "vp": {
+      "w": 1440,
+      "h": 900,
+      "dpr": 1,
+      "mobile": false
+    },
+    "theme": "islamic",
+    "lang": "en",
+    "requestedPage": "prayers",
+    "requestedMMode": null,
+    "azan": false,
+    "clipSel": "#sunGrid",
+    "result": {
+      "problems": [],
+      "theme": "islamic",
+      "lang": "en",
+      "dir": "ltr",
+      "mMode": false,
+      "activePage": "page-prayers",
+      "azanOpen": false,
+      "docOverflowX": false,
+      "contentScroll": {
+        "top": 0,
+        "h": 1176,
+        "client": 838
+      }
+    },
+    "bytes": 36306
+  },
+  {
+    "name": "64-zoom-glance-islamic-en",
+    "vp": {
+      "w": 1440,
+      "h": 900,
+      "dpr": 1,
+      "mobile": false
+    },
+    "theme": "islamic",
+    "lang": "en",
+    "requestedPage": "prayers",
+    "requestedMMode": null,
+    "azan": false,
+    "clipSel": "#page-prayers .glance",
+    "result": {
+      "problems": [],
+      "theme": "islamic",
+      "lang": "en",
+      "dir": "ltr",
+      "mMode": false,
+      "activePage": "page-prayers",
+      "azanOpen": false,
+      "docOverflowX": false,
+      "contentScroll": {
+        "top": 0,
+        "h": 1176,
+        "client": 838
+      }
+    },
+    "bytes": 38701
+  },
+  {
+    "name": "65-zoom-prayercards-islamic-en",
+    "vp": {
+      "w": 1440,
+      "h": 900,
+      "dpr": 1,
+      "mobile": false
+    },
+    "theme": "islamic",
+    "lang": "en",
+    "requestedPage": "prayers",
+    "requestedMMode": null,
+    "azan": false,
+    "clipSel": "#page-prayers .prayer-cards",
+    "result": {
+      "problems": [],
+      "theme": "islamic",
+      "lang": "en",
+      "dir": "ltr",
+      "mMode": false,
+      "activePage": "page-prayers",
+      "azanOpen": false,
+      "docOverflowX": false,
+      "contentScroll": {
+        "top": 0,
+        "h": 1176,
+        "client": 838
+      }
+    },
+    "bytes": 80272
+  },
+  {
+    "name": "66-zoom-sidebar-islamic-en",
+    "vp": {
+      "w": 1440,
+      "h": 900,
+      "dpr": 1,
+      "mobile": false
+    },
+    "theme": "islamic",
+    "lang": "en",
+    "requestedPage": "prayers",
+    "requestedMMode": null,
+    "azan": false,
+    "clipSel": ".sb",
+    "result": {
+      "problems": [],
+      "theme": "islamic",
+      "lang": "en",
+      "dir": "ltr",
+      "mMode": false,
+      "activePage": "page-prayers",
+      "azanOpen": false,
+      "docOverflowX": false,
+      "contentScroll": {
+        "top": 0,
+        "h": 1176,
+        "client": 838
+      }
+    },
+    "bytes": 354077
+  }
+]
