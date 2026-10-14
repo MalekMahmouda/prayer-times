@@ -57,7 +57,6 @@ function cfgFingerprint(cfg) {
 function pushCfg() {
   if (!PT) return;
   try {    // Active saved location's timezone (empty = system/unknown)
-    const actLoc = (typeof DB3 !== 'undefined' && DB3) ? DB3.locations.find((l) => l.id === DB3.prefs.activeLoc) : null;
     if ((S.lat != null && !isFiniteLat(S.lat)) || (S.lon != null && !isFiniteLon(S.lon))) {
       showToast('⚠️ ' + (S.lang === 'ar' ? 'إحداثيات غير صالحة — تحقق من الموقع' : 'Invalid coordinates — check your location'));
       return;
@@ -496,7 +495,7 @@ function gotoPage(name) {
   if (window.PTCompass && name !== 'qibla') window.PTCompass.stop();
   document.querySelectorAll('.page').forEach((p) => p.classList.remove('active'));
   const pg = $('page-' + name); if (pg) pg.classList.add('active');
-  if (name === 'mhome') renderMHomeCards();
+  if (name === 'mhome') { renderMHome(); renderMHomeCards(); }
   document.querySelectorAll('[data-page]').forEach((b) => b.classList.toggle('active', b.dataset.page === name));
   if (name === 'calendar' && window.renderCalendar) renderCalendar();
   if (name === 'quran' && window.renderSurahList) renderSurahList();
@@ -651,6 +650,11 @@ async function refreshTodaySchedule(now = new Date()) {
 /* ═══ DASHBOARD ═══ */
 function renderAll() {
   renderDashboard();
+  // The mobile home is a separate DOM tree from the desktop dashboard, so it has
+  // to be repainted by the same events. Without this, its hero (next prayer +
+  // time) and prayer strip kept their "—" placeholders until the countdown's
+  // 30th tick — up to half a minute of live countdown under an unnamed prayer.
+  if (document.body.classList.contains('m-mode')) renderMHome();
   renderMHomeCards();
   renderSunSection(); // API-backed rows in browser; full night times via ptGetDay on desktop
   if (window.renderQibla) renderQibla();
@@ -730,10 +734,10 @@ function renderDashboard() {
   // Glance
   const q = qiblaBearing();
   const cells = [
-    { i: '🕌', v: '5', l: t('prayersCount') },
-    { i: '⏳', v: `${S.lang === 'ar' ? AR_PRAYER[info.next.prayer] : info.next.prayer}`, l: t('nextPrayer') },
-    { i: '🧭', v: `${Math.round(q)}°`, l: t('qiblaBearing') },
-    { i: '🌙', v: hijriOf(new Date()).replace(/[,،]?\s*\d{4}\s*(هـ|AH)?\.?\s*$/, ''), l: t('hijri') },
+    { i: ICONS.mosque, v: '5', l: t('prayersCount') },
+    { i: ICONS.clock, v: `${S.lang === 'ar' ? AR_PRAYER[info.next.prayer] : info.next.prayer}`, l: t('nextPrayer') },
+    { i: ICONS.compass, v: `${Math.round(q)}°`, l: t('qiblaBearing') },
+    { i: ICONS.moon, v: hijriOf(new Date()).replace(/[,،]?\s*\d{4}\s*(هـ|AH)?\.?\s*$/, ''), l: t('hijri') },
   ];
   $('glanceGrid').innerHTML = cells.map((c) => `<div class="gcell"><span class="gi">${c.i}</span><div><div class="gv">${c.v}</div><div class="gl">${c.l}</div></div></div>`).join('');
 }
@@ -743,12 +747,12 @@ function renderSunSection() {
   const el = $('sunGrid'); if (!el) return;
   const ts = S.todaySchedule && S.todaySchedule.sun;
   const rows = [
-    { i: '🌅', k: 'sunrise', lbl: t('sunrise'), v: (ts && ts.sunrise) || (S.times && S.times.Sunrise ? fmt(timeStrToDate(S.times.Sunrise)) : '—') },
-    { i: '🌇', k: 'sunset', lbl: t('sunset'), v: (ts && ts.sunset) || (S.times && S.times.Sunset ? fmt(timeStrToDate(S.times.Sunset)) : '—') },
-    { i: '🌞', k: 'dhuhr', lbl: t('solarNoon'), v: (ts && ts.dhuhr) || (S.times && S.times.Dhuhr ? fmt(timeStrToDate(S.times.Dhuhr)) : '—') },
-    { i: '🌙', k: 'midnight', lbl: t('midnight'), v: ts && ts.midnight ? ts.midnight : '—' },
-    { i: '🌌', k: 'firstThird', lbl: t('firstThird'), v: ts && ts.firstThird ? ts.firstThird : '—' },
-    { i: '☄️', k: 'lastThird', lbl: t('lastThird'), v: ts && ts.lastThird ? ts.lastThird : '—' },
+    { i: ICONS.sunrise, k: 'sunrise', lbl: t('sunrise'), v: (ts && ts.sunrise) || (S.times && S.times.Sunrise ? fmt(timeStrToDate(S.times.Sunrise)) : '—') },
+    { i: ICONS.sunset, k: 'sunset', lbl: t('sunset'), v: (ts && ts.sunset) || (S.times && S.times.Sunset ? fmt(timeStrToDate(S.times.Sunset)) : '—') },
+    { i: ICONS.sun, k: 'dhuhr', lbl: t('solarNoon'), v: (ts && ts.dhuhr) || (S.times && S.times.Dhuhr ? fmt(timeStrToDate(S.times.Dhuhr)) : '—') },
+    { i: ICONS.midnight, k: 'midnight', lbl: t('midnight'), v: ts && ts.midnight ? ts.midnight : '—' },
+    { i: ICONS.firstThird, k: 'firstThird', lbl: t('firstThird'), v: ts && ts.firstThird ? ts.firstThird : '—' },
+    { i: ICONS.lastThird, k: 'lastThird', lbl: t('lastThird'), v: ts && ts.lastThird ? ts.lastThird : '—' },
   ];
   el.innerHTML = rows.map((r) => `<div class="sun-cell"><div class="ic">${r.i}</div><div class="lbl">${r.lbl}</div><div class="tm">${r.v}</div></div>`).join('');
 }
@@ -916,6 +920,46 @@ function playAdhanBrowser() {
   a.currentTime = 0;
   a.play().catch(() => showToast('🔇 ' + t('toast.adhanFail')));
 }
+/* ═══ FULL-SCREEN AZAN SCREEN ═══
+   One presentation surface shared by the Test Adhan button and the automatic
+   prayer-time event (foreground) on Android and the web build. The desktop
+   app keeps its own separate always-on-top Electron overlay window
+   (adhan.html) — PT.testOverlay() — unchanged. */
+const AZAN_AR = { Fajr: 'الفجر', Dhuhr: 'الظهر', Asr: 'العصر', Maghrib: 'المغرب', Isha: 'العشاء', Test: 'الأذان' };
+let _azanOpen = false;
+let _azanClockTimer = null;
+function _azanTick() {
+  const el = $('azanClock'); if (!el) return;
+  const d = new Date();
+  const h = S.cfg.h24 ? d.getHours() : ((d.getHours() % 12) || 12);
+  el.textContent = `${h}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+function showAzanScreen(prayer) {
+  const el = $('azanOverlay'); if (!el) return;
+  const key = AZAN_AR[prayer] ? prayer : 'Test';
+  $('azanArName').textContent = AZAN_AR[key];
+  $('azanEnName').textContent = key === 'Test' ? t('azan.playing') : key;
+  const city = $('azanCity'); if (city) city.textContent = S.city || '';
+  $('azanStatus').textContent = t('azan.playing');
+  _azanTick();
+  if (_azanClockTimer) clearInterval(_azanClockTimer);
+  _azanClockTimer = setInterval(_azanTick, 1000);
+  el.setAttribute('aria-hidden', 'false');
+  el.classList.add('open');
+  _azanOpen = true;
+}
+function hideAzanScreen(stopAudio) {
+  const el = $('azanOverlay'); if (!el) return;
+  el.classList.remove('open');
+  el.setAttribute('aria-hidden', 'true');
+  _azanOpen = false;
+  if (_azanClockTimer) { clearInterval(_azanClockTimer); _azanClockTimer = null; }
+  if (stopAudio) { const a = $('adhanAudio'); if (a) { try { a.pause(); } catch (e) { /* ignore */ } } }
+}
+/* True while the full-screen azan is showing — the Android back-button chain
+   (www-build/entry.js) and the foreground notification hook consult this. */
+window.ptAzanScreen = { isOpen: () => _azanOpen, show: showAzanScreen, hide: hideAzanScreen };
+
 function testAdhan() {
   // Desktop: run the REAL pipeline (bundled audio file, configured volume, the
   // actual overlay shown at prayer time — also logged to azan-debug.log), so
@@ -926,9 +970,9 @@ function testAdhan() {
     PT.testOverlay();
     return;
   }
-  // Android (v1.4.0): play the LOCAL bundled recording — the same file the
-  // adhan notification channel uses (copied to res/raw). No CDN, works
-  // offline; at prayer time Android delivers the sound via the channel.
+  // Android (v1.4.0): open the SAME full-screen Azan screen the automatic
+  // prayer-time event uses, and play the LOCAL bundled recording — the same
+  // file the adhan notification channel ships (res/raw). No CDN, works offline.
   const onAndroid = !!(window.Capacitor && window.Capacitor.isNativePlatform());
   if (onAndroid) {
     showToast('🕌 ' + t('toast.adhanOverlay'));
@@ -938,10 +982,13 @@ function testAdhan() {
     a.volume = S.cfg.adhanVol != null ? S.cfg.adhanVol : 1;
     a.currentTime = 0;
     a.play().catch(() => showToast('🔇 ' + t('toast.adhanFail')));
+    showAzanScreen('Test');
     return;
   }
+  // Browser / PWA: same full-screen surface + the CDN preview audio.
   showToast('🔊 ' + t('toast.adhanPlay'));
   playAdhanBrowser();
+  showAzanScreen('Test');
 }
 
 /* ═══ I18N APPLY ═══ */
@@ -1031,6 +1078,15 @@ function applyLang() {
   $('slTestNotif').textContent = t('set.testNotif');
   $('dataNote').textContent = t('set.dataNote');
   $('creditsNote').textContent = t('set.credits');
+  // About card + full-screen Azan labels (both languages)
+  const shAbout = $('shAbout'); if (shAbout) shAbout.textContent = t('set.about');
+  const aboutDev = $('aboutDev'); if (aboutDev) aboutDev.textContent = t('set.developer');
+  const aboutDua = $('aboutDua'); if (aboutDua) aboutDua.textContent = t('set.dua');
+  const azStop = $('azanStopLbl'); if (azStop) azStop.textContent = t('azan.stop');
+  const azClose = $('azanCloseLbl'); if (azClose) azClose.textContent = t('azan.close');
+  const azStatus = $('azanStatus'); if (azStatus) azStatus.textContent = t('azan.playing');
+  const footDev = $('footDev'); if (footDev) footDev.textContent = t('set.developer');
+  const footDua = $('footDua'); if (footDua) footDua.textContent = t('set.dua');
   $('slGps').textContent = t('set.gps');
   $('slCitySearch').textContent = t('set.searchCity');
 
@@ -1060,15 +1116,33 @@ function applyLang() {
   if (window.renderSurahList && document.getElementById('page-quran').classList.contains('active')) renderSurahList();
 }
 
+/* ═══ APP-CHROME ICONS ═══
+   Navigation, topbar and sheet glyphs are declared once in ICONS (data.js) and
+   painted into every [data-icon] placeholder, so the chrome shares the dashboard's
+   single stroke language instead of the colour-emoji set it used before. */
+function paintIcons(root) {
+  (root || document).querySelectorAll('[data-icon]').forEach((el) => {
+    const svg = ICONS[el.dataset.icon];
+    if (svg) el.innerHTML = svg;
+  });
+}
+
 /* ═══ INIT ═══ */
 async function init() {
   load();
   applyTheme(S.cfg.theme);
   applyLangStatic();       // nav/labels before data renders
+  paintIcons();            // chrome glyphs (nav, topbar, sheets) from the shared set
   buildSwatches();
 
   // Narrow viewport (phone / small window): dedicated mobile UI — desktop unaffected
   initMobileUI();
+  // Derive the mode from the viewport AT BOOT, not only on resize. The stylesheet
+  // hides #page-prayers below 768px while m-mode is off, and routing to the mobile
+  // home only happens in applyMMode — so with a resize-only trigger a phone's first
+  // paint was an EMPTY content area (topbar + bottom nav, nothing between) until a
+  // later scroll/rotate happened to fire a resize. See docs/design-review §F2.
+  applyMMode(window.innerWidth <= 768);
   let mqTick = null;
   window.addEventListener('resize', () => {
     clearTimeout(mqTick);
@@ -1202,6 +1276,9 @@ function toggleMiniMode() {
 function makkahFallback() {
   S.lat = 21.3891; S.lon = 39.8579; S.city = 'Makkah'; S.country = 'Saudi Arabia';
   saveLoc(); updateLocNames(); fetchTimes(S.lat, S.lon); refreshTodaySchedule();
+  // Honest default: the location chip alone was easy to miss — say why the
+  // app is showing Makkah so the user can set their own city.
+  showToast('🕌 ' + t('toast.makkahDefault'));
 }
 
 function scheduleMidnight() {

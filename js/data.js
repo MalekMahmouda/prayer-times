@@ -73,7 +73,44 @@ const RECITERS = [
 /* ═══ PRAYER CONSTANTS ═══ */
 const PRAYERS = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
 const AR_PRAYER = { Fajr: 'الفجر', Dhuhr: 'الظهر', Asr: 'العصر', Maghrib: 'المغرب', Isha: 'العشاء' };
-const ICON_PRAYER = { Fajr: '🌅', Dhuhr: '☀️', Asr: '🌤', Maghrib: '🌇', Isha: '🌙' };
+/* ── Dashboard icon set ──────────────────────────────────────────────────────
+   One stroke language: 24px grid, 1.75 stroke, currentColor, no fill.
+   Replaces the emoji that previously stood in for icons on the dashboard. Those
+   mixed photographic (🌅/🌇/🕌), cartoon (🌞) and flat (🌙) styles, and two of
+   them — 🌌 (first third) and ☄️ (last third) — were not legible as glyphs at
+   the rendered 21px, showing up as unreadable coloured blobs.
+   The svg sizes from the host element's font-size (see .pcard .ic svg in app.css). */
+const ICON_SVG = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const ICONS = {
+  dawn:       ICON_SVG('<path d="M4 18h16"/><path d="M8.6 18a3.4 3.4 0 0 1 6.8 0"/><path d="M12 5v2.4"/><path d="M6.6 9.6 8.2 11.2"/><path d="M17.4 9.6 15.8 11.2"/>'),
+  sun:        ICON_SVG('<circle cx="12" cy="12" r="4"/><path d="M12 2.8V6"/><path d="M12 18v3.2"/><path d="M2.8 12H6"/><path d="M18 12h3.2"/><path d="M5.5 5.5 7.7 7.7"/><path d="M16.3 16.3l2.2 2.2"/><path d="M18.5 5.5 16.3 7.7"/><path d="M7.7 16.3 5.5 18.5"/>'),
+  afternoon:  ICON_SVG('<circle cx="12" cy="11.4" r="3.8"/><path d="M12 4.2v2.2"/><path d="M4.6 11.4h2.2"/><path d="M17.2 11.4h2.2"/><path d="M6.9 6.3 8.4 7.8"/><path d="M17.1 6.3l-1.5 1.5"/><path d="M3.4 18.6h17.2"/>'),
+  dusk:       ICON_SVG('<path d="M4 18h16"/><path d="M8.6 18a3.4 3.4 0 0 0 6.8 0"/><path d="M12 6.4V4"/><path d="M6.6 9.4 5 7.8"/><path d="M17.4 9.4 19 7.8"/>'),
+  moon:       ICON_SVG('<path d="M19.8 14.4A8.3 8.3 0 0 1 9.6 4.2a8.5 8.5 0 1 0 10.2 10.2z"/>'),
+  sunrise:    ICON_SVG('<path d="M3.4 18.4h17.2"/><path d="M8.1 18.4a3.9 3.9 0 0 1 7.8 0"/><path d="M12 3.2v4.8"/><path d="M9.7 5.8 12 3.3l2.3 2.5"/>'),
+  sunset:     ICON_SVG('<path d="M3.4 18.4h17.2"/><path d="M8.1 18.4a3.9 3.9 0 0 0 7.8 0"/><path d="M12 3.2v4.8"/><path d="M9.7 5.8 12 8.3l2.3-2.5"/>'),
+  // the night wheel: cut at the middle / earliest part lit / latest part lit
+  midnight:   ICON_SVG('<circle cx="12" cy="12" r="7.6"/><path d="M12 4.4v15.2"/>'),
+  firstThird: ICON_SVG('<circle cx="12" cy="12" r="7.6"/><path d="M12 4.4a7.6 7.6 0 0 0 0 15.2z" fill="currentColor" stroke="none"/>'),
+  lastThird:  ICON_SVG('<circle cx="12" cy="12" r="7.6"/><path d="M12 4.4a7.6 7.6 0 0 1 0 15.2z" fill="currentColor" stroke="none"/>'),
+  mosque:     ICON_SVG('<path d="M2.5 20.5h19"/><path d="M5.4 20.5v-8.7"/><path d="M18.6 20.5v-8.7"/><path d="M7.4 15.6a4.6 4.6 0 0 1 9.2 0"/><path d="M12 4.6v3.4"/>'),
+  clock:      ICON_SVG('<circle cx="12" cy="12" r="8.2"/><path d="M12 7.4V12l3.2 2"/>'),
+  compass:    ICON_SVG('<circle cx="12" cy="12" r="8.2"/><path d="M15.7 8.3l-2.3 5.4-5.4 2.3 2.3-5.4z" fill="currentColor" stroke="none"/>'),
+  // ── Navigation / app-chrome glyphs (same 24-grid, 1.75 stroke, round caps) ──
+  calendar:   ICON_SVG('<rect x="3.6" y="5.2" width="16.8" height="15.2" rx="3.2"/><path d="M3.6 10h16.8"/><path d="M8.4 3.4v3.6"/><path d="M15.6 3.4v3.6"/>'),
+  book:       ICON_SVG('<path d="M12 6.6v13"/><path d="M12 6.6C10.6 5.1 8.7 4.4 6.3 4.4H3.9v13.2h2.4c2.4 0 4.3.7 5.7 2"/><path d="M12 6.6c1.4-1.5 3.3-2.2 5.7-2.2h2.4v13.2h-2.4c-2.4 0-4.3.7-5.7 2"/>'),
+  star:       ICON_SVG('<path d="M12 3.9l2.6 5.4 5.8.8-4.2 4.1 1 5.9L12 17.3l-5.2 2.8 1-5.9-4.2-4.1 5.8-.8z"/>'),
+  // dhikr: a ring of prayer beads (six beads on a loop)
+  beads:      ICON_SVG('<circle cx="12" cy="4.9" r="1.8"/><circle cx="18.3" cy="8.6" r="1.8"/><circle cx="18.3" cy="15.4" r="1.8"/><circle cx="12" cy="19.1" r="1.8"/><circle cx="5.7" cy="15.4" r="1.8"/><circle cx="5.7" cy="8.6" r="1.8"/>'),
+  chart:      ICON_SVG('<path d="M4.2 20h15.6"/><path d="M7.8 20v-6.4"/><path d="M12 20V7.8"/><path d="M16.2 20v-9.2"/>'),
+  // settings: sliders rather than a cog, so it can never be mistaken for the sun
+  sliders:    ICON_SVG('<path d="M4.2 8.6h8.2"/><path d="M17.2 8.6h2.6"/><circle cx="14.9" cy="8.6" r="2.3"/><path d="M4.2 15.4h2.6"/><path d="M11.6 15.4h8.2"/><circle cx="9.1" cy="15.4" r="2.3"/>'),
+  globe:      ICON_SVG('<circle cx="12" cy="12" r="8.2"/><path d="M3.8 12h16.4"/><path d="M12 3.8c2.3 2.4 3.5 5.2 3.5 8.2s-1.2 5.8-3.5 8.2c-2.3-2.4-3.5-5.2-3.5-8.2s1.2-5.8 3.5-8.2z"/>'),
+  pin:        ICON_SVG('<path d="M12 20.8c4.1-4.3 6.2-7.4 6.2-10a6.2 6.2 0 1 0-12.4 0c0 2.6 2.1 5.7 6.2 10z"/><circle cx="12" cy="10.6" r="2.3"/>'),
+  pencil:     ICON_SVG('<path d="M4.4 19.6l4.3-1.2L19.3 8a1.9 1.9 0 0 0-2.7-2.7L5.6 15.7z"/><path d="M14.7 6.5l2.8 2.8"/>'),
+  more:       ICON_SVG('<circle cx="5.6" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="18.4" cy="12" r="1.6" fill="currentColor" stroke="none"/>'),
+};
+const ICON_PRAYER = { Fajr: ICONS.dawn, Dhuhr: ICONS.sun, Asr: ICONS.afternoon, Maghrib: ICONS.dusk, Isha: ICONS.moon };
 
 const HME = ['Muharram','Safar','Rabi al-Awwal','Rabi al-Thani','Jumada al-Awwal','Jumada al-Thani','Rajab',"Sha'ban",'Ramadan','Shawwal',"Dhu al-Qi'dah",'Dhu al-Hijjah'];
 const HMA = ['محرم','صفر','ربيع الأول','ربيع الثاني','جمادى الأولى','جمادى الآخرة','رجب','شعبان','رمضان','شوال','ذو القعدة','ذو الحجة'];
@@ -90,11 +127,12 @@ const T = {
     sunNight: 'Sun & Night', sunrise: 'Sunrise', sunset: 'Sunset', solarNoon: 'Solar Noon',
     midnight: 'Midnight', firstThird: 'First Third', lastThird: 'Last Third',
     glance: 'Today at a Glance', prayersCount: 'Prayers', qiblaBearing: 'Qibla',
+    azan: { now: 'It is time for', playing: 'Adhan is playing…', stop: 'Stop', close: 'Close' },
     hist: { title: 'Prayer Record', hint: 'Tap a prayer to cycle: Not recorded → Completed → Missed' },
     offline: 'Offline', cached: 'Using cached times', detecting: 'Detecting…',
     setDate: 'Date', failedLoad: 'Failed to load. Check connection.',
     cal: { title: 'Monthly Calendar', prev: 'Previous month', nextM: 'Next month', todayBtn: 'Today', selectDay: 'Select a day to see prayer times', noTimes: 'Times unavailable for this date', exportCsv: 'Export month (CSV)' },
-    qibla: { title: 'Qibla Direction', from: 'from', distance: 'Distance to Kaaba', km: 'km', yourCoords: 'Your coordinates', kaabaCoords: 'Kaaba coordinates', how: 'How to use', howText: 'Face the direction shown by the bearing. The dial rotates the Kaaba marker to the qibla angle from North.', live: 'Live compass — turn until the 🕋 marker points forward', calibrate: 'Compass unreliable — move the phone in a ∞ figure to calibrate', noSensor: 'No compass data yet — showing static bearing', static: 'Static bearing — this device has no compass', denied: 'Compass permission denied — showing static bearing', turn: 'Turn' },
+    qibla: { title: 'Qibla Direction', from: 'from', distance: 'Distance to Kaaba', km: 'km', yourCoords: 'Your coordinates', kaabaCoords: 'Kaaba coordinates', how: 'How to use', howText: 'The needle points toward the Qibla relative to your device. Turn until the needle points to the top of the dial — the number shown is the Qibla bearing from North.', live: 'Live compass — turn until the needle points to the top of the dial', aligned: 'Aligned — you are facing the Qibla ✓', calibrate: 'Compass unreliable — move the phone in a ∞ figure to calibrate', noSensor: 'No compass data yet — showing static bearing', static: 'Static bearing — this device has no compass', denied: 'Compass permission denied — showing static bearing', turn: 'Turn' },
     quran: { search: 'Search surah by name or number…', meccan: 'Meccan', medinan: 'Medinan', verses: 'verses', noResults: 'No surahs found.', reciter: 'Reciter', loading: 'Could not load audio. Check connection.' },
     names: { search: 'Search by name or meaning…', day: 'Name of the Day', all: 'All 99 Names', dhikr: 'Dhikr', noResults: 'No names found.', source: 'Asma Allah al-Husna' },
     dhikr: { title: 'Dhikr Counter', target: 'Target', custom: 'Custom', reset: 'Reset', daily: 'Today', total: 'All time', tapHint: 'Tap the counter or press Space', done: 'Target reached — Alhamdulillah!' },
@@ -107,8 +145,9 @@ const T = {
       notif: 'Prayer Alerts', notifS: 'Notify before each prayer', minutesBefore: 'Minutes before', beep: 'Pre-prayer beep', adhanSound: 'Play adhan at prayer time',
       adjust: 'Time Adjustments (min)', dataNote: 'All data is stored locally on this device. No account, no analytics.',
       credits: 'Quran text: Tanzil (quran-uthmani) · Translation: Saheeh International · Adhan recordings: courtesy of AlAdhan.com · Prayer engine: adhan-js',
+      about: 'About', developer: 'Developed by Malek Mahmoud', dua: 'يرجى الدعاء ليا ولوالدي',
     },
-    toast: { locSet: 'Location updated!', locFail: 'City not found. Try again.', noCity: 'Please enter a city', gpsDenied: 'Location denied. Set manually.', gpsNo: 'Geolocation not supported', gpsFail: 'Location unavailable — set your city manually', switchedEn: 'Switched to English 🌙', switchedAr: 'تم التبديل للعربية 🌙', testIn3: 'Test notification in 3s…', deskOnly: 'Desktop mode only', adhanPlay: 'Playing adhan preview…', adhanOverlay: 'Playing adhan — fullscreen overlay', adhanFail: 'Could not play the adhan preview' },
+    toast: { locSet: 'Location updated!', locFail: 'City not found. Try again.', noCity: 'Please enter a city', gpsDenied: 'Location denied. Set manually.', gpsNo: 'Geolocation not supported', gpsFail: 'Location unavailable — set your city manually', switchedEn: 'Switched to English 🌙', switchedAr: 'تم التبديل للعربية 🌙', testIn3: 'Test notification in 3s…', deskOnly: 'Desktop mode only', adhanPlay: 'Playing adhan preview…', adhanOverlay: 'Playing adhan — fullscreen overlay', adhanFail: 'Could not play the adhan preview', makkahDefault: 'No location set yet — showing Makkah by default. Set your city from Location.' },
     dh: { subhan: 'SubhanAllah', subhanAr: 'سُبْحَانَ اللَّه', alhamd: 'Alhamdulillah', alhamdAr: 'الْحَمْدُ لِلَّه', akbar: 'Allahu Akbar', akbarAr: 'اللَّهُ أَكْبَر', tahlil: 'La ilaha illa Allah', tahlilAr: 'لَا إِلَٰهَ إِلَّا اللَّه', istighfar: 'Astaghfirullah', istighfarAr: 'أَسْتَغْفِرُ اللَّه', salawat: 'Salawat', salawatAr: 'صَلَّى اللَّهُ عَلَيْهِ وَسَلَّمَ' },
   },
   ar: {
@@ -121,11 +160,12 @@ const T = {
     sunNight: 'الشمس والليل', sunrise: 'الشروق', sunset: 'الغروب', solarNoon: 'الظهر شمسياً',
     midnight: 'منتصف الليل', firstThird: 'الثلث الأول', lastThird: 'الثلث الأخير',
     glance: 'نظرة سريعة', prayersCount: 'الصلوات', qiblaBearing: 'القبلة',
+    azan: { now: 'حان الآن وقت صلاة', playing: 'الأذان قيد التشغيل…', stop: 'إيقاف', close: 'إغلاق' },
     hist: { title: 'سجل الصلوات', hint: 'اضغط على الصلاة للتبديل: غير مسجلة → أدّيتها → فاتتني' },
     offline: 'غير متصل', cached: 'أوقات مخزنة مؤقتاً', detecting: 'جاري التحديد…',
     setDate: 'التاريخ', failedLoad: 'فشل التحميل. تحقق من الاتصال.',
     cal: { title: 'التقويم الشهري', prev: 'الشهر السابق', nextM: 'الشهر التالي', todayBtn: 'اليوم', selectDay: 'اختر يوماً لعرض أوقات الصلاة', noTimes: 'الأوقات غير متاحة لهذا التاريخ', exportCsv: 'تصدير الشهر (CSV)' },
-    qibla: { title: 'اتجاه القبلة', from: 'من', distance: 'المسافة إلى الكعبة', km: 'كم', yourCoords: 'إحداثياتك', kaabaCoords: 'إحداثيات الكعبة', how: 'كيفية الاستخدام', howText: 'اتجه نحو الدرجة المعروضة. تدور البوصلة لتشير علامة الكعبة إلى زاوية القبلة من الشمال.', live: 'بوصلة حية — أدر الهاتف حتى يشير مؤشر 🕋 إلى الأمام', calibrate: 'البوصلة غير مستقرة — حرّك الهاتف على شكل ∞ للمعايرة', noSensor: 'لا توجد بيانات بوصلة بعد — يتم عرض الاتجاه الثابت', static: 'اتجاه ثابت — هذا الجهاز لا يحتوي بوصلة', denied: 'تم رفض إذن البوصلة — يتم عرض الاتجاه الثابت', turn: 'أدر حتى' },
+    qibla: { title: 'اتجاه القبلة', from: 'من', distance: 'المسافة إلى الكعبة', km: 'كم', yourCoords: 'إحداثياتك', kaabaCoords: 'إحداثيات الكعبة', how: 'كيفية الاستخدام', howText: 'يشير المؤشر إلى اتجاه القبلة بالنسبة لاتجاه جهازك. أدر الهاتف حتى يشير المؤشر إلى أعلى القرص — الدرجة المعروضة هي اتجاه القبلة من الشمال.', live: 'بوصلة حية — أدر الهاتف حتى يشير المؤشر إلى أعلى القرص', aligned: 'تم الاستقامة — أنت متجه نحو القبلة ✓', calibrate: 'البوصلة غير مستقرة — حرّك الهاتف على شكل ∞ للمعايرة', noSensor: 'لا توجد بيانات بوصلة بعد — يتم عرض الاتجاه الثابت', static: 'اتجاه ثابت — هذا الجهاز لا يحتوي بوصلة', denied: 'تم رفض إذن البوصلة — يتم عرض الاتجاه الثابت', turn: 'أدر حتى' },
     quran: { search: 'ابحث عن سورة بالاسم أو الرقم…', meccan: 'مكية', medinan: 'مدنية', verses: 'آية', noResults: 'لا توجد نتائج.', reciter: 'القارئ', loading: 'تعذر تحميل الصوت. تحقق من الاتصال.' },
     names: { search: 'ابحث عن الاسم أو المعنى…', day: 'اسم اليوم', all: 'أسماء الله الحسنى', dhikr: 'الذكر', noResults: 'لا توجد نتائج.', source: 'أسماء الله الحسنى' },
     dhikr: { title: 'مسبحة إلكترونية', target: 'الهدف', custom: 'مخصص', reset: 'تصفير', daily: 'اليوم', total: 'الإجمالي', tapHint: 'اضغط على العداد أو مفتاح المسافة', done: 'اكتمل الهدف — الحمد لله!' },
@@ -138,8 +178,9 @@ const T = {
       notif: 'تنبيهات الصلاة', notifS: 'إشعار قبل كل صلاة', minutesBefore: 'دقائق قبل', beep: 'تنبيه قبل الصلاة', adhanSound: 'تشغيل الأذان عند وقت الصلاة',
       adjust: 'تعديل الأوقات (د)', dataNote: 'جميع البيانات محفوظة محلياً على هذا الجهاز. لا حسابات ولا تحليلات.',
       credits: 'النص القرآني: تنزيل (قرآن عثماني) · الترجمة: سعد الدولعة (صحيح إنترناشونال) · تسجيلات الأذان: من AlAdhan.com · محرك المواقيت: adhan-js',
+      about: 'حول التطبيق', developer: 'تطوير: Malek Mahmoud', dua: 'يرجى الدعاء ليا ولوالدي',
     },
-    toast: { locSet: 'تم تحديث الموقع!', locFail: 'لم يتم العثور على المدينة. حاول مجدداً.', noCity: 'الرجاء إدخال مدينة', gpsDenied: 'تم رفض الموقع. حدد يدوياً.', gpsNo: 'تحديد الموقع غير مدعوم', gpsFail: 'تعذر تحديد الموقع — حدد مدينتك يدوياً', switchedEn: 'Switched to English 🌙', switchedAr: 'تم التبديل للعربية 🌙', testIn3: 'تنبيه تجريبي بعد ٣ ثوان…', deskOnly: 'يعمل في وضع سطح المكتب فقط', adhanPlay: 'تجربة الأذان…', adhanOverlay: 'تشغيل الأذان — شاشة كاملة', adhanFail: 'تعذر تشغيل معاينة الأذان' },
+    toast: { locSet: 'تم تحديث الموقع!', locFail: 'لم يتم العثور على المدينة. حاول مجدداً.', noCity: 'الرجاء إدخال مدينة', gpsDenied: 'تم رفض الموقع. حدد يدوياً.', gpsNo: 'تحديد الموقع غير مدعوم', gpsFail: 'تعذر تحديد الموقع — حدد مدينتك يدوياً', switchedEn: 'Switched to English 🌙', switchedAr: 'تم التبديل للعربية 🌙', testIn3: 'تنبيه تجريبي بعد ٣ ثوان…', deskOnly: 'يعمل في وضع سطح المكتب فقط', adhanPlay: 'تجربة الأذان…', adhanOverlay: 'تشغيل الأذان — شاشة كاملة', adhanFail: 'تعذر تشغيل معاينة الأذان', makkahDefault: 'لم يتم تحديد موقع بعد — تُعرض مكة افتراضياً. حدد مدينتك من صفحة الموقع.' },
     dh: { subhan: 'سبحان الله', subhanAr: 'سُبْحَانَ اللَّه', alhamd: 'الحمد لله', alhamdAr: 'الْحَمْدُ لِلَّه', akbar: 'الله أكبر', akbarAr: 'اللَّهُ أَكْبَر', tahlil: 'لا إله إلا الله', tahlilAr: 'لَا إِلَٰهَ إِلَّا اللَّه', istighfar: 'أستغفر الله', istighfarAr: 'أَسْتَغْفِرُ اللَّه', salawat: 'الصلاة على النبي', salawatAr: 'صَلَّى اللَّهُ عَلَيْهِ وَسَلَّمَ' },
   },
 };

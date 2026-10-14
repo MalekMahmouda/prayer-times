@@ -17,12 +17,11 @@ window.renderQibla = function renderQibla() {
   // with device GPS. The location modal's GPS button is the explicit way to
   // make coordinates current.
   $('qSub').textContent = `${t('qibla.from')} ${S.city || fmtCoords(2)}`;
-  // Map-rose static render (v1.3.2, corrected v1.4.0): north up, Kaaba on
-  // the rim at its bearing — rotate(b) + translateY(−78px) moves along the
-  // UNROTATED up-axis (bearings start at north = up; a +x translate lands
-  // 90° clockwise). The live compass (if any) takes over the dial from here.
+  // Needle static render (v1.5): north-up map; the centered needle rests at
+  // the bare bearing (screen angle = bearing when no device heading exists).
+  // The live compass takes over dial + needle the moment it starts.
   $('compassIn').style.transform = 'rotate(0deg)';
-  $('kaabaMark').style.transform = `rotate(${b}deg) translateY(-78px) rotate(${-b}deg)`;
+  $('qNeedle').style.transform = `rotate(${b}deg)`;
   // Live heading (Android/web sensors) rotates the dial by −heading so the
   // rose matches the world; desktop keeps the static map, honestly labeled —
   // it never pretends to have a live compass sensor (Phase 8).
@@ -72,11 +71,15 @@ window.renderCalendar = function renderCalendar() {
 
 const PRAYERS_CAL = ['Fajr', 'Sunrise', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
 let calDayCache = {};
+// Monotonic request counter: a SLOW getDay for a previously clicked day must
+// never overwrite the panel of the day selected while it was in flight.
+let calDaySeq = 0;
 
 async function showCalDay(date) {
   const panel = $('calDayPanel');
   panel.style.display = 'block';
   const key = localDateKey(date);
+  const seq = ++calDaySeq;
   panel.innerHTML = `<b>${fmtDate(date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</b>
     <div class="muted" style="font-size:12px">${hijriOf(date)}</div>
     <div class="muted" style="font-size:12px;margin-top:6px">${t('cal.noTimes')}…</div>`;
@@ -96,7 +99,8 @@ async function showCalDay(date) {
       } catch (e) { /* offline */ }
     }
   }
-  if (!timings) { panel.querySelector('.muted:last-child').textContent = t('cal.noTimes'); return; }
+  if (!timings) { if (seq !== calDaySeq) return; panel.querySelector('.muted:last-child').textContent = t('cal.noTimes'); return; }
+  if (seq !== calDaySeq) return; // a newer day was selected while loading
   const labels = { Fajr: AR_PRAYER.Fajr, Sunrise: 'الشروق', Dhuhr: AR_PRAYER.Dhuhr, Asr: AR_PRAYER.Asr, Maghrib: AR_PRAYER.Maghrib, Isha: AR_PRAYER.Isha };
   panel.innerHTML = `<b>${fmtDate(date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</b>
     <div class="muted" style="font-size:12px">${hijriOf(date)}</div>
@@ -489,6 +493,14 @@ function wireSettings() {
   $('setAdhanType').onchange = (e) => { S.cfg.adhanType = e.target.value; saveCfg(); };
   $('setReciterSel').onchange = (e) => { S.cfg.reciter = e.target.value; saveCfg(); if (qrIdx >= 0) qrLoadAndPlay(qrIdx); };
   $('btnTestAdhan').onclick = testAdhan;
+  // Full-screen Azan screen controls (mobile + web). Explicit dismiss only —
+  // no backdrop tap, so an immersive azan is never closed by an accidental touch.
+  const azStop = $('azanStop'), azClose = $('azanClose');
+  if (azStop) azStop.onclick = () => hideAzanScreen(true);
+  if (azClose) azClose.onclick = () => hideAzanScreen(true);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && window.ptAzanScreen && window.ptAzanScreen.isOpen()) hideAzanScreen(true);
+  });
   $('tgWidget').onclick = toggleWidgetSetting;
   $('tgMini').onclick = toggleMiniMode;
   $('imsakMinus').onclick = () => { DB3.prefs.ramadan = DB3.prefs.ramadan || { imsakMode: 'fajrOffset', imsakOffset: 10 }; DB3.prefs.ramadan.imsakOffset = Math.max(0, DB3.prefs.ramadan.imsakOffset - 1); save3(); renderSettings(); };
