@@ -171,12 +171,13 @@ function ptRadioInit() {
   }
 }
 
-/* ═══ DOWNLOADS: verified release → cards ═══ */
+/* ═══ DOWNLOADS: verified release → bar ═══ */
 function ptApplyRelease() {
-  const elVer = ptEl('dlAndroidVer');
-  if (elVer) elVer.textContent = t('dl.verPrefix') + PT_RELEASE.version;
-  const elSize = ptEl('dlAndroidSize');
-  if (elSize) elSize.textContent = PT_RELEASE.mb + ' ' + t('dl.unitMB') + ' · ' + t('dl.androidReq');
+  const elMeta = ptEl('dlAndroidMeta');
+  if (elMeta) {
+    elMeta.textContent = t('dl.verPrefix') + PT_RELEASE.version + ' · ' +
+      PT_RELEASE.mb + ' ' + t('dl.unitMB') + ' · ' + t('dl.androidReq');
+  }
   const elBtn = ptEl('dlAndroidBtn');
   if (elBtn) elBtn.href = PT_REPO + '/releases/download/v' + PT_RELEASE.version + '/' + PT_RELEASE.apk;
   const elTag = ptEl('dlRelTag');
@@ -190,17 +191,11 @@ function applyExtrasLang() {
   set('dlTitle', 'dl.title');
   set('dlLead', 'dl.lead');
   set('dlAndroidT', 'dl.androidT');
-  set('dlAndroidS', 'dl.androidS');
   set('dlAndroidBtnT', 'dl.androidBtn');
-  set('dlAndroidNote', 'dl.androidNote');
   set('dlCodeT', 'dl.codeT');
-  set('dlCodeS', 'dl.codeS');
   set('dlCodeBtnT', 'dl.codeBtn');
-  set('dlCodeNote', 'dl.codeNote');
   set('dlRelT', 'dl.relT');
-  set('dlRelS', 'dl.relS');
   set('dlRelBtnT', 'dl.relBtn');
-  set('dlRelNote', 'dl.relNote');
   set('dlFootT', 'dl.footT');
   ptApplyRelease();
 
@@ -219,31 +214,115 @@ function applyExtrasLang() {
 
 window.applyExtrasLang = applyExtrasLang;
 
+/* ═══ Hash routes + the #downloads anchor ═══
+   This app is a single page: "navigation" is a class swap, so a shared link
+   like .../prayer-times/#/quran used to mean nothing. The router keeps the hash
+   in sync with whichever page is open (replaceState — no extra history entry,
+   no reload) and re-opens it on load and on hashchange.
+
+   `#downloads` is a special route: it jumps to the downloads bar, which lives
+   on the Stats page. */
+const PT_ROUTE_PAGES = ['prayers', 'calendar', 'qibla', 'quran', 'names', 'dhikr', 'stats', 'settings', 'mhome'];
+let ptRouterInstalled = false;
+let ptRouterOn = false;      // hash writes stay off until the app has booted
+let ptRouterQuiet = false;   // a navigation we started ourselves from the hash
+let ptPendingRoute = null;   // the route the URL asked for, before boot clobbers it
+
+function ptRouteFromHash() {
+  const raw = (location.hash || '').replace(/^#\/?/, '').trim();
+  if (!raw) return null;
+  const page = raw.split('?')[0];
+  if (page === 'downloads') return 'downloads';
+  return PT_ROUTE_PAGES.indexOf(page) === -1 ? null : page;
+}
+
+function ptGoSilently(name) {
+  ptRouterQuiet = true;
+  try { window.gotoPage(name); } finally { ptRouterQuiet = false; }
+}
+
+function ptRestoreHash(route) {
+  const want = route === 'downloads' ? '#downloads' : '#/' + route;
+  if (location.hash === want) return;
+  ptRouterQuiet = true;
+  try { history.replaceState(null, '', want); } catch (e) { /* file:// or older engine */ }
+  ptRouterQuiet = false;
+}
+
 /* ═══ #downloads — a real anchor ═══
-   The downloads block lives on the Settings page, which the SPA reaches by
-   switching pages rather than by navigating. Without this, a shared
-   /#downloads link would land on the dashboard and do nothing. */
+   The downloads bar sits on the Stats page, so opening the anchor means
+   switching pages and then scrolling. `behavior: 'instant'` is deliberate, and
+   both earlier attempts were wrong in the same way: requestAnimationFrame never
+   runs in a tab the browser is not compositing, and a smooth animation needs
+   frames too — but it gets a subtle pass because `.content` sets
+   `scroll-behavior:smooth`, which makes `behavior:'auto'` resolve to smooth and
+   then stall, leaving the bar thousands of pixels below the fold. */
 function ptOpenDownloads() {
   const el = ptEl('downloads');
   if (!el) return;
-  if (typeof window.gotoPage === 'function') window.gotoPage('settings');
-  const soft = !window.matchMedia || !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  // One frame later: the page switch has painted, so the scroll targets the
-  // visible layout instead of the page that was on screen.
-  requestAnimationFrame(() => el.scrollIntoView({ block: 'start', behavior: soft ? 'smooth' : 'auto' }));
+  if (typeof window.gotoPage === 'function') ptGoSilently('stats');
+  const land = () => {
+    el.scrollIntoView({ block: 'start', behavior: 'instant' });
+    /* Put focus on the bar (tabindex="-1"). A page switch leaves focus on
+       <body>, so keyboard and screen-reader users get no idea that anything
+       happened — the link promised them the download links, so land them on
+       the download links. preventScroll keeps focus from re-scrolling. */
+    try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); }
+  };
+  land();
+  setTimeout(land, 500);   // again once web fonts and the rows have settled
 }
 
-function ptCheckHash() { if (location.hash === '#downloads') ptOpenDownloads(); }
+function ptApplyRoute() {
+  const target = ptRouteFromHash();
+  if (!target) return;
+  if (target === 'downloads') { ptOpenDownloads(); return; }
+  if (typeof window.gotoPage !== 'function') return;
+  ptGoSilently(target);
+}
+
+function ptSyncHash(name) {
+  if (!ptRouterOn || ptRouterQuiet) return;
+  const want = '#/' + (name === 'mhome' ? 'prayers' : name);
+  if (location.hash === want) return;
+  ptRouterQuiet = true;
+  try { history.replaceState(null, '', want); } catch (e) { /* file:// */ }
+}
+
+function ptInstallRouter() {
+  if (ptRouterInstalled || typeof window.gotoPage !== 'function') return;
+  ptRouterInstalled = true;
+  const orig = window.gotoPage;
+  window.gotoPage = function (name) {
+    const r = orig.call(this, name);
+    try { ptSyncHash(name); } catch (e) { /* never break navigation over a hash */ }
+    return r;
+  };
+}
 
 function ptExtrasInit() {
   ptRadioInit();
   applyExtrasLang();
-  ptCheckHash();
-  // Re-run on load: initMobileUI() (app.js, registered earlier on the same
-  // event) re-enters on 'prayers' when it settles the viewport mode, which
-  // would otherwise wipe the page this hash asked for.
-  window.addEventListener('load', ptCheckHash);
-  window.addEventListener('hashchange', ptCheckHash);
+  ptInstallRouter();
+
+  /* Remember the route the URL asked for, then open it. Remembering matters:
+     the app boots into 'prayers' once the viewport mode settles, which would
+     otherwise wipe a #/quran deep link before it could be honoured. */
+  const wanted = ptRouteFromHash();
+  if (wanted) { ptPendingRoute = wanted; ptApplyRoute(); }
+
+  window.addEventListener('load', () => {
+    ptRouterOn = true;
+    if (!ptPendingRoute) return;
+    ptApplyRoute();
+    ptRestoreHash(ptPendingRoute);
+  });
+
+  window.addEventListener('hashchange', () => {
+    const r = ptRouteFromHash();
+    ptPendingRoute = r;
+    if (r) ptApplyRoute();
+  });
 }
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ptExtrasInit);

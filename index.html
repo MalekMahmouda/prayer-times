@@ -220,10 +220,10 @@
              lives in JS, and aria-pressed carries "is this station playing". -->
         <div class="radio-bar" id="radioBar">
           <div class="rb-top">
-            <span class="rb-eyebrow" id="radioTitle">Quran Radio</span>
+            <h2 class="rb-eyebrow" id="radioTitle">Quran Radio</h2>
             <span class="rb-status" id="radioStatus" role="status" aria-live="polite"></span>
           </div>
-          <div class="rb-stations">
+          <div class="rb-stations" role="group" aria-labelledby="radioTitle">
             <button class="rb-st" id="radioSaudi" data-station="saudi" type="button" aria-pressed="false">
               <span class="rb-ico" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
@@ -351,6 +351,66 @@
         <div class="sec-lbl" id="stPerPrayerH">By Prayer</div>
         <div class="card"><div id="stByPrayer"></div></div>
         <div class="note muted" style="font-size:11px;margin-top:12px" id="stNote">These statistics describe your records in this app only — never a judgment. Days count as “recorded” when at least one prayer is logged.</div>
+        <!-- ══ GET PRAYER TIMES ══
+             One compact bar under the stats: three verified destinations, no
+             card grid to wade through. Every href points at the real v1.5.0
+             release; js/extras.js owns the version/size strings so they cannot
+             drift onto a file that does not exist. -->
+        <div class="dl-bar" id="downloads" aria-labelledby="dlTitle" tabindex="-1">
+          <div class="dlb-head">
+            <h2 class="dlb-title" id="dlTitle">Get Prayer Times</h2>
+            <p class="dlb-lead" id="dlLead">Download Prayer Times for your device, explore the source code, and help improve the project.</p>
+          </div>
+          <ul class="dlb-list">
+            <li class="dlb-item">
+              <span class="dl-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="6" y="2.5" width="12" height="19" rx="2.6"/><path d="M12 7v6"/><path d="M9.4 10.6 12 13.2l2.6-2.6"/>
+                </svg>
+              </span>
+              <span class="dlb-txt">
+                <span class="dlb-name" id="dlAndroidT">Android app</span>
+                <span class="dlb-meta" id="dlAndroidMeta" dir="ltr">Version 1.5.0 · 49.6 MB · Android 7.0+</span>
+              </span>
+              <a class="btn primary dlb-btn" id="dlAndroidBtn" href="https://github.com/MalekMahmouda/prayer-times/releases/download/v1.5.0/Prayer-Times-1.5.0-android.apk" rel="noopener noreferrer" target="_blank">
+                <svg class="dl-btni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="M7.5 10.5 12 15l4.5-4.5"/><path d="M5 20h14"/></svg><span id="dlAndroidBtnT">Download for Android</span>
+              </a>
+            </li>
+            <li class="dlb-item">
+              <span class="dl-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12 12 0 0 0-6.2 0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/>
+                </svg>
+              </span>
+              <span class="dlb-txt">
+                <span class="dlb-name" id="dlCodeT">Source code</span>
+                <span class="dlb-meta" id="dlCodeMeta" dir="ltr">malekmahmouda/prayer-times</span>
+              </span>
+              <a class="btn dlb-btn" id="dlCodeBtn" href="https://github.com/malekmahmouda/prayer-times" rel="noopener noreferrer" target="_blank">
+                <svg class="dl-btni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18 3.5 12 9 6"/><path d="M15 6l5.5 6L15 18"/></svg><span id="dlCodeBtnT">View on GitHub</span>
+              </a>
+            </li>
+            <li class="dlb-item">
+              <span class="dl-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7 12 12l8.7-5"/><path d="M12 22V12"/>
+                </svg>
+              </span>
+              <span class="dlb-txt">
+                <span class="dlb-name" id="dlRelT">All versions</span>
+                <span class="dlb-meta" id="dlRelTag">Latest: v1.5.0</span>
+              </span>
+              <a class="btn dlb-btn" id="dlRelBtn" href="https://github.com/malekmahmouda/prayer-times/releases" rel="noopener noreferrer" target="_blank">
+                <svg class="dl-btni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7 12 12l8.7-5"/><path d="M12 22V12"/></svg><span id="dlRelBtnT">View all releases</span>
+              </a>
+            </li>
+          </ul>
+          <p class="dlb-foot" id="dlFoot">
+            <svg class="dl-footi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+            <span id="dlFootT">Straight to the GitHub release page — no redirects, no ads, no tracking. Android may ask you to confirm installing from outside Google Play.</span>
+          </p>
+        </div>
+
       </section>
 
       <!-- ══════════ DHIKR ══════════ -->
@@ -512,75 +572,6 @@
             <div class="about-dev" id="aboutDev" dir="ltr">Developed by Malek Mahmoud</div>
             <div class="note" id="aboutVersion">Prayer Times</div>
           </div>
-
-          <!-- ══ GET PRAYER TIMES ══
-               Every link below points at the real, verified v1.5.0 GitHub release.
-               JS only ever *refreshes* these details from the public releases API;
-               if that request fails the static values stay, so nothing here can
-               become a dead button because the network was down. -->
-          <section class="dl-sec" id="downloads" aria-labelledby="dlTitle">
-            <h2 class="dl-title-lg" id="dlTitle">Get Prayer Times</h2>
-            <p class="dl-lead" id="dlLead">Download Prayer Times for your device, explore the source code, and help improve the project.</p>
-
-            <div class="dl-grid">
-              <article class="dl-card">
-                <span class="dl-ico" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="6" y="2.5" width="12" height="19" rx="2.6"/><path d="M12 7v6"/><path d="M9.4 10.6 12 13.2l2.6-2.6"/>
-                  </svg>
-                </span>
-                <h3 class="dl-name" id="dlAndroidT">Android app</h3>
-                <p class="dl-sub" id="dlAndroidS">Install Prayer Times on your phone — prayer times, adhan alerts, Qibla and Quran, fully offline.</p>
-                <ul class="dl-meta">
-                  <li id="dlAndroidVer">Version 1.5.0</li>
-                  <li id="dlAndroidSize">49.6 MB · Android 7.0+</li>
-                </ul>
-                <a class="btn primary dl-btn" id="dlAndroidBtn" href="https://github.com/MalekMahmouda/prayer-times/releases/download/v1.5.0/Prayer-Times-1.5.0-android.apk" rel="noopener noreferrer" target="_blank">
-                  <svg class="dl-btni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="M7.5 10.5 12 15l4.5-4.5"/><path d="M5 20h14"/></svg><span id="dlAndroidBtnT">Download for Android</span>
-                </a>
-                <p class="dl-note" id="dlAndroidNote">Android may ask you to confirm installing an app from outside Google Play — allow it for this one file.</p>
-              </article>
-
-              <article class="dl-card">
-                <span class="dl-ico" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12 12 0 0 0-6.2 0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/>
-                  </svg>
-                </span>
-                <h3 class="dl-name" id="dlCodeT">Source code</h3>
-                <p class="dl-sub" id="dlCodeS">Read the code behind the app — the prayer engine, the Quran reader and every screen are in the open.</p>
-                <ul class="dl-meta">
-                  <li dir="ltr">malekmahmouda/prayer-times</li>
-                </ul>
-                <a class="btn primary dl-btn" id="dlCodeBtn" href="https://github.com/malekmahmouda/prayer-times" rel="noopener noreferrer" target="_blank">
-                  <svg class="dl-btni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18 3.5 12 9 6"/><path d="M15 6l5.5 6L15 18"/></svg><span id="dlCodeBtnT">View on GitHub</span>
-                </a>
-                <p class="dl-note" id="dlCodeNote">Issues and pull requests are welcome.</p>
-              </article>
-
-              <article class="dl-card">
-                <span class="dl-ico" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7 12 12l8.7-5"/><path d="M12 22V12"/>
-                  </svg>
-                </span>
-                <h3 class="dl-name" id="dlRelT">All versions</h3>
-                <p class="dl-sub" id="dlRelS">Every published release, with notes, checksums and older builds you can go back to.</p>
-                <ul class="dl-meta">
-                  <li id="dlRelTag">Latest: v1.5.0</li>
-                </ul>
-                <a class="btn primary dl-btn" id="dlRelBtn" href="https://github.com/malekmahmouda/prayer-times/releases" rel="noopener noreferrer" target="_blank">
-                  <svg class="dl-btni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7 12 12l8.7-5"/><path d="M12 22V12"/></svg><span id="dlRelBtnT">View all releases</span>
-                </a>
-                <p class="dl-note" id="dlRelNote">Windows installer and Android APK are both attached to each release.</p>
-              </article>
-            </div>
-
-            <p class="dl-foot" id="dlFoot">
-              <svg class="dl-footi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
-              <span id="dlFootT">Downloads link straight to the GitHub release page — no redirects, no ads, no tracking.</span>
-            </p>
-          </section>
 
           <footer class="site-foot" id="siteFoot">
             <span id="footDua" dir="rtl">يرجى الدعاء ليا ولوالدي</span>
