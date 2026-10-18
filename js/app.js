@@ -1114,6 +1114,9 @@ function applyLang() {
   if (window.renderDhikr && document.getElementById('page-dhikr').classList.contains('active')) renderDhikr();
   if (window.renderCalendar && document.getElementById('page-calendar').classList.contains('active')) renderCalendar();
   if (window.renderSurahList && document.getElementById('page-quran').classList.contains('active')) renderSurahList();
+
+  // Downloads + Quran Radio labels live in js/extras.js (loaded after this file).
+  if (window.applyExtrasLang) window.applyExtrasLang();
 }
 
 /* ═══ APP-CHROME ICONS ═══
