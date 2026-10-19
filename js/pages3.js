@@ -103,14 +103,14 @@ window.renderLocations = function renderLocations() {
     const isActive = l.id === activeId;
     return `<div class="row" style="border:1px solid ${isActive ? 'var(--primary)' : 'var(--border)'};border-radius:12px;padding:8px 12px">
       <div style="min-width:0">
-        <div style="font-size:13.5px;font-weight:650">${isActive ? '⭐ ' : '📍 '}${escHtml(l.name)}</div>
+        <div style="font-size:13.5px;font-weight:650">${isActive ? '<span class="ii">' + ICONS.star + '</span> ' : '<span class="ii">' + ICONS.pin + '</span> '}${escHtml(l.name)}</div>
         <div style="font-size:11px;color:var(--text-muted)">${escHtml(l.city || '')}${l.country ? ', ' + escHtml(l.country) : ''} · ${l.latitude.toFixed(2)}, ${l.longitude.toFixed(2)}</div>
-        <div style="font-size:10.5px;color:var(--text-muted)">${l.timezone ? '🕑 ' + escHtml(l.timezone) : (S.lang === 'ar' ? '🕑 منطقة زمنية: النظام' : '🕑 Timezone: system')}</div>
+        <div style="font-size:10.5px;color:var(--text-muted)">${l.timezone ? '<span class="ii">' + ICONS.clock + '</span> ' + escHtml(l.timezone) : (S.lang === 'ar' ? 'المنطقة الزمنية: النظام' : 'Timezone: system')}</div>
       </div>
       <div style="display:flex;gap:6px;flex-shrink:0">
         ${isActive ? '' : `<button class="btn sm" data-loc-use="${l.id}">${S.lang === 'ar' ? 'تنشيط' : 'Use'}</button>`}
-        <button class="icon-btn" data-loc-edit="${l.id}" title="Edit" style="width:30px;height:30px;font-size:13px">✏️</button>
-        <button class="icon-btn" data-loc-del="${l.id}" title="Delete" style="width:30px;height:30px;font-size:13px">🗑️</button>
+        <button class="icon-btn" data-loc-edit="${l.id}" title="Edit" style="width:30px;height:30px;font-size:13px"><span class="ii">${ICONS.pencil}</span></button>
+        <button class="icon-btn" data-loc-del="${l.id}" title="Delete" style="width:30px;height:30px;font-size:13px"><span class="ii">${ICONS.trash}</span></button>
       </div>
     </div>`;
   }).join('') : `<div class="muted" style="font-size:12.5px;padding:6px 0">${S.lang === 'ar' ? 'لا مواقع محفوظة بعد.' : 'No saved locations yet.'}</div>`;
@@ -139,7 +139,7 @@ function activateLocation(id) {
   fetchTimes(S.lat, S.lon);
   refreshTodaySchedule();
   updateLocNames();
-  showToast('✅ ' + (S.lang === 'ar' ? `التنشيط: ${loc.name}` : `Active: ${loc.name}`));
+  showToast((S.lang === 'ar' ? `التنشيط: ${loc.name}` : `Active: ${loc.name}`));
 }
 
 function editLocation(id) {
@@ -159,7 +159,7 @@ function editLocation(id) {
           loc.timezone = tz.trim();
           if (loc.timezone && !isValidTimezone(loc.timezone)) {
             loc.timezone = '';
-            showToast('⚠️ ' + (L ? 'منطقة زمنية غير صالحة — تم المسح' : 'Invalid timezone — cleared'));
+            showToast((L ? 'منطقة زمنية غير صالحة — تم المسح' : 'Invalid timezone — cleared'));
           }
           save3(); renderLocations();
         },
@@ -171,7 +171,7 @@ function editLocation(id) {
 const COMMON_TIMEZONES = ['UTC', 'Asia/Riyadh', 'Asia/Dubai', 'Asia/Qatar', 'Asia/Kuwait', 'Asia/Cairo', 'Asia/Jerusalem', 'Asia/Amman', 'Asia/Baghdad', 'Asia/Tehran', 'Asia/Karachi', 'Asia/Dhaka', 'Asia/Kolkata', 'Asia/Kuala_Lumpur', 'Asia/Jakarta', 'Asia/Manila', 'Asia/Shanghai', 'Asia/Tokyo', 'Asia/Seoul', 'Australia/Sydney', 'Europe/London', 'Europe/Paris', 'Europe/Berlin', 'Europe/Istanbul', 'Europe/Moscow', 'Africa/Lagos', 'Africa/Nairobi', 'Africa/Johannesburg', 'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles', 'America/Toronto', 'America/Sao_Paulo', 'America/Argentina/Buenos_Aires', 'America/Indiana/Indianapolis'];
 
 window.addCurrentLocation = function addCurrentLocation() {
-  if (S.lat == null) { showToast('⚠️ ' + t('toast.noCity')); return; }
+  if (S.lat == null) { showToast(t('toast.noCity')); return; }
   const L = S.lang === 'ar';
   const tzGuess = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
   openTextModal({
@@ -191,7 +191,7 @@ window.addCurrentLocation = function addCurrentLocation() {
             timezone: isValidTimezone(tz.trim()) ? tz.trim() : '',
           });
           save3(); renderLocations();
-          showToast('⭐ ' + (L ? 'تم الحفظ' : 'Location saved'));
+          showToast((L ? 'تم الحفظ' : 'Location saved'));
         },
       });
     },
@@ -349,7 +349,7 @@ window.renderRamadan = function renderRamadan(elId) {
   const fasting = nowMin >= imsakMin && nowMin < iftarMin;
   el.innerHTML = `<div class="card" style="background:var(--grad);color:#fff;border:none">
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-      <div style="font-size:15px;font-weight:800">🌙 ${S.lang === 'ar' ? 'رمضان — اليوم' : 'Ramadan — Day'} ${hj.day}</div>
+      <div style="font-size:15px;font-weight:800"><span class="ii">${ICONS.moon}</span> ${S.lang === 'ar' ? 'رمضان — اليوم' : 'Ramadan — Day'} ${hj.day}</div>
       <div style="font-size:12px;color:rgba(255,255,255,.75)">${fasting ? (S.lang === 'ar' ? 'صائم' : 'Fasting today') : (S.lang === 'ar' ? 'وقت الإفطار' : 'Outside fasting hours')}</div>
     </div>
     <div style="display:flex;gap:12px;margin-top:12px;flex-wrap:wrap">
@@ -387,7 +387,7 @@ window.exportBackup = function exportBackup() {
   a.download = `prayertimes-backup-${dateKeyOf(new Date())}.json`;
   a.click();
   URL.revokeObjectURL(a.href);
-  showToast('⬇ ' + (S.lang === 'ar' ? 'تم تصدير النسخة الاحتياطية' : 'Backup exported'));
+  showToast((S.lang === 'ar' ? 'تم تصدير النسخة الاحتياطية' : 'Backup exported'));
 };
 
 window.handleImportFile = function handleImportFile(file) {
@@ -395,9 +395,9 @@ window.handleImportFile = function handleImportFile(file) {
   reader.onload = () => {
     let data;
     try { data = JSON.parse(reader.result); }
-    catch (e) { showToast('❌ ' + (S.lang === 'ar' ? 'ملف غير صالح' : 'Invalid file')); return; }
+    catch (e) { showToast((S.lang === 'ar' ? 'ملف غير صالح' : 'Invalid file')); return; }
     const v = validateBackup(data);
-    if (!v.ok) { showToast('❌ ' + v.error); return; }
+    if (!v.ok) { showToast(v.error); return; }
     // Preview + explicit confirmation — nothing replaced until confirmed.
     const lines = [
       `v${data.version} · ${data.exportedAt ? data.exportedAt.slice(0, 10) : '—'}`,
@@ -437,10 +437,10 @@ function applyBackup(v) {
     if (v.ptl) localStorage.setItem('ptl', v.ptl);
     if (v.ptlg) localStorage.setItem('ptlg', v.ptlg);
     if (v.pt3) localStorage.setItem('pt3', v.pt3);
-    showToast('✅ ' + (S.lang === 'ar' ? 'تم الاستيراد — جاري إعادة التحميل' : 'Imported — reloading'));
+    showToast((S.lang === 'ar' ? 'تم الاستيراد — جاري إعادة التحميل' : 'Imported — reloading'));
     setTimeout(() => location.reload(), 900);
   } catch (e) {
-    showToast('❌ ' + (S.lang === 'ar' ? 'فشل الاستيراد' : 'Import failed'));
+    showToast((S.lang === 'ar' ? 'فشل الاستيراد' : 'Import failed'));
   }
 }
 
@@ -472,9 +472,9 @@ window.renderThemeBuilder = function renderThemeBuilder() {
     <div class="note">${S.lang === 'ar' ? 'القوالب المدمجة محمية — قوالبك تُحفظ منفصلة.' : 'Built-in themes are immutable — customs are stored separately.'}</div>`;
 
   body.querySelectorAll('[data-tb]').forEach((inp) => (inp.oninput = () => { tbDraft = tbDraft || {}; tbDraft[inp.dataset.tb] = inp.value; }));
-  $('tbApply').onclick = () => { if (!tbDraft) return showToast('⚠️ Pick colors first'); applyCustomThemeDraft(); };
+  $('tbApply').onclick = () => { if (!tbDraft) return showToast('Pick colors first'); applyCustomThemeDraft(); };
   $('tbSave').onclick = () => {
-    if (!tbDraft) return showToast('⚠️ Pick colors first');
+    if (!tbDraft) return showToast('Pick colors first');
     const L = S.lang === 'ar';
     openTextModal({
       title: L ? 'حفظ القالب' : 'Save theme',
@@ -484,12 +484,12 @@ window.renderThemeBuilder = function renderThemeBuilder() {
         const id = 'custom-' + Date.now();
         DB3.customThemes.push({ id, name: name.trim().slice(0, 40) || 'Custom', tokens: { ...tbDraft } });
         save3(); renderThemeBuilder(); refreshThemeUI();
-        showToast('🎨 ' + (L ? 'تم حفظ القالب' : 'Theme saved'));
+        showToast((L ? 'تم حفظ القالب' : 'Theme saved'));
       },
     });
   };
   $('tbDelete').onclick = () => {
-    const id = $('tbPick').value; if (!id) return showToast('⚠️ Pick a theme');
+    const id = $('tbPick').value; if (!id) return showToast('Pick a theme');
     const wasActive = S.cfg.theme === id;
     DB3.customThemes = DB3.customThemes.filter((c) => c.id !== id);
     save3(); renderThemeBuilder(); refreshThemeUI();

@@ -13,6 +13,13 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
+// Canonical public URL — every SEO hint below points at it. Keep in sync with
+// the gh-pages remote (scripts/build-web.js is the ONLY deploy pipeline).
+const SITE_URL = 'https://malekmahmouda.github.io';
+const SITE_PATH = '/prayer-times/';
+const SITE = SITE_URL + SITE_PATH;
+const SITE_TITLE = 'Prayer Times | أوقات الصلاة — مسبحة، قرآن، قبلة، تقويم هجري';
+const SITE_DESC = 'Free offline prayer times app: accurate Muslim prayer times with adhan notifications, Qibla compass, full Quran reader with mushaf verses, electronic tasbih (dhikr counter), Hijri calendar, and 99 Names of Allah. Works with no account — install or use right in the browser.';
 const ROOT = path.join(__dirname, '..');
 const DIST = path.join(ROOT, 'dist-web');
 
@@ -28,6 +35,21 @@ html = html.replace(
   '<link rel="stylesheet" href="styles/fonts.css">',
   `<link rel="stylesheet" href="styles/fonts.css">
 <link rel="stylesheet" href="styles/web.css">
+<meta name="description" content="${SITE_DESC}">
+<meta name="robots" content="index,follow">
+<link rel="canonical" href="${SITE}">
+<meta property="og:type" content="website">
+<meta property="og:url" content="${SITE}">
+<meta property="og:title" content="${SITE_TITLE}">
+<meta property="og:description" content="${SITE_DESC}">
+<meta property="og:image" content="${SITE}icons/icon-256.png">
+<meta property="og:locale" content="en_US">
+<meta property="og:locale:alternate" content="ar_AR">
+<meta property="og:site_name" content="Prayer Times">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${SITE_TITLE}">
+<meta name="twitter:description" content="${SITE_DESC}">
+<meta name="twitter:image" content="${SITE}icons/icon-256.png">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0e6b43">
 <meta name="mobile-web-app-capable" content="yes">
@@ -37,6 +59,7 @@ html = html.replace(
 <link rel="icon" type="image/png" href="icons/icon-256.png">`
 );
 html = html.replace('</body>', '  <script src="sw-reg.js"></script>\n</body>');
+html = html.replace(/<title>[^<]*<\/title>/, `<title>${SITE_TITLE}</title>`);
 fs.writeFileSync(path.join(DIST, 'index.html'), html);
 
 // ── 3. web.css — polish layer on top of the app's own tokens ──
@@ -72,9 +95,38 @@ fs.writeFileSync(path.join(DIST, 'manifest.webmanifest'), JSON.stringify({
   icons,
 }, null, 2));
 
+// ── 4b. SEO files: robots.txt + sitemap.xml (canonical URL is the gh-pages site) ──
+fs.writeFileSync(path.join(DIST, 'robots.txt'),
+`User-agent: *
+Allow: /
+
+Sitemap: ${SITE}sitemap.xml
+`);
+const today = new Date().toISOString().slice(0, 10);
+// A sitemap of ONE url, because there is one url. The app is a single document
+// whose "pages" are hash routes (#/prayers, #/downloads …); fragments are not
+// part of a URL for crawlers, so listing them here would be noise Google has to
+// throw away — it finds those states by crawling the document itself. The old
+// list also carried data/, fonts/*.txt, robots.txt and the manifest, i.e. exactly
+// the assets that add no discovery value and spend crawl budget.
+// Generated, never hand-edited in the gh-pages checkout, so a redeploy cannot
+// silently shrink it back to whatever someone committed last.
+const SITEMAP_URLS = [
+  { path: '', changefreq: 'weekly', priority: '1.0' },
+];
+fs.writeFileSync(path.join(DIST, 'sitemap.xml'),
+`<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- Prayer Times — the whole app is this one URL (#/… routes are fragments) -->
+${
+  SITEMAP_URLS.map((u) => `  <url>\n    <loc>${SITE}${u.path}</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>${u.changefreq}</changefreq>\n    <priority>${u.priority}</priority>\n  </url>`).join('\n')
+}
+</urlset>
+`);
+
 // ── 5. sw.js — offline app shell (cache key changes every build) ──
 const CACHE = 'pt-cache-' + new Date().toISOString().replace(/\D/g, '').slice(0, 14);
-const SHELL = ['index.html', 'styles/app.css', 'styles/fonts.css', 'styles/web.css', 'js/app.js', 'js/pages.js', 'js/pages3.js', 'js/reader.js', 'js/store3.js', 'js/data.js', 'js/platform.js', 'js/adhan-bundle.js', 'js/pt-engine.js', 'js/compass.js', 'js/stats.js', 'data/quran.json', 'manifest.webmanifest', ...fs.readdirSync(path.join(ROOT, 'fonts')).filter((f) => f.endsWith('.woff2')).map((f) => `fonts/${f}`), ...fs.readdirSync(path.join(ROOT, 'assets')).filter((f) => /^icon-(16|32|48|64|128|256)\.png$/.test(f)).map((f) => `icons/${f}`)];
+const SHELL = ['index.html', 'styles/app.css', 'styles/fonts.css', 'styles/web.css', 'js/app.js', 'js/pages.js', 'js/pages3.js', 'js/reader.js', 'js/store3.js', 'js/data.js', 'js/platform.js', 'js/adhan-bundle.js', 'js/pt-engine.js', 'js/compass.js', 'js/stats.js', 'js/extras.js', 'data/quran.json', 'manifest.webmanifest', ...fs.readdirSync(path.join(ROOT, 'fonts')).filter((f) => f.endsWith('.woff2')).map((f) => `fonts/${f}`), ...fs.readdirSync(path.join(ROOT, 'assets')).filter((f) => /^icon-(16|32|48|64|128|256)\.png$/.test(f)).map((f) => `icons/${f}`)];
 fs.writeFileSync(path.join(DIST, 'sw.js'), `/* Prayer Times service worker — offline app shell (v1) */
 const CACHE = '${CACHE}';
 const SHELL = ${JSON.stringify(SHELL)};

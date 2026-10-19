@@ -11,6 +11,10 @@ const AR = { Fajr: 'الفجر', Dhuhr: 'الظهر', Asr: 'العصر', Maghrib
 
 const audio = document.getElementById('adhanAudio');
 const playPauseBtn = document.getElementById('playPause');
+/* Inline stroke glyphs — adhan.html loads no data.js, and a text ⏸/▶ renders
+   as a colour emoji on some platforms and a plain glyph on others. */
+const ICON_PAUSE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M9 5.6v12.8"/><path d="M15 5.6v12.8"/></svg>';
+const ICON_PLAY = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8.4 5.4v13.2L19 12z"/></svg>';
 const volSlider = document.getElementById('vol');
 const errLine = document.getElementById('errLine');
 let playing = false;
@@ -145,7 +149,7 @@ function show(payload) {
   try { audio.load(); dbg('audio.load() issued'); } catch (e) { dbg('audio.load() threw', { detail: describeMediaError(e) }); }
   audio.currentTime = 0;
   playing = true;
-  playPauseBtn.textContent = '⏸';
+  playPauseBtn.innerHTML = ICON_PAUSE;
   audio.play().then(() => {
     dbg('audio.play() resolved — adhan audio is playing', { src: audio.src });
   }).catch((e) => {
@@ -162,10 +166,10 @@ document.getElementById('stopBtn').addEventListener('click', () => stopAndClose(
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') stopAndClose('user Escape key'); });
 
 playPauseBtn.addEventListener('click', () => {
-  if (playing) { audio.pause(); playing = false; playPauseBtn.textContent = '▶'; dbg('manual pause'); }
+  if (playing) { audio.pause(); playing = false; playPauseBtn.innerHTML = ICON_PLAY; dbg('manual pause'); }
   else {
     audio.play().then(() => dbg('manual resume resolved')).catch((e) => dbg('manual resume REJECTED', { detail: describeMediaError(e) }));
-    playing = true; playPauseBtn.textContent = '⏸';
+    playing = true; playPauseBtn.innerHTML = ICON_PAUSE;
   }
 });
 

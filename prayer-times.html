@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' https://cdn.jsdelivr.net; connect-src 'self' https://api.aladhan.com https://nominatim.openstreetmap.org; media-src 'self' https://cdn.islamic.network https://cdn.aladhan.com https://*.mp3quran.net; object-src 'none'">
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' https://cdn.jsdelivr.net; connect-src 'self' https://api.aladhan.com https://nominatim.openstreetmap.org; media-src 'self' https://cdn.islamic.network https://cdn.aladhan.com https://*.mp3quran.net https://edge.mixlr.com https://radio.xecod.com https://stream.radiojar.com; object-src 'none'">
 <!-- v1.3.3: remote hosts are scheme-prefixed (https:) — schemeless hosts match
      the document's own scheme per CSP3, so on Electron's file:// page nothing
      remote ever matched: Test Adhan CDN, Quran audio AND Arabic web fonts were
@@ -35,6 +35,7 @@
       <button class="nav-item" data-page="dhikr"><span class="ni" data-icon="beads"></span><span class="t">Dhikr</span></button>
       <button class="nav-item" data-page="stats"><span class="ni" data-icon="chart"></span><span class="t">Stats</span></button>
       <div style="flex:1"></div>
+      <button class="nav-item nav-dl" data-page="downloads"><span class="ni" data-icon="download"></span><span class="t">Download</span></button>
       <button class="nav-item" data-page="settings"><span class="ni" data-icon="sliders"></span><span class="t">Settings</span></button>
     </nav>
     <div class="sb-foot">
@@ -145,8 +146,7 @@
           <div class="cal-nav">
             <button class="icon-btn" id="calPrev" title="Previous month">‹</button>
             <button class="btn sm" id="calToday">Today</button>
-            <button class="icon-btn" id="calNext" title="Next month">›</button>
-            <button class="btn sm" id="calExport">⬇ CSV</button>
+            <button class="icon-btn" id="calNext" title="Next month">›</button>             <button class="btn sm" id="calExport"><span data-icon="download"></span> CSV</button>
           </div>
         </div>
         <div class="cal-grid" id="calDowRow"></div>
@@ -191,11 +191,58 @@
 
       <!-- ══════════ QURAN ══════════ -->
       <section class="page" id="page-quran">
-        <div class="qtabs">
-          <button class="qtab active" data-qtab="list">📖 <span id="qtList">Surahs</span></button>
-          <button class="qtab" data-qtab="read">📜 <span id="qtRead">Read</span></button>
-          <button class="qtab" data-qtab="search">🔍 <span id="qtSearch">Search</span></button>
-          <button class="qtab" data-qtab="marks">🔖 <span id="qtMarks">Bookmarks</span></button>
+        <!-- ══ QURAN RADIO ══
+             Two live stations, played by their own <audio> element so they never
+             touch the adhan or the surah player. Buttons (not links): the state
+             lives in JS, and aria-pressed carries "is this station playing". -->
+        <div class="radio-bar" id="radioBar">
+          <div class="rb-top">
+            <h2 class="rb-eyebrow" id="radioTitle">Quran Radio</h2>
+            <span class="rb-status" id="radioStatus" role="status" aria-live="polite"></span>
+          </div>
+          <div class="rb-stations" role="group" aria-labelledby="radioTitle">
+            <button class="rb-st" id="radioSaudi" data-station="saudi" type="button" aria-pressed="false">
+              <span class="rb-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 11a8 8 0 0 1 16 0"/><path d="M7.5 13.5a4.5 4.5 0 0 1 9 0"/><circle cx="12" cy="16" r="1.4"/>
+                </svg>
+              </span>
+              <span class="rb-txt">
+                <span class="rb-name" id="radioSaudiName">Saudi Quran Radio</span>
+                <span class="rb-sub" id="radioSaudiSub">Makkah — إذاعة القرآن الكريم</span>
+              </span>
+              <span class="rb-toggle" aria-hidden="true">
+                <svg class="rb-tri" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.4v13.2L19 12z"/></svg>
+                <span class="rb-eq"><i></i><i></i><i></i></span>
+              </span>
+            </button>
+            <button class="rb-st" id="radioEgypt" data-station="egypt" type="button" aria-pressed="false">
+              <span class="rb-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 11a8 8 0 0 1 16 0"/><path d="M7.5 13.5a4.5 4.5 0 0 1 9 0"/><circle cx="12" cy="16" r="1.4"/>
+                </svg>
+              </span>
+              <span class="rb-txt">
+                <span class="rb-name" id="radioEgyptName">Egyptian Quran Radio</span>
+                <span class="rb-sub" id="radioEgyptSub">Cairo — إذاعة القرآن الكريم</span>
+              </span>
+              <span class="rb-toggle" aria-hidden="true">
+                <svg class="rb-tri" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.4v13.2L19 12z"/></svg>
+                <span class="rb-eq"><i></i><i></i><i></i></span>
+              </span>
+            </button>
+          </div>
+          <div class="rb-vol-row" id="radioVolRow" hidden>
+            <span class="rb-vol-ico" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 9.5h3.5L12 5.5v13L7.5 14.5H4z"/><path d="M16 9a4.5 4.5 0 0 1 0 6"/><path d="M18.5 6.5a8 8 0 0 1 0 11"/>
+              </svg>
+            </span>
+            <input class="rb-vol" id="radioVol" type="range" min="0" max="1" step="0.05" value="1" aria-label="Radio volume">
+          </div>
+        </div>
+
+        <div class="qtabs">           <button class="qtab active" data-qtab="list"><span data-icon="book"></span> <span id="qtList">Surahs</span></button>           <button class="qtab" data-qtab="read"><span data-icon="doc"></span> <span id="qtRead">Read</span></button>           <button class="qtab" data-qtab="search"><span data-icon="search"></span> <span id="qtSearch">Search</span></button>           <button class="qtab" data-qtab="marks"><span data-icon="bookmark"></span> <span id="qtMarks">Bookmarks</span></button>
         </div>
 
         <!-- List tab -->
@@ -210,8 +257,8 @@
             <button class="icon-btn" id="rdBack" title="Back to list">←</button>
             <button class="icon-btn" id="rdPrev" title="Previous surah">‹</button>
             <div style="flex:1;min-width:0;text-align:center">
-              <div style="font-weight:800;font-size:14px;font-family:var(--font-ar);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="rdTitle">—</div>
-              <div style="font-size:10.5px;color:var(--text-muted)" id="rdMeta">—</div>
+              <div style="font-weight:700;font-size:15px;font-family:var(--font-ar);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="rdTitle">—</div>
+              <div style="font-size:10.5px;font-family:var(--font-ui);color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="rdMeta">—</div>
             </div>
             <button class="icon-btn" id="rdNext" title="Next surah">›</button>
             <button class="icon-btn" id="rdFontMinus" title="Smaller text">A−</button>
@@ -279,6 +326,90 @@
         <div class="note muted" style="font-size:11px;margin-top:12px" id="stNote">These statistics describe your records in this app only — never a judgment. Days count as “recorded” when at least one prayer is logged.</div>
       </section>
 
+      <!-- ══════════ DOWNLOAD ══════════
+           A page of its own (reached from the sidebar, #/downloads) rather than
+           a block buried under Stats: the three destinations are the only
+           things a first-time visitor is looking for, so they get room, a clear
+           heading, and nothing competing beside them. Every href points at the
+           real v1.5.0 release; js/extras.js owns the version/size strings so
+           they cannot drift onto a file that does not exist. -->
+      <section class="page" id="page-downloads">
+        <div class="dl-page">
+          <header class="dl-head">
+            <h2 class="dl-title" id="dlTitle" tabindex="-1">Get Prayer Times</h2>
+            <p class="dl-lead" id="dlLead">Install it on your phone, read the source, or pick an older release.</p>
+          </header>
+
+          <div class="dl-bar" id="downloads" aria-labelledby="dlTitle">
+          <ul class="dlb-list">
+            <li class="dlb-item">
+              <span class="dl-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="6" y="2.5" width="12" height="19" rx="2.6"/><path d="M12 7v6"/><path d="M9.4 10.6 12 13.2l2.6-2.6"/>
+                </svg>
+              </span>
+              <span class="dlb-txt">
+                <span class="dlb-name" id="dlAndroidT">Android app</span>
+                <span class="dlb-meta" id="dlAndroidMeta">Version 1.5.0 · 49.6 MB · Android 7.0+</span>
+              </span>
+              <a class="btn primary dlb-btn" id="dlAndroidBtn" href="https://github.com/MalekMahmouda/prayer-times/releases/download/v1.5.0/Prayer-Times-1.5.0-android.apk" rel="noopener noreferrer" target="_blank">
+                <svg class="dl-btni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="M7.5 10.5 12 15l4.5-4.5"/><path d="M5 20h14"/></svg><span id="dlAndroidBtnT">Download for Android</span>
+              </a>
+            </li>
+            <li class="dlb-item">
+              <span class="dl-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12 12 0 0 0-6.2 0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/>
+                </svg>
+              </span>
+              <span class="dlb-txt">
+                <span class="dlb-name" id="dlCodeT">Source code</span>
+                <span class="dlb-meta" id="dlCodeMeta" dir="ltr">malekmahmouda/prayer-times</span>
+              </span>
+              <a class="btn dlb-btn" id="dlCodeBtn" href="https://github.com/malekmahmouda/prayer-times" rel="noopener noreferrer" target="_blank">
+                <svg class="dl-btni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18 3.5 12 9 6"/><path d="M15 6l5.5 6L15 18"/></svg><span id="dlCodeBtnT">View on GitHub</span>
+              </a>
+            </li>
+            <li class="dlb-item">
+              <span class="dl-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7 12 12l8.7-5"/><path d="M12 22V12"/>
+                </svg>
+              </span>
+              <span class="dlb-txt">
+                <span class="dlb-name" id="dlRelT">All versions</span>
+                <span class="dlb-meta" id="dlRelTag">Latest: v1.5.0</span>
+              </span>
+              <a class="btn dlb-btn" id="dlRelBtn" href="https://github.com/malekmahmouda/prayer-times/releases" rel="noopener noreferrer" target="_blank">
+                <svg class="dl-btni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7 12 12l8.7-5"/><path d="M12 22V12"/></svg><span id="dlRelBtnT">View all releases</span>
+              </a>
+            </li>
+          </ul>
+          <p class="dlb-foot" id="dlFoot">
+            <svg class="dl-footi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+            <span id="dlFootT">Straight to the GitHub release page — no redirects, no ads, no tracking. Android may ask you to confirm installing from outside Google Play.</span>
+          </p>
+          </div>
+
+          <!-- The two questions a visitor actually has after seeing the list:
+               "what happens when I tap this" and "do I even need a download?". -->
+          <div class="dl-help">
+            <section class="dl-help-card">
+              <h3 class="dl-help-t" id="dlAndT">Installing on Android</h3>
+              <ol class="dl-steps">
+                <li id="dlAnd1">Tap “Download for Android” — the APK comes straight from the GitHub release.</li>
+                <li id="dlAnd2">Open the downloaded file. If Android asks, allow installs from this source.</li>
+                <li id="dlAnd3">Grant notification permission so the adhan can reach you.</li>
+              </ol>
+            </section>
+            <section class="dl-help-card">
+              <h3 class="dl-help-t" id="dlWebT">Or skip the download</h3>
+              <p class="dl-help-p" id="dlNote">This site is the whole app. Use “Add to Home Screen” or the install icon in the address bar and it runs offline after the first visit.</p>
+            </section>
+          </div>
+        </div>
+      </section>
+
       <!-- ══════════ DHIKR ══════════ -->
       <section class="page" id="page-dhikr">
         <div class="dhikr-chips" id="dhikrChips"></div>
@@ -326,8 +457,7 @@
       <section class="page" id="page-settings">
         <div class="set-grid">
 
-          <div class="card set-card">
-            <div class="card-h">🌐 <span id="shGeneral">General</span></div>
+          <div class="card set-card">             <div class="card-h"><span data-icon="globe"></span><span id="shGeneral">General</span></div>
             <div class="row"><span class="lbl" id="slLang">Language</span>
               <select class="select" id="setLang"><option value="en">English</option><option value="ar">العربية</option></select></div>
             <div class="row"><span class="lbl" id="slTheme">Theme</span>
@@ -336,8 +466,7 @@
               <button class="toggle" id="tg24"></button></div>
           </div>
 
-          <div class="card set-card">
-            <div class="card-h">🧮 <span id="shCalc">Prayer Calculation</span></div>
+          <div class="card set-card">             <div class="card-h"><span data-icon="chart"></span><span id="shCalc">Prayer Calculation</span></div>
             <div class="row"><span class="lbl" id="slMethod">Method</span>
               <select class="select" id="setMethod"></select></div>
             <div class="row"><div><span class="lbl" id="slMadhab">Asr school</span><div class="sub" id="slMadhabS">Used by ISNA and custom methods</div></div>
@@ -346,8 +475,7 @@
             <div id="offsetRows"></div>
           </div>
 
-          <div class="card set-card">
-            <div class="card-h">📣 <span id="shNotif">Notifications</span></div>
+          <div class="card set-card">             <div class="card-h"><span data-icon="bell"></span><span id="shNotif">Notifications</span></div>
             <div class="row"><div><span class="lbl" id="slNotif">Prayer Alerts</span><div class="sub" id="slNotifS">Notify before each prayer</div></div>
               <button class="toggle" id="tgNotif"></button></div>
             <div class="row"><span class="lbl" id="slMinBefore">Minutes before</span>
@@ -358,8 +486,7 @@
               <button class="toggle" id="tgAdhan"></button></div>
           </div>
 
-          <div class="card set-card">
-            <div class="card-h">🕌 <span id="shAdhan">Adhan</span></div>
+          <div class="card set-card">             <div class="card-h"><span data-icon="mosque"></span><span id="shAdhan">Adhan</span></div>
             <div class="row"><span class="lbl" id="slReciter">Reciter</span>
               <select class="select" id="setReciterSel"></select></div>
             <div class="row"><span class="lbl" id="slAdhanStyle">Adhan style</span>
@@ -379,35 +506,28 @@
             </div>
           </div>
 
-          <div class="card set-card only-desktop">
-            <div class="card-h">🖥️ <span id="shDesktop">Desktop</span></div>
+          <div class="card set-card only-desktop">             <div class="card-h"><span data-icon="monitor"></span><span id="shDesktop">Desktop</span></div>
             <div class="row"><div><span class="lbl" id="slSww">Start with Windows</span><div class="sub" id="slSwwS">Launch automatically at login</div></div>
               <button class="toggle" id="tgSww"></button></div>
             <div class="row"><div><span class="lbl" id="slCtt">Close to Tray</span><div class="sub" id="slCttS">Keep running in the system tray when closed</div></div>
               <button class="toggle" id="tgCtt"></button></div>
-            <div class="row"><span class="lbl" id="slTestNotif">Test Notification</span>
-              <button class="btn sm" id="btnTestNotif">🔔 Test</button></div>
+            <div class="row"><span class="lbl" id="slTestNotif">Test Notification</span>               <button class="btn sm" id="btnTestNotif"><span data-icon="bell"></span> Test</button></div>
             <div class="note" id="dataNote">All data is stored locally on this device. No account, no analytics.</div>
             <div class="note" id="creditsNote">Quran text: Tanzil (quran-uthmani) · Translation: Saheeh International · Adhan recordings: courtesy of AlAdhan.com · Prayer engine: adhan-js</div>
             <div class="note" style="border-top:none;padding-top:6px" id="aboutLine">Prayer Times</div>
           </div>
 
-          <div class="card set-card">
-            <div class="card-h">⭐ <span id="shLocs">Saved Locations</span></div>
+          <div class="card set-card">             <div class="card-h"><span data-icon="pin"></span><span id="shLocs">Saved Locations</span></div>
             <div id="locsList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px"></div>
             <button class="btn sm" id="btnAddLoc" style="width:100%">＋ <span id="slAddLoc">Save current as location</span></button>
           </div>
 
-          <div class="card set-card">
-            <div class="card-h">💾 <span id="shData">Data Management</span></div>
-            <button class="btn" id="btnExport" style="width:100%;margin-bottom:9px">⬇ <span id="slExport">Export backup (JSON)</span></button>
-            <button class="btn" id="btnImport" style="width:100%;margin-bottom:9px">⬆ <span id="slImport">Import backup</span></button>
+          <div class="card set-card">             <div class="card-h"><span data-icon="disk"></span><span id="shData">Data Management</span></div>             <button class="btn" id="btnExport" style="width:100%;margin-bottom:9px"><span data-icon="upload"></span> <span id="slExport">Export backup (JSON)</span></button>             <button class="btn" id="btnImport" style="width:100%;margin-bottom:9px"><span data-icon="download"></span> <span id="slImport">Import backup</span></button>
             <input type="file" id="importFile" accept=".json,application/json" style="display:none">
             <div class="note" id="backupNote">Backup includes settings, locations, prayer record, dhikr data, bookmarks, and themes. Import shows a preview before replacing anything.</div>
           </div>
 
-          <div class="card set-card">
-            <div class="card-h">🎨 <span id="shThemeBuilder">Theme Builder</span></div>
+          <div class="card set-card">             <div class="card-h"><span data-icon="palette"></span><span id="shThemeBuilder">Theme Builder</span></div>
             <div id="themeBuilderBody"></div>
           </div>
 
@@ -416,20 +536,16 @@
             <div id="keysList" style="font-size:12.5px;line-height:2.1"></div>
           </div>
 
-          <div class="card set-card only-desktop">
-            <div class="card-h">🖥️ <span id="shWidget">Widget & Mini Mode</span></div>
+          <div class="card set-card only-desktop">             <div class="card-h"><span data-icon="monitor"></span><span id="shWidget">Widget & Mini Mode</span></div>
             <div class="row"><div><span class="lbl" id="slWidget">Desktop Mini Widget</span><div class="sub" id="slWidgetS">Compact always-on-top next-prayer card</div></div>
               <button class="toggle" id="tgWidget"></button></div>
             <div class="row"><div><span class="lbl" id="slMini">Mini Mode</span><div class="sub" id="slMiniS">Compact always-on-top window</div></div>
               <button class="toggle" id="tgMini"></button></div>
           </div>
 
-          <div class="card set-card">
-            <div class="card-h">📍 <span id="shLocation">Location</span></div>
+          <div class="card set-card">             <div class="card-h"><span data-icon="pin"></span><span id="shLocation">Location</span></div>
             <div style="font-size:15px;font-weight:700;margin-bottom:4px" id="setLocName">—</div>
-            <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px" id="setCoords" dir="ltr">—</div>
-            <button class="btn" id="btnGps" style="width:100%;margin-bottom:9px">📍 <span id="slGps">Use GPS / Current Location</span></button>
-            <button class="btn" id="btnCitySearch" style="width:100%">🔍 <span id="slCitySearch">Search city</span></button>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px" id="setCoords" dir="ltr">—</div>             <button class="btn" id="btnGps" style="width:100%;margin-bottom:9px"><span data-icon="pin"></span> <span id="slGps">Use GPS / Current Location</span></button>             <button class="btn" id="btnCitySearch" style="width:100%"><span data-icon="search"></span> <span id="slCitySearch">Search city</span></button>
           </div>
 
           <div class="card set-card" id="aboutCard">
@@ -471,6 +587,7 @@
       <button class="msq" data-page="calendar"><span class="msi" data-icon="calendar"></span><span class="mst">Calendar</span></button>
       <button class="msq" data-page="names"><span class="msi" data-icon="star"></span><span class="mst">Names</span></button>
       <button class="msq" data-page="stats"><span class="msi" data-icon="chart"></span><span class="mst">Stats</span></button>
+      <button class="msq" data-page="downloads"><span class="msi" data-icon="download"></span><span class="mst">Download</span></button>
       <button class="msq" data-page="settings"><span class="msi" data-icon="sliders"></span><span class="mst">Settings</span></button>
     </div>
     <div class="msheet-row">
@@ -487,11 +604,9 @@
 <!-- ══ LOCATION MODAL ══ -->
 <div class="overlay" id="locOverlay">
   <div class="modal">
-    <h3 id="locTitle">Set Location</h3>
-    <button class="btn" id="btnGps2" style="width:100%;margin-bottom:11px">📍 <span id="locGpsLbl">Use GPS / Current Location</span></button>
+    <h3 id="locTitle">Set Location</h3>     <button class="btn" id="btnGps2" style="width:100%;margin-bottom:11px"><span data-icon="pin"></span> <span id="locGpsLbl">Use GPS / Current Location</span></button>
     <div class="fgrp"><label id="lblCity">City</label><input class="inp" id="cityInp" placeholder="e.g. Riyadh, Cairo, London…"></div>
-    <div class="fgrp"><label id="lblCountry">Country</label><input class="inp" id="cntryInp" placeholder="e.g. Saudi Arabia, Egypt…"></div>
-    <button class="btn primary" id="btnSetLoc" style="width:100%;margin-bottom:9px">🔍 <span id="locSearchLbl">Search & Set Location</span></button>
+    <div class="fgrp"><label id="lblCountry">Country</label><input class="inp" id="cntryInp" placeholder="e.g. Saudi Arabia, Egypt…"></div>     <button class="btn primary" id="btnSetLoc" style="width:100%;margin-bottom:9px"><span data-icon="search"></span> <span id="locSearchLbl">Search & Set Location</span></button>
     <button class="btn" id="btnCancelLoc" style="width:100%">Cancel</button>
   </div>
 </div>
@@ -528,8 +643,7 @@
     <div class="pbar" id="plBar"><div class="pbar-fill" id="plFill"></div></div>
     <div class="ptime"><span id="plElapsed">0:00</span><span id="plDur">—</span></div>
   </div>
-  <div class="pvol">
-    <span style="font-size:14px">🔊</span>
+  <div class="pvol">     <span data-icon="speaker" style="font-size:14px"></span>
     <input type="range" id="plVol" min="0" max="1" step="0.05" value="1">
   </div>
   <button class="pcbtn" id="plStop" title="Stop">⏹</button>
@@ -567,6 +681,9 @@
 <!-- ══ AUDIO ══ -->
 <audio id="adhanAudio" preload="none"></audio>
 <audio id="beepAudio" preload="none"></audio>
+<!-- Live Quran radio: its own element so a station never interrupts the adhan
+     or the surah player, and stopping it can never stop a prayer alert. -->
+<audio id="radioAudio" preload="none"></audio>
 
 <script src="shared/pt-engine.js"></script>
 <script src="js/data.js"></script>
@@ -578,6 +695,7 @@
 <script src="js/pages3.js"></script>
 <script src="js/reader.js"></script>
 <script src="js/stats.js"></script>
+<script src="js/extras.js"></script>
 <!-- overlay/widget pages load their own scripts: js/overlay.js, js/widget.js -->
 </body>
 </html>

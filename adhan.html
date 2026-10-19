@@ -5,6 +5,7 @@
 <meta http-equiv="Content-Security-Policy"
       content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self' file: https://cdn.aladhan.com; connect-src 'none'; object-src 'none'">
 <title>Adhan</title>
+<link rel="stylesheet" href="styles/fonts.css">
 <style>
   :root {
     --gold: #f0cc70;
@@ -17,19 +18,18 @@
       radial-gradient(ellipse at 50% 18%, rgba(240,204,112,.12) 0%, transparent 55%),
       radial-gradient(circle at 30% 20%, #16306b 0%, #0d1640 55%, #060a1c 100%);
     color: #fff;
-    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-family: 'Cairo', 'Segoe UI', system-ui, -apple-system, sans-serif;
     display: flex; align-items: center; justify-content: center;
     user-select: none; cursor: default;
   }
-  [dir="rtl"] body, .ar { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; }
+  [dir="rtl"] body, .ar { font-family: 'Cairo', 'Segoe UI', Tahoma, Arial, sans-serif; }
   .card { text-align: center; padding: 40px 60px; animation: rise .5s ease-out; }
   @keyframes rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
 
-  .kaaba {
-    font-size: 92px; line-height: 1; display: inline-block;
+  .kaaba { color: #f0cc70; display: inline-block; line-height: 1;
     filter: drop-shadow(0 10px 34px rgba(0,0,0,.5));
-    animation: glow 2.6s ease-in-out infinite alternate;
-  }
+    animation: glow 2.6s ease-in-out infinite alternate; }
+  .kaaba svg { width: 86px; height: 86px; display: block; }
   @keyframes glow { from { transform: scale(1); } to { transform: scale(1.07); } }
 
   .pulse {
@@ -45,7 +45,7 @@
   }
 
   .lbl { font-size: 11px; letter-spacing: 2.2px; text-transform: uppercase; color: rgba(255,255,255,.55); margin-top: 26px; }
-  .name-ar { font-size: 62px; font-weight: 800; margin-top: 8px; font-family: 'Segoe UI', Tahoma, sans-serif; }
+  .name-ar { font-size: 62px; font-weight: 700; margin-top: 8px; font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif; }
   .name-en { font-size: 24px; font-weight: 600; color: var(--gold); margin-top: 4px; letter-spacing: 1.5px; text-transform: uppercase; }
   .time { font-size: 16px; color: rgba(255,255,255,.65); margin-top: 12px; font-variant-numeric: tabular-nums; }
 
@@ -60,7 +60,9 @@
     display: inline-flex; align-items: center; justify-content: center; transition: background .2s, transform .15s;
   }
   .icon-btn:hover { background: rgba(255,255,255,.28); }
+  .icon-btn svg { width: 18px; height: 18px; display: block; }
   .icon-btn:active { transform: scale(.94); }
+  .icon-btn svg { width: 18px; height: 18px; display: block; }
 
   .stop-btn {
     margin-top: 28px; padding: 13px 46px; font-size: 15px; font-weight: 700;
@@ -76,7 +78,7 @@
 </head>
 <body>
   <div class="card">
-    <div class="kaaba">🕋</div>
+    <div class="kaaba"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.2 20.4 7.4v9.2L12 20.8 3.6 16.6V7.4z"/><path d="M3.6 7.4 12 11.6l8.4-4.2"/><path d="M12 11.6v9.2"/><path d="M7.4 9.7v7.9"/></svg></div>
     <div class="pulse"></div>
     <div class="lbl" id="lbl">It is time for prayer</div>
     <div class="name-ar ar" id="nameAr">الصلاة</div>
@@ -84,8 +86,8 @@
     <div class="time" id="timeLine"></div>
     <div class="divider"></div>
     <div class="row">
-      <button class="icon-btn" id="playPause" title="Play / Pause">⏸</button>
-      <span style="font-size:16px;opacity:.8">🔊</span>
+      <button class="icon-btn" id="playPause" title="Play / Pause" aria-label="Play or pause"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M9 5.6v12.8"/><path d="M15 5.6v12.8"/></svg></button>
+      <span style="opacity:.8" aria-hidden="true"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.4 9.5h3.5L12 5.6v12.8l-4.1-3.9H4.4z"/><path d="M15.6 9.4a4 4 0 0 1 0 5.2"/><path d="M18.1 7a7.4 7.4 0 0 1 0 10"/></svg></span>
       <input type="range" class="vol" id="vol" min="0" max="1" step="0.05" value="1">
     </div>
     <button class="stop-btn" id="stopBtn">Stop Adhan</button>

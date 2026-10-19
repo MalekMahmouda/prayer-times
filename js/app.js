@@ -58,7 +58,7 @@ function pushCfg() {
   if (!PT) return;
   try {    // Active saved location's timezone (empty = system/unknown)
     if ((S.lat != null && !isFiniteLat(S.lat)) || (S.lon != null && !isFiniteLon(S.lon))) {
-      showToast('⚠️ ' + (S.lang === 'ar' ? 'إحداثيات غير صالحة — تحقق من الموقع' : 'Invalid coordinates — check your location'));
+      showToast((S.lang === 'ar' ? 'إحداثيات غير صالحة — تحقق من الموقع' : 'Invalid coordinates — check your location'));
       return;
     }
     // v1.3.2 P10: adhanEnabled is THE authoritative azan switch — one name,
@@ -596,8 +596,8 @@ async function fetchTimes(lat, lon) {
     $('offBadge').classList.remove('show');
   } catch (e) {
     $('offBadge').classList.add('show');
-    if (!S.times) { showToast('⚠️ ' + t('failedLoad')); }
-    else showToast('📦 ' + t('cached'));
+    if (!S.times) { showToast(t('failedLoad')); }
+    else showToast(t('cached'));
   }
   renderAll();
 }
@@ -615,8 +615,8 @@ async function fetchByCity(city, country) {
     S.times = null; S.hijri = null;            // drop any stale API cache
     localStorage.removeItem('ptt');
     await refreshTodaySchedule();
-    renderAll(); closeLocModal(); showToast('✅ ' + t('toast.locSet'));
-  } catch (e) { showToast('❌ ' + t('toast.locFail')); }
+    renderAll(); closeLocModal(); showToast(t('toast.locSet'));
+  } catch (e) { showToast(t('toast.locFail')); }
 }
 
 /* ═══ OFFLINE SCHEDULE (platform adapter: main process on desktop, adhan lib on mobile/browser) ═══ */
@@ -811,7 +811,7 @@ function updateLocNames() {
 function openLocModal() { $('locOverlay').classList.add('open'); }
 function closeLocModal() { $('locOverlay').classList.remove('open'); }
 function useGPS() {
-  if (!navigator.geolocation) { showToast('⚠️ ' + t('toast.gpsNo')); return; }
+  if (!navigator.geolocation) { showToast(t('toast.gpsNo')); return; }
   $('locName').textContent = t('detecting');
   // GPS accuracy tiers (Phase 9): imperfect accuracy must never block prayer
   // calculation, but a bad fix must not silently replace a good location.
@@ -821,7 +821,7 @@ function useGPS() {
     const hadPrevious = S.lat != null && S.lon != null;
     if (acc != null && acc > POOR_ACCURACY_M && hadPrevious) {
       // Keep the previous reliable location; just tell the user why.
-      showToast('⚠️ ' + (S.lang === 'ar'
+      showToast((S.lang === 'ar'
         ? `دقة GPS ضعيفة (±${Math.round(acc)} م) — تم الاحتفاظ بالموقع السابق`
         : `GPS accuracy poor (±${Math.round(acc)}m) — keeping previous location`));
       closeLocModal();
@@ -830,7 +830,7 @@ function useGPS() {
     S.lat = pos.coords.latitude; S.lon = pos.coords.longitude; S.city = ''; S.country = '';
     saveLoc(); revGeo(S.lat, S.lon); fetchTimes(S.lat, S.lon); refreshTodaySchedule(); closeLocModal();
     if (acc != null && acc > POOR_ACCURACY_M) {
-      showToast('⚠️ ' + (S.lang === 'ar'
+      showToast((S.lang === 'ar'
         ? `دقة GPS ضعيفة (±${Math.round(acc)} م)`
         : `GPS accuracy poor (±${Math.round(acc)}m)`));
     }
@@ -838,7 +838,7 @@ function useGPS() {
     // v1.4.0: “denied” was shown for EVERY failure — a missing Windows
     // location provider or a timeout is not a permission denial.
     const key = err && err.code === 1 ? 'toast.gpsDenied' : 'toast.gpsFail';
-    showToast('❌ ' + t(key));
+    showToast(t(key));
   }, { timeout: 10000, maximumAge: 600000 });
 }
 /* Nominatim reverse geocoding — an OPTIONAL service for a friendly city
@@ -892,7 +892,7 @@ async function revGeo(lat, lon) {
 }
 function setManualLoc() {
   const c = $('cityInp').value.trim();
-  if (!c) { showToast('⚠️ ' + t('toast.noCity')); return; }
+  if (!c) { showToast(t('toast.noCity')); return; }
   fetchByCity(c, $('cntryInp').value.trim());
 }
 
@@ -918,7 +918,7 @@ function playAdhanBrowser() {
   if (!a.src || !a.src.startsWith('http')) a.src = ADHAN_SOUNDS[S.cfg.adhanType] || ADHAN_SOUNDS.alafasy;
   a.volume = S.cfg.adhanVol != null ? S.cfg.adhanVol : 1;
   a.currentTime = 0;
-  a.play().catch(() => showToast('🔇 ' + t('toast.adhanFail')));
+  a.play().catch(() => showToast(t('toast.adhanFail')));
 }
 /* ═══ FULL-SCREEN AZAN SCREEN ═══
    One presentation surface shared by the Test Adhan button and the automatic
@@ -966,7 +966,7 @@ function testAdhan() {
   // the test verifies exactly what will happen at prayer time, offline too.
   // The CDN <audio> preview is kept only for the browser/PWA build.
   if (IS_DESKTOP && PT && typeof PT.testOverlay === 'function') {
-    showToast('🕌 ' + t('toast.adhanOverlay'));
+    showToast(t('toast.adhanOverlay'));
     PT.testOverlay();
     return;
   }
@@ -975,18 +975,18 @@ function testAdhan() {
   // file the adhan notification channel ships (res/raw). No CDN, works offline.
   const onAndroid = !!(window.Capacitor && window.Capacitor.isNativePlatform());
   if (onAndroid) {
-    showToast('🕌 ' + t('toast.adhanOverlay'));
+    showToast(t('toast.adhanOverlay'));
     const a = $('adhanAudio');
     const type = S.cfg.adhanType;
     a.src = `./adhans/${type === 'alafasy' ? 'default' : type}.mp3`;
     a.volume = S.cfg.adhanVol != null ? S.cfg.adhanVol : 1;
     a.currentTime = 0;
-    a.play().catch(() => showToast('🔇 ' + t('toast.adhanFail')));
+    a.play().catch(() => showToast(t('toast.adhanFail')));
     showAzanScreen('Test');
     return;
   }
   // Browser / PWA: same full-screen surface + the CDN preview audio.
-  showToast('🔊 ' + t('toast.adhanPlay'));
+  showToast(t('toast.adhanPlay'));
   playAdhanBrowser();
   showAzanScreen('Test');
 }
@@ -998,10 +998,14 @@ function applyLang() {
 
   // Sidebar + bottom nav
   document.getElementById('sbTitle').textContent = t('appName');
-  document.getElementById('sbSub').textContent = t('sub');    const navMap = { prayers: 'nav.prayers', calendar: 'nav.calendar', qibla: 'nav.qibla', quran: 'nav.quran', names: 'nav.names', dhikr: 'nav.dhikr', stats: 'nav.stats', settings: 'nav.settings' };
+  document.getElementById('sbSub').textContent = t('sub');    const navMap = { prayers: 'nav.prayers', calendar: 'nav.calendar', qibla: 'nav.qibla', quran: 'nav.quran', names: 'nav.names', dhikr: 'nav.dhikr', stats: 'nav.stats', downloads: 'nav.downloads', settings: 'nav.settings' };
   document.querySelectorAll('[data-page]').forEach((b) => {
     const key = navMap[b.dataset.page];
-    const el = b.querySelector('.t'); if (el && key) el.textContent = t(key);
+    if (!key) return;
+    // `.t` is the sidebar row, `.mst` the tile in the mobile More sheet — the
+    // sheet used to stay English in Arabic because only `.t` was repainted.
+    const el = b.querySelector('.t') || b.querySelector('.mst');
+    if (el) el.textContent = t(key);
   });
 
   // Mobile home + More sheet labels
@@ -1114,6 +1118,9 @@ function applyLang() {
   if (window.renderDhikr && document.getElementById('page-dhikr').classList.contains('active')) renderDhikr();
   if (window.renderCalendar && document.getElementById('page-calendar').classList.contains('active')) renderCalendar();
   if (window.renderSurahList && document.getElementById('page-quran').classList.contains('active')) renderSurahList();
+
+  // Downloads + Quran Radio labels live in js/extras.js (loaded after this file).
+  if (window.applyExtrasLang) window.applyExtrasLang();
 }
 
 /* ═══ APP-CHROME ICONS ═══
@@ -1251,9 +1258,13 @@ function wireKeyboardShortcuts() {
   document.addEventListener('keydown', (e) => {
     const tag = (document.activeElement && document.activeElement.tagName) || '';
     if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA' || document.activeElement.isContentEditable) return;
-    if (e.ctrlKey && !e.shiftKey && e.key >= '1' && e.key <= '7') {
+    if (e.ctrlKey && !e.shiftKey && e.key >= '1' && e.key <= '9') {
       e.preventDefault();
-      gotoPage(['prayers', 'calendar', 'qibla', 'quran', 'names', 'dhikr', 'settings'][+e.key - 1]);
+      // Same order as the sidebar — including Stats, which used to be skipped
+      // here, so ⌘/Ctrl+7 opened Settings while the seventh row said Stats.
+      const pages = ['prayers', 'calendar', 'qibla', 'quran', 'names', 'dhikr', 'stats', 'downloads', 'settings'];
+      const page = pages[+e.key - 1];
+      if (page) gotoPage(page);
     } else if (e.ctrlKey && e.shiftKey && (e.key === 'P' || e.key === 'p')) {
       e.preventDefault(); toggleWidgetSetting();
     } else if (e.ctrlKey && e.shiftKey && (e.key === 'M' || e.key === 'm')) {
@@ -1265,7 +1276,7 @@ function wireKeyboardShortcuts() {
 function toggleWidgetSetting() {
   S.cfg.widget = !S.cfg.widget; saveCfg(); renderSettings();
   if (PT) PT.widgetToggle(S.cfg.widget);
-  showToast((S.cfg.widget ? '🪟 ' : '') + (S.lang === 'ar' ? (S.cfg.widget ? 'تم إظهار الأداة' : 'تم إخفاء الأداة') : (S.cfg.widget ? 'Widget shown' : 'Widget hidden')));
+  showToast((S.lang === 'ar' ? (S.cfg.widget ? 'تم إظهار الأداة' : 'تم إخفاء الأداة') : (S.cfg.widget ? 'Widget shown' : 'Widget hidden')));
 }
 function toggleMiniMode() {
   S.cfg.mini = !S.cfg.mini; saveCfg(); renderSettings();
@@ -1278,7 +1289,7 @@ function makkahFallback() {
   saveLoc(); updateLocNames(); fetchTimes(S.lat, S.lon); refreshTodaySchedule();
   // Honest default: the location chip alone was easy to miss — say why the
   // app is showing Makkah so the user can set their own city.
-  showToast('🕌 ' + t('toast.makkahDefault'));
+  showToast(t('toast.makkahDefault'));
 }
 
 function scheduleMidnight() {

@@ -45,6 +45,7 @@ if (!fs.existsSync(listFile)) {
     'shared/pt-engine.js',
     'js/app.js', 'js/pages.js', 'js/pages3.js', 'js/reader.js', 'js/store3.js',
     'js/data.js', 'js/stats.js', 'js/platform.js', 'js/overlay.js', 'js/widget.js', 'js/compass.js',
+    'js/extras.js',
     'styles/app.css',
     'assets/icon.ico', 'assets/icon-256.png',
     'data/quran.json',

@@ -1,20 +1,71 @@
-/* ── Mushaf Quran fonts (offline-first; CDN fallback if local file missing) ── */
-/* Amiri Quran: SIL OFL 1.1 — https://github.com/aliftype/amiri */
+/* ══════════════════════════════════════════════════════════════
+   Prayer Times — bundled fonts (self-hosted, offline-first)
+   ────────────────────────────────────────────────────────────
+   Cairo                — SIL OFL 1.1 — UI font (latin + arabic), 400–700
+   Noto Naskh Arabic    — SIL OFL 1.1 — Quranic text + mushaf, 400/700
+   Amiri Quran / Amiri  — SIL OFL 1.1 — legacy mushaf fallbacks
+   Licences: fonts/OFL-Cairo.txt, fonts/OFL-NotoNaskhArabic.txt,
+             fonts/OFL-Amiri.txt (see docs/FONTS.md)
+   All files ship locally: packaged in the desktop app (fonts/** in
+   electron-builder), copied into www/ for Android (cap sync) and
+   precached by the web build's service worker. This file never
+   points the PRIMARY interface at a remote server.
+   ══════════════════════════════════════════════════════════════ */
 
-@font-face {
-  font-family: 'Amiri Quran';
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url('../fonts/amiri-quran-regular.woff2') format('woff2'),
-       url('https://cdn.jsdelivr.net/fontsource/fonts/amiri-quran@latest/arabic-400-normal.woff2') format('woff2');
-}
+/* ── Cairo — UI (latin + arabic, weights 400/500/600/700) ── */
 
-@font-face {
-  font-family: 'Amiri';
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url('../fonts/amiri-bold.woff2') format('woff2'),
-       url('https://cdn.jsdelivr.net/fontsource/fonts/amiri@latest/arabic-700-normal.woff2') format('woff2');
-}
+@font-face{font-family:'Cairo';font-style:normal;font-weight:400;font-display:swap;
+  src:url('../fonts/cairo-latin-400.woff2') format('woff2');
+  unicode-range:U+0000-00FF,U+0131,U+2000-206F,U+20A0-20CF,U+2190-21BB,U+2212,U+2215,U+FEFF,U+FFFD;}
+@font-face{font-family:'Cairo';font-style:normal;font-weight:500;font-display:swap;
+  src:url('../fonts/cairo-latin-500.woff2') format('woff2');
+  unicode-range:U+0000-00FF,U+0131,U+2000-206F,U+20A0-20CF,U+2190-21BB,U+2212,U+2215,U+FEFF,U+FFFD;}
+@font-face{font-family:'Cairo';font-style:normal;font-weight:600;font-display:swap;
+  src:url('../fonts/cairo-latin-600.woff2') format('woff2');
+  unicode-range:U+0000-00FF,U+0131,U+2000-206F,U+20A0-20CF,U+2190-21BB,U+2212,U+2215,U+FEFF,U+FFFD;}
+@font-face{font-family:'Cairo';font-style:normal;font-weight:700;font-display:swap;
+  src:url('../fonts/cairo-latin-700.woff2') format('woff2');
+  unicode-range:U+0000-00FF,U+0131,U+2000-206F,U+20A0-20CF,U+2190-21BB,U+2212,U+2215,U+FEFF,U+FFFD;}
+
+@font-face{font-family:'Cairo';font-style:normal;font-weight:400;font-display:swap;
+  src:url('../fonts/cairo-arabic-400.woff2') format('woff2');
+  unicode-range:U+0600-06FF,U+0750-077F,U+0870-088E,U+0890-0891,U+0897-08E1,U+08E3-08FF,U+200C-200E,U+2010-2011,U+204F,U+25CC,U+2E41,U+FB50-FDFF,U+FE70-FE74,U+FE76-FEFC;}
+@font-face{font-family:'Cairo';font-style:normal;font-weight:500;font-display:swap;
+  src:url('../fonts/cairo-arabic-500.woff2') format('woff2');
+  unicode-range:U+0600-06FF,U+0750-077F,U+0870-088E,U+0890-0891,U+0897-08E1,U+08E3-08FF,U+200C-200E,U+2010-2011,U+204F,U+25CC,U+2E41,U+FB50-FDFF,U+FE70-FE74,U+FE76-FEFC;}
+@font-face{font-family:'Cairo';font-style:normal;font-weight:600;font-display:swap;
+  src:url('../fonts/cairo-arabic-600.woff2') format('woff2');
+  unicode-range:U+0600-06FF,U+0750-077F,U+0870-088E,U+0890-0891,U+0897-08E1,U+08E3-08FF,U+200C-200E,U+2010-2011,U+204F,U+25CC,U+2E41,U+FB50-FDFF,U+FE70-FE74,U+FE76-FEFC;}
+@font-face{font-family:'Cairo';font-style:normal;font-weight:700;font-display:swap;
+  src:url('../fonts/cairo-arabic-700.woff2') format('woff2');
+  unicode-range:U+0600-06FF,U+0750-077F,U+0870-088E,U+0890-0891,U+0897-08E1,U+08E3-08FF,U+200C-200E,U+2010-2011,U+204F,U+25CC,U+2E41,U+FB50-FDFF,U+FE70-FE74,U+FE76-FEFC;}
+
+/* ── Noto Naskh Arabic — Quranic text (arabic + latin, 400/700) ──
+   Only weights the reader uses; the mushaf never bolds body verses. */
+
+@font-face{font-family:'Noto Naskh Arabic';font-style:normal;font-weight:400;font-display:swap;
+  src:url('../fonts/notonaskharabic-arabic-400.woff2') format('woff2');
+  unicode-range:U+0600-06FF,U+0750-077F,U+0870-088E,U+0890-0891,U+0897-08E1,U+08E3-08FF,U+200C-200E,U+2010-2011,U+204F,U+25CC,U+2E41,U+FB50-FDFF,U+FE70-FE74,U+FE76-FEFC;}
+@font-face{font-family:'Noto Naskh Arabic';font-style:normal;font-weight:700;font-display:swap;
+  src:url('../fonts/notonaskharabic-arabic-700.woff2') format('woff2');
+  unicode-range:U+0600-06FF,U+0750-077F,U+0870-088E,U+0890-0891,U+0897-08E1,U+08E3-08FF,U+200C-200E,U+2010-2011,U+204F,U+25CC,U+2E41,U+FB50-FDFF,U+FE70-FE74,U+FE76-FEFC;}
+@font-face{font-family:'Noto Naskh Arabic';font-style:normal;font-weight:400;font-display:swap;
+  src:url('../fonts/notonaskharabic-latin-400.woff2') format('woff2');
+  unicode-range:U+0000-00FF,U+0131,U+2000-206F,U+20A0-20CF,U+2190-21BB,U+2212,U+2215,U+FEFF,U+FFFD;}
+@font-face{font-family:'Noto Naskh Arabic';font-style:normal;font-weight:700;font-display:swap;
+  src:url('../fonts/notonaskharabic-latin-700.woff2') format('woff2');
+  unicode-range:U+0000-00FF,U+0131,U+2000-206F,U+20A0-20CF,U+2190-21BB,U+2212,U+2215,U+FEFF,U+FFFD;}
+
+/* ── Amiri Quran — Quranic text (primary mushaf face) ──
+   Purpose-built for Uthmani script: superscript alef (ٰ), small waqf
+   marks (ۖۗۚۛۜ), and the classic Naskh letterforms. Only 400 exists;
+   the mushaf never bolds body verses. Amiri 700 covers bold headers.
+   Noto Naskh Arabic stays as the missing-glyph fallback.
+   Both: SIL OFL 1.1 — https://github.com/aliftype/amiri */
+
+@font-face{font-family:'Amiri Quran';font-style:normal;font-weight:400;font-display:swap;
+  src:url('../fonts/amiri-quran-regular.woff2') format('woff2');
+  unicode-range:U+0600-06FF,U+0750-077F,U+0870-088E,U+0890-0891,U+0897-08E1,U+08A0-08B4,U+08E3-08FF,U+200C-200E,U+2010-2011,U+204F,U+25CC,U+2E41,U+FB50-FDFF,U+FE70-FEFC;}
+@font-face{font-family:'Amiri';font-style:normal;font-weight:700;font-display:swap;
+  src:url('../fonts/amiri-bold.woff2') format('woff2');
+  unicode-range:U+0600-06FF,U+0750-077F,U+0870-088E,U+0890-0891,U+0897-08E1,U+08E3-08FF,U+200C-200E,U+2010-2011,U+204F,U+25CC,U+2E41,U+FB50-FDFF,U+FE70-FEFC;}

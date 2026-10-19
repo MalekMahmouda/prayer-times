@@ -7,8 +7,16 @@
 
 /* ── Tokens ── */
 :root {
-  --font: 'Segoe UI Variable Display', 'Segoe UI', system-ui, -apple-system, sans-serif;
-  --font-ar: 'Segoe UI', Tahoma, Arial, sans-serif;
+  /* ── Typography (bundled: styles/fonts.css + fonts/*.woff2) ──
+     Cairo — UI everywhere, latin + arabic; Noto Naskh Arabic — Quran only.
+     Weights: 400 body/labels · 600 labels/buttons · 700 headings,
+     numerals, Arabic display · higher only in the adhan overlay. */
+  --font: 'Cairo', 'Segoe UI Variable Display', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-ar: 'Cairo', 'Segoe UI', Tahoma, Arial, sans-serif;
+  --font-quran: 'Amiri Quran', 'Amiri', 'Noto Naskh Arabic', var(--font-ar);
+  --fs-countdown: 52px;
+  --lh-body: 1.55; --lh-numeric: 1.04;
+  --fw-body: 400; --fw-medium: 500; --fw-semibold: 600; --fw-bold: 700;
   --r-xl: 26px; --r-lg: 20px; --r-md: 14px; --r-sm: 10px;
   --sb-w: 232px; --sb-w-compact: 68px;
   --topbar-h: 62px;
@@ -118,7 +126,7 @@
 /* ── Base ── */
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden}
-body{font-family:var(--font);background:var(--bg);color:var(--text);transition:background var(--dur-slow),color var(--dur-slow);-webkit-font-smoothing:antialiased}
+body{font-family:var(--font);font-weight:var(--fw-body);line-height:var(--lh-body);background:var(--bg);color:var(--text);transition:background var(--dur-slow),color var(--dur-slow);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
 /* Android cutouts / gesture bars: keep content clear of system UI */
 .app{padding-top:env(safe-area-inset-top,0)}
 .content{padding-bottom:calc(92px + env(safe-area-inset-bottom,0))}
@@ -177,8 +185,23 @@ a{color:var(--primary)}
 .nav-item:hover .ni{transform:scale(1.12)}
 .nav-item.active{background:rgba(255,255,255,.17);color:#fff;font-weight:650;box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}
 .nav-item.active::before{content:'';position:absolute;inset-inline-start:-10px;top:22%;bottom:22%;width:3.5px;border-radius:3px;background:var(--gold)}
+/* The one nav item that is a call to action rather than a destination inside
+   the app. Filled, not outlined-plus-gold: a single filled row among ten quiet
+   ones is the whole point, and it still leaves the active state readable. */
+.nav-item.nav-dl{margin-bottom:2px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06);color:#fff}
+.nav-item.nav-dl .ni{color:var(--gold)}
+.nav-item.nav-dl:hover{background:rgba(255,255,255,.13);color:#fff}
+.nav-item.nav-dl.active{background:var(--primary);border-color:transparent;color:var(--on-primary);box-shadow:var(--shadow-sm)}
+.nav-item.nav-dl.active .ni{color:var(--on-primary)}
+.nav-item.nav-dl.active::before{display:none}
+/* Pointer feedback on a dark rail: the global focus ring is --primary, which can
+   sit too close to the sidebar's own colour, so the rail gets white. And a
+   pressed row visibly compresses — on touch there is no hover to say "that was
+   the one I hit". */
+.sb :focus-visible{outline-color:#fff;outline-offset:2px}
+.nav-item:active{transform:scale(.985)}
 .sb-foot{padding:14px 16px;border-top:1px solid rgba(255,255,255,.12);position:relative;z-index:1}
-.sb-foot .lbl{font-size:9px;text-transform:uppercase;letter-spacing:1.4px;color:rgba(255,255,255,.42);margin-bottom:8px;font-weight:700}
+.sb-foot .lbl{font-size:9px;text-transform:uppercase;letter-spacing:1.4px;color:rgba(255,255,255,.42);margin-bottom:8px;font-weight:var(--fw-semibold)}
 .swatches{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
 .sw{width:100%;aspect-ratio:1;border-radius:9px;border:2px solid rgba(255,255,255,.15);transition:transform .16s var(--ease),border-color var(--dur),box-shadow var(--dur);box-shadow:inset 0 -2px 5px rgba(0,0,0,.22)}
 .sw:hover{transform:scale(1.14) rotate(-2deg)}
@@ -216,7 +239,7 @@ a{color:var(--primary)}
 hr.sep{border:none;border-top:1px solid var(--border);margin:14px 0}
 
 /* ── Buttons / inputs / toggles ── */
-.btn{padding:10px 18px;border-radius:12px;font-size:13.5px;font-weight:650;background:var(--surface2);color:var(--text);border:1px solid var(--border);transition:all var(--dur) var(--ease);display:inline-flex;align-items:center;gap:7px}
+.btn{padding:10px 18px;border-radius:12px;font-size:13.5px;font-weight:var(--fw-semibold);background:var(--surface2);color:var(--text);border:1px solid var(--border);transition:all var(--dur) var(--ease);display:inline-flex;align-items:center;gap:7px}
 .btn:hover{border-color:var(--primary);color:var(--primary);transform:translateY(-1px);box-shadow:var(--shadow-sm)}
 .btn:active{transform:translateY(0) scale(.97);transition-duration:80ms}
 .btn.primary{background:var(--grad);color:var(--on-primary);border-color:transparent;box-shadow:var(--shadow-sm)}
@@ -264,7 +287,7 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:14px 0}
    while .hero inherits color:#fff — so the countdown rendered white-on-white
    (measured ~1.4:1) in blue/emerald/islamic/ocean/sahara. --text tracks the
    glass polarity in every theme: ~10:1 light, ~14:1 dark. */
-.hero-cd{font-size:52px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.01em;line-height:1.04;color:var(--text)}
+.hero-cd{font-size:var(--fs-countdown);font-weight:var(--fw-bold);font-variant-numeric:tabular-nums;letter-spacing:-.01em;line-height:1.04;color:var(--text)}
 .hero-cd-lbl{font-size:10.5px;color:var(--text-muted);letter-spacing:1.2px;text-transform:uppercase;font-weight:650}
 
 /* ── Prayer cards ── */
@@ -384,16 +407,16 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:14px 0}
 .mushaf-surah-hdr::before,.mushaf-surah-hdr::after{content:'۞';position:absolute;top:50%;transform:translateY(-58%);color:var(--frame);font-size:15px}
 .mushaf-surah-hdr::before{inset-inline-start:-11px}
 .mushaf-surah-hdr::after{inset-inline-end:-11px}
-.msh-ar{font-family:'Amiri',var(--font-ar);font-weight:700;font-size:clamp(21px,4vw,27px);color:var(--frame);line-height:1.5}
+.msh-ar{font-family:var(--font-quran);font-weight:var(--fw-bold);font-size:clamp(21px,4vw,27px);color:var(--frame);line-height:1.5}
 .msh-sub{display:flex;justify-content:center;align-items:center;gap:9px;flex-wrap:wrap;margin-top:2px;font-size:10.5px;letter-spacing:.6px;text-transform:uppercase;color:var(--ink-soft);font-weight:700}
 .msh-sub .msh-play{border:1.4px solid var(--frame);color:var(--frame);background:transparent;border-radius:20px;font-size:10.5px;font-weight:800;padding:4px 13px;cursor:pointer;letter-spacing:.4px;transition:all var(--dur) var(--ease)}
 .msh-sub .msh-play:hover{background:var(--frame);color:#fff}
-.mushaf-bismillah{text-align:center;font-family:'Amiri Quran','Amiri',var(--font-ar);font-size:calc(var(--rd-font,26px) * 1.18);color:var(--ink);margin:8px 0 18px;line-height:2}
-.mushaf-flow{font-family:'Amiri Quran','Amiri',var(--font-ar);font-size:var(--rd-font,26px);line-height:var(--rd-line,2.05);color:var(--ink);text-align:justify;text-align-last:center;word-spacing:.06em}
+.mushaf-bismillah{text-align:center;font-family:var(--font-quran);font-size:calc(var(--rd-font,26px) * 1.18);color:var(--ink);margin:8px 0 18px;line-height:2}
+.mushaf-flow{font-family:var(--font-quran);font-size:var(--rd-font,26px);line-height:var(--rd-line,2.05);color:var(--ink);text-align:justify;text-align-last:center;word-spacing:.06em}
 .mushaf-flow .ayah-inline{cursor:pointer;border-radius:6px;padding:0 2px;transition:background var(--dur)}
 .mushaf-flow .ayah-inline:hover{background:rgba(185,138,47,.14)}
 .mushaf-flow .ayah-inline.marked{background:linear-gradient(180deg,rgba(185,138,47,.30),rgba(185,138,47,.16));border-radius:6px;box-shadow:0 0 0 2px rgba(185,138,47,.28)}
-.ayah-medal{display:inline-flex;align-items:center;justify-content:center;width:calc(var(--rd-font,26px) * 1.18);height:calc(var(--rd-font,26px) * 1.18);margin:0 3px;vertical-align:-4%;border-radius:50%;border:1.4px solid var(--frame);color:var(--frame);font-family:'Amiri',var(--font-ar);font-weight:700;font-size:calc(var(--rd-font,26px) * .5);background:radial-gradient(circle at 30% 28%,rgba(255,255,255,.85),rgba(233,215,166,.5));box-shadow:0 1px 3px rgba(120,90,20,.22);user-select:none}
+.ayah-medal{display:inline-flex;align-items:center;justify-content:center;width:calc(var(--rd-font,26px) * 1.18);height:calc(var(--rd-font,26px) * 1.18);margin:0 3px;vertical-align:-4%;border-radius:50%;border:1.4px solid var(--frame);color:var(--frame);font-family:var(--font-quran);font-weight:var(--fw-bold);font-size:calc(var(--rd-font,26px) * .5);background:radial-gradient(circle at 30% 28%,rgba(255,255,255,.85),rgba(233,215,166,.5));box-shadow:0 1px 3px rgba(120,90,20,.22);user-select:none}
 .mushaf-tr{font-family:var(--font);font-size:calc(var(--rd-font,26px) * .55);color:var(--ink-soft);line-height:1.75;margin:10px 14px 22px;padding-top:8px;border-top:1px dashed var(--frame-soft);text-align:left}
 /* mushaf night mode */
 .mushaf.mnight{--paper:#101726;--paper2:#0b111d;--ink:#dbe4f0;--ink-soft:#8fa0b8;--frame:#c9a24d;--frame-soft:rgba(201,162,77,.4);background:radial-gradient(120% 90% at 50% 0%,var(--paper2) 0%,var(--paper) 58%)}
@@ -410,7 +433,7 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:14px 0}
 .qs-hit{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:12px 15px;margin-bottom:8px;cursor:pointer;transition:border-color var(--dur)}
 .qs-hit:hover{border-color:var(--primary)}
 .qs-hit .qsh-meta{font-size:11px;color:var(--primary);font-weight:750;margin-bottom:4px}
-.qs-hit .qsh-ar{font-family:'Amiri Quran','Amiri',var(--font-ar);font-size:18px;line-height:2;text-align:right}
+.qs-hit .qsh-ar{font-family:var(--font-quran);font-size:18px;line-height:2;text-align:right}
 .qs-hit .qsh-en{font-size:12px;color:var(--text-muted);margin-top:4px;line-height:1.6}
 
 @media(max-width:768px){
@@ -444,7 +467,7 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:14px 0}
 .surah-item .num{width:39px;height:39px;border-radius:12px;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12.5px;color:var(--text-muted);flex-shrink:0;transition:all var(--dur)}
 .surah-item.playing .num{background:var(--grad);color:var(--on-primary);border-color:transparent}
 .surah-item .meta{flex:1;min-width:0}
-.surah-item .ar{font-size:16.5px;font-weight:800;font-family:var(--font-ar)}
+.surah-item .ar{font-size:16.5px;font-weight:var(--fw-bold);font-family:var(--font-ar)}
 .surah-item .en{font-size:12px;color:var(--text-muted);margin-top:1px}
 .surah-item .side{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
 .tag{font-size:10px;font-weight:700;padding:2px 10px;border-radius:12px;background:var(--surface2);color:var(--text-muted);border:1px solid var(--border)}
@@ -456,7 +479,7 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:14px 0}
 .player.show{display:flex;animation:pageIn .3s var(--ease)}
 .player .pnum{width:38px;height:38px;border-radius:12px;background:rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0}
 .player .pmeta{min-width:0;width:175px}
-.player .par{font-size:15px;font-weight:800;font-family:var(--font-ar);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.player .par{font-size:15px;font-weight:var(--fw-bold);font-family:var(--font-ar);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .player .pen{font-size:10.5px;color:rgba(255,255,255,.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .player .pctrl{display:flex;align-items:center;gap:7px}
 .pcbtn{width:35px;height:35px;border-radius:50%;background:rgba(255,255,255,.14);color:#fff;font-size:13px;display:inline-flex;align-items:center;justify-content:center;transition:all var(--dur) var(--ease)}
@@ -479,7 +502,7 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:14px 0}
 .name-hero::after{content:'';position:absolute;bottom:-100px;inset-inline-start:-50px;width:240px;height:240px;border-radius:50%;background:rgba(255,255,255,.05)}
 .name-hero>*{position:relative;z-index:1}
 .badge-day{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.2);font-size:10.5px;font-weight:750;letter-spacing:1.4px;text-transform:uppercase;padding:5px 15px;border-radius:20px;display:inline-block}
-.name-hero .nar{font-size:52px;font-weight:800;font-family:var(--font-ar);margin-top:14px;line-height:1.3;text-shadow:0 2px 16px rgba(0,0,0,.25)}
+.name-hero .nar{font-size:52px;font-weight:var(--fw-bold);font-family:var(--font-ar);margin-top:14px;line-height:1.3;text-shadow:0 2px 16px rgba(0,0,0,.25)}
 .name-hero .ntr{font-size:19px;font-weight:750;color:var(--gold);margin-top:5px;letter-spacing:.4px}
 .name-hero .nen{font-size:14px;color:rgba(255,255,255,.88);margin-top:9px;line-height:1.55;max-width:540px;margin-inline:auto}
 .name-hero .ndh{font-size:21px;font-family:var(--font-ar);color:rgba(255,255,255,.85);margin-top:14px}
@@ -491,7 +514,7 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:14px 0}
 .ncard.today{border-color:var(--gold);box-shadow:0 0 0 3px var(--primary-soft),var(--shadow-sm)}
 .ncard.today::after{content:'★';position:absolute;top:7px;inset-inline-end:9px;color:var(--gold-ink);font-size:11px}
 .ncard .nn{font-size:10px;color:var(--text-muted);font-weight:750;letter-spacing:.5px}
-.ncard .nar{font-size:22px;font-weight:800;color:var(--primary);font-family:var(--font-ar);margin-top:5px;line-height:1.35}
+.ncard .nar{font-size:22px;font-weight:var(--fw-bold);color:var(--primary);font-family:var(--font-ar);margin-top:5px;line-height:1.35}
 .ncard .ntr{font-size:11px;font-weight:700;color:var(--gold-ink);margin-top:4px}
 .ncard .nen{font-size:10.5px;color:var(--text-muted);margin-top:5px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 
@@ -508,7 +531,7 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:14px 0}
 .dhikr-ring .circle-fg{fill:none;stroke:var(--primary);stroke-width:9;stroke-linecap:round;transition:stroke-dashoffset .35s var(--ease);filter:drop-shadow(0 0 6px var(--primary-soft))}
 .dhikr-ring .inner{width:190px;height:190px;border-radius:50%;background:var(--surface);border:1px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:var(--shadow);transition:transform .12s var(--ease)}
 .dhikr-count{font-size:54px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
-.dhikr-word{font-size:16.5px;font-weight:750;font-family:var(--font-ar);color:var(--primary);margin-top:7px}
+.dhikr-word{font-size:16.5px;font-weight:700;font-family:var(--font-ar);color:var(--primary);margin-top:7px}
 .dhikr-target{font-size:10.5px;color:var(--text-muted);margin-top:5px}
 .dhikr-stats{display:flex;gap:11px}
 .stat-mini{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:11px 22px;text-align:center;transition:transform .18s var(--ease)}
@@ -658,7 +681,7 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:14px 0}
   transform:scale(.96);transition:transform var(--dur-slow) var(--ease)}
 .azan-screen.open .azan-inner{transform:scale(1)}
 .azan-city{font-size:12px;font-weight:700;letter-spacing:.4px;color:var(--text-muted);text-transform:uppercase}
-.azan-ar{font-family:var(--font-ar);font-size:clamp(52px,16vw,86px);font-weight:800;line-height:1.15;
+.azan-ar{font-family:var(--font-ar);font-size:clamp(52px,16vw,86px);font-weight:700;line-height:1.15;
   color:var(--primary);margin:6px 0 0}
 .azan-en{font-size:16px;font-weight:650;color:var(--text-muted);margin-top:2px}
 .azan-clock{font-size:clamp(34px,10vw,54px);font-weight:750;letter-spacing:1px;font-variant-numeric:tabular-nums;
@@ -666,7 +689,7 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:14px 0}
 .azan-status{font-size:14px;font-weight:600;color:var(--gold);margin-top:4px}
 .azan-controls{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:26px}
 .azan-controls .btn{min-height:46px;min-width:120px;justify-content:center}
-.about-dua{font-family:var(--font-ar);font-size:22px;font-weight:750;color:var(--primary);text-align:center;
+.about-dua{font-family:var(--font-ar);font-size:22px;font-weight:700;color:var(--primary);text-align:center;
   line-height:1.6;margin:4px 0 10px}
 .about-dev{font-size:14px;font-weight:700;text-align:center;color:var(--text);margin-bottom:8px}
 #aboutVersion{text-align:center}
@@ -678,7 +701,7 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:14px 0}
 /* ── About footer credit (Settings page) ── */
 .site-foot{display:flex;flex-direction:column;gap:5px;align-items:center;text-align:center;
   padding:14px 8px 6px;color:var(--text-muted);font-size:12px}
-.site-foot #footDua{font-family:var(--font-ar);font-size:16px;font-weight:750;color:var(--primary);line-height:1.5}
+.site-foot #footDua{font-family:var(--font-ar);font-size:16px;font-weight:700;color:var(--primary);line-height:1.5}
 .site-foot #footDev{font-weight:700;font-size:12.5px;color:var(--text)}
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -718,3 +741,125 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:14px 0}
 /* ── 4. Let the platform do its typographic work ── */
 body{font-optical-sizing:auto;text-rendering:optimizeLegibility}
 h1,h2,h3,.card-h,.sec-lbl{text-wrap:balance}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   GET PRAYER TIMES + QURAN RADIO (js/extras.js)
+   Both reuse the existing token set — surfaces, borders, radii, the primary
+   gradient — so they inherit all eight themes and their light/dark polarity
+   instead of shipping a second palette. Every size below is a value the rest
+   of the sheet already uses (14/16/18px padding, 12–16px radii, 44px tap
+   targets), which is what keeps the new blocks from reading as bolted on.
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* ── Download page ──
+   A list, not a bento of equal cards: these three rows are not peers — one is
+   the thing you came for and two are secondary — so each gets a full-width row
+   where the button sits at the end of the line the eye is already travelling
+   along. Same rhythm as Settings (72px rows, 14px radius, 44px targets). */
+.dl-page{max-width:960px}
+.dl-head{margin-bottom:16px}
+.dl-title{font-size:22px;font-weight:800;letter-spacing:-.022em;line-height:1.2}
+/* Focused only by the router, never by Tab — a ring on a heading is noise. */
+.dl-title:focus{outline:none}
+.dl-lead{font-size:13px;color:var(--text-muted);line-height:1.55;max-width:68ch;margin-top:5px}
+.dl-bar{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);
+  box-shadow:var(--shadow-sm);padding:12px}
+.dlb-list{list-style:none;display:grid;grid-template-columns:1fr;gap:8px}
+.dlb-item{display:flex;align-items:center;gap:12px;min-width:0;min-height:72px;padding:11px 12px;
+  background:var(--surface2);border:1px solid transparent;border-radius:14px;
+  transition:border-color var(--dur),background var(--dur),box-shadow var(--dur)}
+.dlb-item:hover,.dlb-item:focus-within{border-color:var(--primary);box-shadow:var(--shadow-sm)}
+.dl-ico{width:38px;height:38px;border-radius:12px;background:var(--primary-soft);color:var(--primary);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.dl-ico svg{width:20px;height:20px}
+.dlb-txt{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.dlb-name{font-size:14px;font-weight:700;line-height:1.3}
+.dlb-meta{font-size:11.5px;color:var(--text-muted);line-height:1.4;font-variant-numeric:tabular-nums}
+.dlb-btn{flex-shrink:0;min-height:44px;min-width:168px;justify-content:center;padding:9px 14px;font-size:12.5px}
+.dl-btni{width:1em;height:1em;flex-shrink:0}
+.dlb-foot{display:flex;align-items:flex-start;gap:7px;font-size:11.5px;color:var(--text-muted);line-height:1.5;
+  margin:12px 2px 0;padding-top:11px;border-top:1px solid var(--border)}
+.dlb-foot span{max-width:80ch}
+.dl-footi{width:13px;height:13px;flex-shrink:0;margin-top:2px;color:var(--primary)}
+/* Two quiet cards under the list: the same surface at a lighter weight, so they
+   read as help, not as a second set of actions competing with the buttons. */
+.dl-help{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}
+.dl-help-card{min-width:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:14px 16px}
+.dl-help-t{font-size:12px;font-weight:750;letter-spacing:.04em;text-transform:uppercase;color:var(--text-muted);margin-bottom:9px}
+.dl-steps{margin:0;padding-inline-start:17px;font-size:12.5px;line-height:1.55;color:var(--text)}
+.dl-steps li+li{margin-top:6px}
+.dl-steps b{font-weight:700}
+.dl-help-p{font-size:12.5px;line-height:1.55;color:var(--text)}
+/* Arabic runs wider at the same size — give the copy room rather than clipping. */
+[dir="rtl"] .dlb-name,[dir="rtl"] .dlb-meta,[dir="rtl"] .dl-lead{line-height:1.6}
+/* Touch: no grey flash on tap, and the bar/rows take a hint of pressed state —
+   the one cue a pointer gets instead of a hover. */
+.dl-bar,.dlb-item,.rb-st{-webkit-tap-highlight-color:color-mix(in srgb,var(--primary) 28%,transparent)}
+.dlb-item:active,.rb-st:active{border-color:var(--primary);background:var(--primary-soft)}
+
+/* ── Quran Radio ── */
+.radio-bar{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);
+  box-shadow:var(--shadow-sm);padding:13px 15px;margin-bottom:14px}
+.rb-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.rb-eyebrow{font-size:10.5px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold-ink)}
+.rb-status{font-size:11.5px;color:var(--text-muted);line-height:1.4}
+.rb-status:empty{display:none}
+.rb-status.err{color:var(--danger);font-weight:600}
+.rb-stations{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.rb-st{display:flex;align-items:center;gap:10px;min-height:56px;padding:9px 11px;text-align:start;
+  background:var(--surface2);border:1.5px solid var(--border);border-radius:14px;
+  transition:border-color var(--dur),background var(--dur),transform var(--dur) var(--ease)}
+@media (hover:hover){ .rb-st:hover{border-color:var(--primary);transform:translateY(-1px)} }
+.rb-st.playing{border-color:var(--primary);background:var(--primary-soft)}
+.rb-st.failed{border-color:var(--danger)}
+.rb-ico{width:34px;height:34px;border-radius:11px;background:var(--primary-soft);color:var(--primary);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.rb-ico svg{width:19px;height:19px}
+.rb-st.playing .rb-ico{background:var(--primary);color:var(--on-primary)}
+.rb-txt{display:flex;flex-direction:column;min-width:0;flex:1}
+.rb-name{font-size:13px;font-weight:700;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rb-sub{font-size:11px;color:var(--text-muted);line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* The play/pause affordance is a 30px disc — small enough not to compete with
+   the station name, large enough to read as the button it is. */
+.rb-toggle{width:30px;height:30px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  background:var(--surface);border:1px solid var(--border);color:var(--primary)}
+.rb-st:hover .rb-toggle{border-color:var(--primary)}
+.rb-tri{width:14px;height:14px;margin-inline-start:1px}
+.rb-eq{display:none;align-items:flex-end;gap:2px;height:12px}
+.rb-eq i{display:block;width:2.5px;background:currentColor;border-radius:1px;height:100%;transform-origin:bottom;
+  animation:rbEq .9s ease-in-out infinite}
+.rb-eq i:nth-child(2){animation-delay:.18s}
+.rb-eq i:nth-child(3){animation-delay:.36s}
+.rb-st.playing .rb-tri{display:none}
+.rb-st.playing .rb-eq{display:flex}
+@keyframes rbEq{0%,100%{transform:scaleY(.35)}50%{transform:scaleY(1)}}
+.rb-vol-row{display:flex;align-items:center;gap:9px;margin-top:10px;padding-top:10px;border-top:1px dashed var(--border)}
+.rb-vol-row[hidden]{display:none}
+.rb-vol-ico{display:flex;color:var(--text-muted);flex-shrink:0}
+.rb-vol-ico svg{width:15px;height:15px}
+.rb-vol{flex:1;min-width:0;height:22px;accent-color:var(--primary);cursor:pointer}
+
+/* ── Responsive: the rows stay rows, then stack once the button stops fitting ── */
+@media (max-width:760px){
+  .dl-page{max-width:none}
+  .dl-bar{padding:10px}
+  .dl-title{font-size:19px}
+  .dlb-item{min-height:64px;padding:10px}
+  .dlb-btn{min-width:0;padding:9px 12px}
+  .dl-help{grid-template-columns:1fr}
+  .rb-stations{grid-template-columns:1fr}
+}
+@media (max-width:560px){
+  .dlb-item{flex-wrap:wrap;gap:10px 12px}
+  .dlb-txt{flex-basis:calc(100% - 50px)}
+  .dlb-btn{flex:1 0 100%;min-height:46px}
+}
+@media (pointer:coarse){
+  .rb-st{min-height:60px}
+  .rb-toggle{width:34px;height:34px}
+  .dlb-btn{min-height:46px}
+}
+@media (prefers-contrast: more){
+  .dlb-item,.rb-st{border-color:var(--text)}
+  .dlb-meta,.dlb-foot,.dl-lead,.rb-sub,.rb-status{color:var(--text)}
+}

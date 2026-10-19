@@ -48,8 +48,8 @@ function openVpop(surahN, ayahN, x, y) {
   vpopEl.className = 'vpop';
   const L = S.lang === 'ar';
   vpopEl.innerHTML = `
-    <button data-act="bm">${marked ? '🔖' : '📑'} ${marked ? (L ? 'محفوظة — إزالة' : 'Marked — remove') : (L ? 'حفظ' : 'Bookmark')}</button>
-    <button data-act="note">✎ ${L ? 'ملاحظة' : 'Note'}</button>
+    <button data-act="bm"><span class="ii">${ICONS.bookmark}</span> ${marked ? (L ? 'محفوظة — إزالة' : 'Marked — remove') : (L ? 'حفظ' : 'Bookmark')}</button>
+    <button data-act="note"><span class="ii">${ICONS.pencil}</span> ${L ? 'ملاحظة' : 'Note'}</button>
     <button data-act="copy">⧉ ${L ? 'نسخ' : 'Copy'}</button>`;
   document.body.appendChild(vpopEl);
   const r = vpopEl.getBoundingClientRect();
@@ -83,7 +83,7 @@ function openVpop(surahN, ayahN, x, y) {
             const el_ayah = document.getElementById(`ayah-${surahN}-${ayahN}`);
             if (el_ayah) el_ayah.classList.add('marked');
             if (window.renderBookmarks) renderBookmarks();
-            showToast('📝 ' + (L ? 'تم حفظ الملاحظة' : 'Note saved'));
+            showToast((L ? 'تم حفظ الملاحظة' : 'Note saved'));
           },
         });
         closeVpop();
@@ -101,7 +101,7 @@ function openVpop(surahN, ayahN, x, y) {
 
 /* ═══ RENDER: whole mushaf page for one surah ═══ */
 window.quranOpenReader = function quranOpenReader(surahN, ayahN) {
-  if (!QURAN_DATA) { showToast('⚠️ ' + (S.lang === 'ar' ? 'جاري تحميل نص القرآن…' : 'Quran text still loading…')); return; }
+  if (!QURAN_DATA) { showToast((S.lang === 'ar' ? 'جاري تحميل نص القرآن…' : 'Quran text still loading…')); return; }
   const sur = QURAN_DATA.surahs[surahN - 1];
   if (!sur) return;
   rdSurah = surahN;
@@ -194,11 +194,11 @@ window.renderBookmarks = function renderBookmarks() {
     const ay = QURAN_DATA && sur.ayahs ? sur.ayahs[m.ayah - 1] : null;
     return `<div class="bm-item">
       <div class="bmm" data-open="${m.surah}:${m.ayah}">
-        <div class="bm-meta">${S.lang === 'ar' ? sur.ar : sur.en} · ${m.surah}:${m.ayah} ${m.note ? '📝' : ''}</div>
+        <div class="bm-meta">${S.lang === 'ar' ? sur.ar : sur.en} · ${m.surah}:${m.ayah} ${m.note ? '<span class="ii">' + ICONS.pencil + '</span>' : ''}</div>
         ${ay ? `<div class="bm-txt">${ay.ar.slice(0, 90)}…</div>` : ''}
         ${m.note ? `<div class="bm-note">${escHtml(m.note)}</div>` : ''}
       </div>
-      <button class="icon-btn" data-bmdel="${m.surah}:${m.ayah}" style="width:30px;height:30px;font-size:13px" title="Remove">🗑️</button>
+      <button class="icon-btn" data-bmdel="${m.surah}:${m.ayah}" style="width:30px;height:30px;font-size:13px" title="Remove"><span class="ii">${ICONS.trash}</span></button>
     </div>`;
   }).join('') : `<div class="muted" style="padding:16px;text-align:center">${S.lang === 'ar' ? 'لا علامات مرجعية بعد — افتح وضع القراءة واحفظ آية.' : 'No bookmarks yet — open Read mode and bookmark an ayah.'}</div>`;
 

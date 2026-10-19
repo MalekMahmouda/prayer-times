@@ -5,32 +5,34 @@
 <meta http-equiv="Content-Security-Policy"
       content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'">
 <title>Prayer Widget</title>
+<link rel="stylesheet" href="styles/fonts.css">
 <style>
   :root { --wbg:#0e1526; --wfg:#e4ecff; --wmut:#7c90bd; --wac:#5b8aff; --wgold:#f0cc70; }
   * { margin:0; padding:0; box-sizing:border-box; }
   html, body { height:100%; overflow:hidden; }
   body {
     background: var(--wbg); color: var(--wfg);
-    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-family: 'Cairo', 'Segoe UI', system-ui, sans-serif;
     border-radius: 14px; user-select: none; cursor: default;
     display:flex; flex-direction:column;
     -webkit-app-region: drag; /* frameless: whole window drags */
   }
   .top { display:flex; align-items:center; gap:7px; padding:9px 12px 0; }
-  .badge { font-size:17px; }
+  .badge { font-size:17px; display:inline-flex; align-items:center; }
+  .badge svg { width:17px; height:17px; display:block; }
   .title { flex:1; font-size:10px; letter-spacing:1.4px; text-transform:uppercase; color:var(--wmut); font-weight:700; }
   .btn { -webkit-app-region:no-drag; width:24px; height:24px; border-radius:8px; border:none; background:rgba(255,255,255,.08); color:var(--wfg); font-size:12px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; }
   .btn:hover { background:rgba(255,255,255,.2); }
   .card { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:6px 12px 12px; }
   .lbl { font-size:9.5px; letter-spacing:1.6px; text-transform:uppercase; color:var(--wmut); font-weight:700; }
-  .prayer { font-size:30px; font-weight:800; line-height:1.2; }
-  .time { font-size:14px; color:var(--wgold); font-weight:650; font-variant-numeric:tabular-nums; }
-  .cd { font-size:24px; font-weight:800; font-variant-numeric:tabular-nums; letter-spacing:1px; margin-top:6px; }
+  .prayer { font-size:30px; font-weight:700; line-height:1.2; }
+  .time { font-size:14px; color:var(--wgold); font-weight:600; font-variant-numeric:tabular-nums; }
+  .cd { font-size:24px; font-weight:700; font-variant-numeric:tabular-nums; letter-spacing:1px; margin-top:6px; }
   .cdlbl { font-size:9px; color:var(--wmut); letter-spacing:1px; text-transform:uppercase; }
   .times { display:none; gap:6px; padding:0 12px 12px; flex-wrap:wrap; justify-content:center; }
   .mini .times { display:flex; }
   .tchip { background:rgba(255,255,255,.07); border-radius:8px; padding:4px 9px; font-size:10.5px; font-variant-numeric:tabular-nums; }
-  .tchip b { color:var(--wgold); font-weight:750; }
+  .tchip b { color:var(--wgold); font-weight:700; }
   body.light { --wbg:#f4f6fa; --wfg:#0a2540; --wmut:#51708c; --wac:#0a6aaa; --wgold:#b45309; }
   body.light .btn, body.light .tchip { background:rgba(0,0,0,.06); }
   @media (prefers-reduced-motion: reduce) { * { transition:none !important; animation:none !important; } }
@@ -38,7 +40,7 @@
 </head>
 <body>
   <div class="top">
-    <span class="badge">🕌</span>
+    <span class="badge" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2.8 20.4h18.4"/><path d="M5.8 20.4v-8.6"/><path d="M18.2 20.4v-8.6"/><path d="M7.6 15.6a4.4 4.4 0 0 1 8.8 0"/><path d="M12 4.8v3.2"/><path d="M12 8a4.2 4.2 0 0 1-4.2 4.2"/></svg></span>
     <span class="title" id="wTitle">Next Prayer</span>
     <button class="btn" id="wExpand" title="Expand">⤢</button>
     <button class="btn" id="wClose" title="Close">✕</button>
