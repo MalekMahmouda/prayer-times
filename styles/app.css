@@ -202,10 +202,18 @@ a{color:var(--primary)}
 .nav-item:active{transform:scale(.985)}
 .sb-foot{padding:14px 16px;border-top:1px solid rgba(255,255,255,.12);position:relative;z-index:1}
 .sb-foot .lbl{font-size:9px;text-transform:uppercase;letter-spacing:1.4px;color:rgba(255,255,255,.42);margin-bottom:8px;font-weight:var(--fw-semibold)}
-.swatches{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
-.sw{width:100%;aspect-ratio:1;border-radius:9px;border:2px solid rgba(255,255,255,.15);transition:transform .16s var(--ease),border-color var(--dur),box-shadow var(--dur);box-shadow:inset 0 -2px 5px rgba(0,0,0,.22)}
-.sw:hover{transform:scale(1.14) rotate(-2deg)}
-.sw.active{border-color:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.22),inset 0 -2px 5px rgba(0,0,0,.22)}
+/* Theme picker. Tiny colour-only squares read as a dev widget; give each
+   swatch a consistent pill with the theme name beside it, one per row. */
+.swatches{display:flex;flex-direction:column;gap:5px}
+.ms .swatches{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.sw{display:flex;align-items:center;gap:9px;width:100%;padding:5.5px 8px;border-radius:10px;border:1.5px solid transparent;background:transparent;cursor:pointer;text-align:start;transition:background var(--dur) var(--ease),border-color var(--dur)}
+.ms .sw{display:block;padding:0;aspect-ratio:1;border-radius:9px;border:2px solid rgba(255,255,255,.15);box-shadow:inset 0 -2px 5px rgba(0,0,0,.22)}
+.sw:hover{background:rgba(255,255,255,.08)}
+.ms .sw:hover{transform:scale(1.14) rotate(-2deg);background:transparent}
+.sw.active{border-color:rgba(255,255,255,.55);background:rgba(255,255,255,.1)}
+.ms .sw.active{border-color:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.22),inset 0 -2px 5px rgba(0,0,0,.22);background:transparent}
+.sw-dot{width:18px;height:18px;border-radius:6px;flex-shrink:0;box-shadow:inset 0 -2px 4px rgba(0,0,0,.25),0 0 0 1px rgba(255,255,255,.18)}
+.sw-lbl{font-size:12.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* ── Main / Topbar ── */
 .main{flex:1;display:flex;flex-direction:column;min-width:0}
@@ -455,7 +463,13 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:14px 0}
 .hs-none{--hc:var(--text-muted)}
 .hchip{display:inline-flex;align-items:center;gap:8px;padding:8px 13px;border-radius:12px;border:1.5px solid var(--border);background:var(--surface);font-size:13px;cursor:pointer;transition:all var(--dur) var(--ease)}
 .hchip:hover{border-color:var(--hc,var(--primary));transform:translateY(-1px)}
-.hchip .hi{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--hc,var(--text-muted));color:var(--hc,var(--text-muted));display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800}
+.hchip .hi{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--hc,var(--text-muted));color:transparent;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800}
+/* State shapes drawn in CSS, not glyphs: empty circle / check / cross,
+   so no font renders them differently across platforms. */
+.hchip.hs-done .hi::before{content:'';width:53%;height:53%;border:solid var(--hc);border-width:0 0 2px 2px;transform:rotate(-45deg) translateY(-12%)}
+.hchip.hs-missed .hi::before{content:'×';color:var(--hc);font-size:15px;font-weight:800;line-height:1}
+.hchip.hs-on .hi::before{border-color:var(--on-primary)}
+.hchip.hs-missed.hs-on .hi::before{color:var(--on-primary)}
 .hchip.hs-on{border-color:var(--hc);box-shadow:0 0 0 3px color-mix(in srgb,var(--hc) 15%,transparent)}
 .hchip.hs-on .hi{background:var(--hc);color:var(--on-primary)}
 .hchip .hn{font-weight:650}
@@ -559,7 +573,7 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:14px 0}
 .fgrp label{display:block;font-size:12px;font-weight:650;color:var(--text-muted);margin-bottom:5px}
 
 /* ── Toast ── */
-.toast{position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-90px);background:var(--glass);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);color:var(--text);border:1px solid var(--glass-brd);border-inline-start:4px solid var(--primary);padding:11px 20px;border-radius:13px;font-size:13px;font-weight:550;box-shadow:var(--shadow-lg);z-index:999;transition:transform .38s cubic-bezier(.34,1.4,.64,1);white-space:nowrap;max-width:92vw}
+.toast{position:fixed;top:calc(var(--topbar-h,64px) + 14px);left:50%;transform:translateX(-50%) translateY(-160px);background:var(--glass);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);color:var(--text);border:1px solid var(--glass-brd);border-inline-start:4px solid var(--primary);padding:11px 20px;border-radius:13px;font-size:13px;font-weight:550;box-shadow:var(--shadow-lg);z-index:999;transition:transform .38s cubic-bezier(.34,1.4,.64,1);white-space:nowrap;max-width:92vw}
 .toast.show{transform:translateX(-50%) translateY(0)}
 
 /* ── Responsive ── */

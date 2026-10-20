@@ -483,7 +483,19 @@ function buildSwatches() {
   THEMES.forEach((th) => {
     const b = document.createElement('button');
     b.className = 'sw' + (th.id === S.cfg.theme ? ' active' : '');
-    b.dataset.theme = th.id; b.style.background = th.color; b.title = S.lang === 'ar' ? th.ar : th.en;
+    b.dataset.theme = th.id;
+    // Sidebar variant: colour dot + theme name. Mobile sheet keeps bare
+    // colour squares (.ms .sw), where saving space matters more because the
+    // sheet covers content.
+    if (wrap.closest('.sb-foot')) {
+      b.style.background = 'none';
+      const dot = document.createElement('span'); dot.className = 'sw-dot'; dot.style.background = th.color;
+      const lbl = document.createElement('span'); lbl.className = 'sw-lbl'; lbl.textContent = S.lang === 'ar' ? th.ar : th.en;
+      b.appendChild(dot); b.appendChild(lbl);
+    } else {
+      b.style.background = th.color;
+      b.title = S.lang === 'ar' ? th.ar : th.en;
+    }
     b.onclick = () => { applyTheme(th.id); saveCfg(); };
     wrap.appendChild(b);
   });
