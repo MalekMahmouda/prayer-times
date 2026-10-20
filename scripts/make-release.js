@@ -45,46 +45,37 @@ Highlights
 
 What's new in ${version}
 ------------------------
-This is a legibility and design-consistency pass driven by an expert visual
-review of the RENDERED app (42 screenshots, 8 themes, EN/AR) rather than by
-measured styles alone. Full report: docs/DESIGN-REVIEW.md.
+This cycle shipped a new Downloads page reached from the sidebar (with a
+verified, real release asset behind every card), shareable #/ hash routes
+(deep links survive reload and back/forward), and a resilience ladder for
+Quran Radio (ordered HTTPS-relay fallbacks, one station at a time, an
+autoplay-block message instead of a dead feed).
 
-Readability
-- FIXED: the hero countdown was invisible in all five LIGHT themes (~1.4:1 —
-  white digits inherited onto a near-white glass chip). It now takes its ink
-  from the theme's text colour and is legible in every theme.
-- FIXED: the gold accent failed AA as small text on a light surface (islamic
-  measured 3.20:1). A new --gold-ink token, defined in all eight themes, is
-  now used for text on surfaces; --gold stays for on-gradient accents.
-- Past prayer cards were dimmed to 42%; now 58% (90% on hover), so their
-  times stay readable.
-
-Consistency
-- FIXED: the dashboard icon row used six unrelated emoji styles, two of them
-  illegible at 21px. One 23-glyph stroke icon set now covers the dashboard
-  AND the whole navigation frame (sidebar, bottom nav, More sheet, topbar).
-
-Mobile
-- FIXED: a phone's first paint was an empty screen — mobile mode was derived
-  only on a resize event. It is now derived from the viewport at boot.
-- FIXED: the mobile home's next-prayer name, its time and the prayer strip
-  were painted only every 30th countdown tick, so a phone showed a live
-  countdown under an unnamed prayer for up to half a minute. They now paint
-  as soon as data arrives and on navigation to the page.
-- A dedicated mobile home: gradient hero, live countdown, scrollable prayer
-  strip, and a five-tab bottom bar with a More sheet.
+De-vibe passes (1.6.1 + 1.6.2)
+- The last text glyphs in the UI (play, pause, plus, stars, info) are now
+  inline stroke SVGs from the shared ICONS set, including live swaps on the
+  Quran player's play/pause button.
+- Prayer-record state is drawn in CSS (circle / check / cross) instead of
+  text glyphs, so it renders identically on every font and platform.
+- Toasts drop below the topbar instead of overlapping the location chip.
+- The sidebar theme picker lists themes as dot + name; the mobile sheet
+  keeps a compact grid.
+- Emoji in the navigation frame were replaced earlier by one stroke icon
+  language; Cairo/Noto Naskh Arabic fonts are self-hosted with OFL licenses.
+- Accessibility/UX pass: one primary action per group, white focus rings on
+  the rail, touch press states, hover-capable-only hover, Arabic bidi
+  number fix, i18n for the More sheet.
 
 Housekeeping
-- The hero decoration is a soft bloom rather than a hard-edged 320px disc.
-- 20 new contract guards pin every fix above so it cannot silently return.
+- Sitemap regenerated per build (single canonical URL).
+- Contract suite at 284 checks, all green across 1.6.0 - 1.6.2.
 
 Known limitations (documented, unchanged)
 - No physical-device or screen-reader verification: touch targets and page
   heading semantics remain declaration / DOM-inspected only.
-- Content-level emoji remain (settings card headers, the Quran tab strip,
-  in-button glyphs, toast prefixes).
-- Two of the eight themes (blue, emerald) were measured programmatically,
-  not screenshotted — they are structural near-duplicates.
+- The custom radio-station option keeps a text star by design: native
+  <option> elements cannot render SVG.
+- Windows installer is not code-signed (SmartScreen note below).
 
 Data & Privacy
 --------------
