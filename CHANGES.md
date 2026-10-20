@@ -143,6 +143,24 @@ in `en` and `ar`, applied by `applyExtrasLang()` from `applyLang()`.
   nav clicks write `#/quran` etc.; English/Arabic and 1400/390 px layouts with
   zero horizontal overflow; keyboard focus lands on the heading.
 
+### 6. Last text-glyph sweep (final audit pass)
+
+The icon audit that closed this release still left six text glyphs behind, in
+places the first sweep did not reach. They are now the same inline stroke SVGs
+as the rest of the chrome (`play`, `pause`, `plus`, `info`, `starFill` added to
+`ICONS` in `js/data.js`):
+
+- Quran player: `▶`/`⏸` on the big play button and `▶ Listen` in the mushaf
+  reader (both swap live with playback state).
+- Quran Radio: custom-station `<option>` keeps a text `★` by design — native
+  `<option>` cannot render SVG.
+- Dhikr: `＋`/`★`/`☆` on the count and favourite buttons.
+- Stats: `ⓘ` on the streak tooltips.
+- Settings: `▶` on Test Adhan, `＋` on Save current as location.
+
+Sizing rules added for svg inside `.icon-btn`, `.btn` and `.msh-play`; the
+dynamic swaps repaint via `paintIcons` on every state change.
+
 ### Manual step when releasing
 
 Bump `PT_RELEASE` (`version`, `apk`, `mb`) in `js/extras.js` and the static

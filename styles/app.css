@@ -221,6 +221,7 @@ a{color:var(--primary)}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
 .icon-btn{width:37px;height:37px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;font-size:16px;color:var(--text-muted);background:var(--surface2);border:1px solid transparent;transition:all var(--dur) var(--ease);flex-shrink:0}
 .icon-btn:hover{background:var(--primary-soft);color:var(--primary);border-color:var(--primary-soft);transform:translateY(-1px)}
+.icon-btn svg{width:16px;height:16px}
 .icon-btn:active{transform:translateY(0) scale(.95)}
 
 /* ── Content / pages ── */
@@ -245,6 +246,7 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:14px 0}
 .btn.primary{background:var(--grad);color:var(--on-primary);border-color:transparent;box-shadow:var(--shadow-sm)}
 .btn.primary:hover{color:var(--on-primary);filter:brightness(1.12)}
 .btn.sm{padding:6px 13px;font-size:12.5px;border-radius:10px}
+.btn svg{width:1em;height:1em}
 .inp{width:100%;padding:10px 14px;background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;font-size:14px;transition:border-color var(--dur),box-shadow var(--dur)}
 .inp:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft)}
 .select{padding:8px 12px;background:var(--surface2);border:1.5px solid var(--border);border-radius:11px;font-size:13px;cursor:pointer;max-width:240px;transition:border-color var(--dur)}
@@ -410,6 +412,7 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:14px 0}
 .msh-ar{font-family:var(--font-quran);font-weight:var(--fw-bold);font-size:clamp(21px,4vw,27px);color:var(--frame);line-height:1.5}
 .msh-sub{display:flex;justify-content:center;align-items:center;gap:9px;flex-wrap:wrap;margin-top:2px;font-size:10.5px;letter-spacing:.6px;text-transform:uppercase;color:var(--ink-soft);font-weight:700}
 .msh-sub .msh-play{border:1.4px solid var(--frame);color:var(--frame);background:transparent;border-radius:20px;font-size:10.5px;font-weight:800;padding:4px 13px;cursor:pointer;letter-spacing:.4px;transition:all var(--dur) var(--ease)}
+.msh-play svg{width:1.05em;height:1.05em;vertical-align:-.18em}
 .msh-sub .msh-play:hover{background:var(--frame);color:#fff}
 .mushaf-bismillah{text-align:center;font-family:var(--font-quran);font-size:calc(var(--rd-font,26px) * 1.18);color:var(--ink);margin:8px 0 18px;line-height:2}
 .mushaf-flow{font-family:var(--font-quran);font-size:var(--rd-font,26px);line-height:var(--rd-line,2.05);color:var(--ink);text-align:justify;text-align-last:center;word-spacing:.06em}

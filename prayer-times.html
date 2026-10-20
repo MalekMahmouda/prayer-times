@@ -502,7 +502,7 @@
             <div class="sub" style="margin-bottom:4px" id="slPerPrayer">Per-prayer Adhan</div>
             <div id="adhanPerRows"></div>
             <div class="row" style="padding-top:10px">
-              <button class="btn sm" id="btnTestAdhan">▶ <span id="slTestAdhan">Test Adhan</span></button>
+              <button class="btn sm" id="btnTestAdhan"><span data-icon="play"></span><span id="slTestAdhan">Test Adhan</span></button>
             </div>
           </div>
 
@@ -519,7 +519,7 @@
 
           <div class="card set-card">             <div class="card-h"><span data-icon="pin"></span><span id="shLocs">Saved Locations</span></div>
             <div id="locsList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px"></div>
-            <button class="btn sm" id="btnAddLoc" style="width:100%">＋ <span id="slAddLoc">Save current as location</span></button>
+            <button class="btn sm" id="btnAddLoc" style="width:100%"><span data-icon="plus"></span><span id="slAddLoc">Save current as location</span></button>
           </div>
 
           <div class="card set-card">             <div class="card-h"><span data-icon="disk"></span><span id="shData">Data Management</span></div>             <button class="btn" id="btnExport" style="width:100%;margin-bottom:9px"><span data-icon="upload"></span> <span id="slExport">Export backup (JSON)</span></button>             <button class="btn" id="btnImport" style="width:100%;margin-bottom:9px"><span data-icon="download"></span> <span id="slImport">Import backup</span></button>
@@ -636,7 +636,7 @@
   </div>
   <div class="pctrl">
     <button class="pcbtn" id="plPrev">⏮</button>
-    <button class="pplay" id="plPlay">▶</button>
+    <button class="pplay" id="plPlay" aria-label="Play"><span data-icon="play"></span></button>
     <button class="pcbtn" id="plNext">⏭</button>
   </div>
   <div class="pmid">

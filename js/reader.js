@@ -130,7 +130,7 @@ window.quranOpenReader = function quranOpenReader(surahN, ayahN) {
       <div class="msh-sub">
         <span>${sur.en} · ${sur.tr}</span>
         <span>${sur.ayahs.length} ${t('quran.verses')}</span>
-        <button class="msh-play" id="mshPlay">▶ ${L ? 'استماع' : 'Listen'}</button>
+        <button class="msh-play" id="mshPlay"><span data-icon="play"></span> ${L ? 'استماع' : 'Listen'}</button>
       </div>
     </div>`;
 
@@ -152,6 +152,7 @@ window.quranOpenReader = function quranOpenReader(surahN, ayahN) {
   }
 
   rd.innerHTML = html;
+  paintIcons(rd);
 
   // Listen button → existing per-surah player
   const play = $('mshPlay');

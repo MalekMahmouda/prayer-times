@@ -70,8 +70,8 @@ window.renderDhikrLibrary = function renderDhikrLibrary() {
         <div style="font-size:12.5px;color:var(--text-muted);margin-top:4px">${S.lang === 'ar' ? it.ar : it.en}</div>
         ${it.tr ? `<div style="font-size:11px;color:var(--text-muted);font-style:italic">${it.tr} · ${t('dhikr.target')}: ${it.count}</div>` : ''}
       </div>
-      <button class="btn sm" data-count="${it.id}" title="Count">＋ ${prog > 0 ? prog : ''}</button>
-      <button class="icon-btn" data-fav="${it.id}" title="Favorite" aria-pressed="${fav}" style="${fav ? 'color:var(--gold)' : ''}">${fav ? '★' : '☆'}</button>
+      <button class="btn sm" data-count="${it.id}" title="Count">${ICONS.plus}${prog > 0 ? prog : ''}</button>
+      <button class="icon-btn" data-fav="${it.id}" title="Favorite" aria-pressed="${fav}" style="${fav ? 'color:var(--gold)' : ''}">${fav ? ICONS.starFill : ICONS.star}</button>
     </div>`;
   }).join('');
   list.querySelectorAll('[data-fav]').forEach((b) => {
@@ -217,8 +217,9 @@ window.renderStats = function renderStats() {
   const sk = Store3.streaks(DB3);
   const tip = S.lang === 'ar' ? 'الأيام المتتالية التي سُجِّل فيها صلاة واحدة على الأقل' : 'Consecutive days with recorded prayer activity.';
   $('stStreak').innerHTML = `
-    <div class="stat-mini" title="${tip}"><div class="v">${sk.current}</div><div class="l">${S.lang === 'ar' ? 'سلسلة حالية' : 'Current streak'} ⓘ</div></div>
-    <div class="stat-mini" title="${tip}"><div class="v">${sk.longest}</div><div class="l">${S.lang === 'ar' ? 'أطول سلسلة' : 'Longest streak'} ⓘ</div></div>`;
+    <div class="stat-mini" title="${tip}"><div class="v">${sk.current}</div><div class="l">${S.lang === 'ar' ? 'سلسلة حالية' : 'Current streak'}<span data-icon="info"></span></div></div>
+    <div class="stat-mini" title="${tip}"><div class="v">${sk.longest}</div><div class="l">${S.lang === 'ar' ? 'أطول سلسلة' : 'Longest streak'}<span data-icon="info"></span></div></div>`;
+  paintIcons($('stStreak'));
 
   // Week / month summaries
   const weekAgo = dateKeyOf(new Date(Date.now() - 6 * 86400000));

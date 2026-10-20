@@ -124,6 +124,14 @@ const ICONS = {
   trash:      ICON_SVG('<path d="M4.6 6.8h14.8"/><path d="M9.4 6.8V5.1a1 1 0 0 1 1-1h3.2a1 1 0 0 1 1 1v1.7"/><path d="M6.7 6.8l.9 12a1.4 1.4 0 0 0 1.4 1.3h6a1.4 1.4 0 0 0 1.4-1.3l.9-12"/><path d="M10.4 10.6v6"/><path d="M13.6 10.6v6"/>'),
   speaker:    ICON_SVG('<path d="M4.4 9.5h3.5L12 5.6v12.8l-4.1-3.9H4.4z"/><path d="M15.6 9.4a4 4 0 0 1 0 5.2"/><path d="M18.1 7a7.4 7.4 0 0 1 0 10"/>'),
   kaaba:      ICON_SVG('<path d="M12 3.6 20 7.4v9.2L12 20.4 4 16.6V7.4z"/><path d="M4 7.4 12 11.2l8-3.8"/><path d="M12 11.2v9.2"/>'),
+  /* ── Media / micro-glyphs, same grid ──
+     Filled play + pause so the two states read at a glance; strokes stay
+     reserved for navigation chrome. These replace the text ▶/⏸/＋/★/☆/ⓘ glyphs. */
+  play:       ICON_SVG('<path d="M8.7 5.7a1 1 0 0 1 1.6-.85l8 6.3a1 1 0 0 1 0 1.7l-8 6.3a1 1 0 0 1-1.6-.85z" fill="currentColor" stroke="none"/>'),
+  pause:      ICON_SVG('<rect x="7.1" y="5.2" width="3.4" height="13.6" rx="1.6" fill="currentColor" stroke="none"/><rect x="13.5" y="5.2" width="3.4" height="13.6" rx="1.6" fill="currentColor" stroke="none"/>'),
+  plus:       ICON_SVG('<path d="M12 5.4v13.2"/><path d="M18.6 12H5.4"/>'),
+  info:       ICON_SVG('<circle cx="12" cy="12" r="8.2"/><path d="M12 11v4.6"/><circle cx="12" cy="7.9" r="1" fill="currentColor" stroke="none"/>'),
+  starFill:   ICON_SVG('<path d="M12 3.9l2.6 5.4 5.8.8-4.2 4.1 1 5.9L12 17.3l-5.2 2.8 1-5.9-4.2-4.1 5.8-.8z" fill="currentColor" stroke="none"/>'),
 };
 const ICON_PRAYER = { Fajr: ICONS.dawn, Dhuhr: ICONS.sun, Asr: ICONS.afternoon, Maghrib: ICONS.dusk, Isha: ICONS.moon };
 
