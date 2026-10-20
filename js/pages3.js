@@ -13,9 +13,9 @@ const dateKeyOf = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart
 
 /* ═══ PRAYER HISTORY (explicit three-state recording) ═══ */
 const HIST_META = {
-  '': { icon: '○', lbl: { en: 'Not recorded', ar: 'غير مسجلة' }, cls: 'hs-none' },
-  done: { icon: '✓', lbl: { en: 'Completed', ar: 'مكتملة' }, cls: 'hs-done' },
-  missed: { icon: '×', lbl: { en: 'Missed', ar: 'فائتة' }, cls: 'hs-missed' },
+  '': { icon: '', lbl: { en: 'Not recorded', ar: 'غير مسجلة' }, cls: 'hs-none' },
+  done: { icon: '', lbl: { en: 'Completed', ar: 'مكتملة' }, cls: 'hs-done' },
+  missed: { icon: '', lbl: { en: 'Missed', ar: 'فائتة' }, cls: 'hs-missed' },
 };
 let histDate = dateKeyOf(new Date());
 
@@ -28,7 +28,7 @@ window.renderHistory = function renderHistory(elId) {
     const m = HIST_META[st];
     return `<button class="hchip ${m.cls}${st === 'done' ? ' hs-on' : ''}" data-p="${p}"
       title="${S.lang === 'ar' ? m.lbl.ar : m.lbl.en}" aria-label="${p}: ${S.lang === 'ar' ? m.lbl.ar : m.lbl.en}">
-      <span class="hi">${m.icon}</span>
+      <span class="hi" aria-hidden="true"></span>
       <span class="hn">${S.lang === 'ar' ? AR_PRAYER[p] : p}</span>
       <span class="hs">${S.lang === 'ar' ? m.lbl.ar : m.lbl.en}</span>
     </button>`;
@@ -210,7 +210,7 @@ window.renderStats = function renderStats() {
   $('stToday').innerHTML = PRAYERS.map((p) => {
     const st = rec[p] || '';
     const m = HIST_META[st];
-    return `<span class="hchip ${m.cls}" style="cursor:default"><span class="hi">${m.icon}</span><span class="hn">${S.lang === 'ar' ? AR_PRAYER[p] : p}</span></span>`;
+    return `<span class="hchip ${m.cls}" style="cursor:default"><span class="hi" aria-hidden="true"></span><span class="hn">${S.lang === 'ar' ? AR_PRAYER[p] : p}</span></span>`;
   }).join('');
 
   // Streaks
@@ -249,7 +249,7 @@ window.renderStats = function renderStats() {
     ${days.map((x) => {
       const h = (x.rec / maxRec) * 100;
       const color = x.missed > 0 && x.done === 0 ? 'var(--danger)' : (x.done > 0 && x.missed === 0 && x.rec === 5 ? 'var(--success)' : (x.rec === 0 ? 'var(--border)' : 'var(--warning)'));
-      return `<div title="${x.k}: ${x.done} ✓ / ${x.missed} ×" style="flex:1;height:${Math.max(4, h)}%;background:${color};border-radius:3px 3px 0 0;opacity:${x.rec ? 1 : .45}"></div>`;
+      return `<div title="${x.k}: ${x.done} completed, ${x.missed} missed" style="flex:1;height:${Math.max(4, h)}%;background:${color};border-radius:3px 3px 0 0;opacity:${x.rec ? 1 : .45}"></div>`;
     }).join('')}
   </div><div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);margin-top:4px">
     <span>${days[0].d.toLocaleDateString(S.lang === 'ar' ? 'ar-SA' : 'en-US', { month: 'short', day: 'numeric' })}</span>
@@ -272,7 +272,7 @@ window.renderStats = function renderStats() {
     return `<div style="margin-bottom:9px">
       <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
         <span style="font-weight:650">${S.lang === 'ar' ? AR_PRAYER[p] : p}</span>
-        <span class="muted">${x.done} ✓ · ${x.missed} ×</span>
+        <span class="muted">${x.done} done · ${x.missed} missed</span>
       </div>
       <div style="height:9px;background:var(--surface2);border-radius:5px;overflow:hidden;display:flex">
         <div style="width:${(x.done / maxPP) * 100}%;background:var(--success);transition:width .4s"></div>
@@ -400,9 +400,11 @@ window.handleImportFile = function handleImportFile(file) {
     const v = validateBackup(data);
     if (!v.ok) { showToast(v.error); return; }
     // Preview + explicit confirmation — nothing replaced until confirmed.
+    const yes = S.lang === 'ar' ? 'نعم' : 'yes';
+    const no = S.lang === 'ar' ? 'لا' : 'none';
     const lines = [
       `v${data.version} · ${data.exportedAt ? data.exportedAt.slice(0, 10) : '—'}`,
-      `settings: ${data.pts ? '✓' : '—'} | location: ${data.ptl ? '✓' : '—'} | lang: ${data.ptlg ? '✓' : '—'}`,
+      `settings: ${data.pts ? yes : no} | location: ${data.ptl ? yes : no} | lang: ${data.ptlg ? yes : no}`,
       `history: ${Object.keys(v.pt3.history).length} days | bookmarks: ${v.pt3.bookmarks.length} | locations: ${v.pt3.locations.length} | themes: ${v.pt3.customThemes.length}`,
     ];
     if (!confirm((S.lang === 'ar' ? 'استيراد هذه النسخة واستبدال البيانات الحالية؟\n\n' : 'Import this backup and replace current data?\n\n') + lines.join('\n'))) {
