@@ -185,6 +185,21 @@ a{color:var(--primary)}
 .nav-item:hover .ni{transform:scale(1.12)}
 .nav-item.active{background:rgba(255,255,255,.17);color:#fff;font-weight:650;box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}
 .nav-item.active::before{content:'';position:absolute;inset-inline-start:-10px;top:22%;bottom:22%;width:3.5px;border-radius:3px;background:var(--gold)}
+/* The one nav item that is a call to action rather than a destination inside
+   the app. Filled, not outlined-plus-gold: a single filled row among ten quiet
+   ones is the whole point, and it still leaves the active state readable. */
+.nav-item.nav-dl{margin-bottom:2px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06);color:#fff}
+.nav-item.nav-dl .ni{color:var(--gold)}
+.nav-item.nav-dl:hover{background:rgba(255,255,255,.13);color:#fff}
+.nav-item.nav-dl.active{background:var(--primary);border-color:transparent;color:var(--on-primary);box-shadow:var(--shadow-sm)}
+.nav-item.nav-dl.active .ni{color:var(--on-primary)}
+.nav-item.nav-dl.active::before{display:none}
+/* Pointer feedback on a dark rail: the global focus ring is --primary, which can
+   sit too close to the sidebar's own colour, so the rail gets white. And a
+   pressed row visibly compresses — on touch there is no hover to say "that was
+   the one I hit". */
+.sb :focus-visible{outline-color:#fff;outline-offset:2px}
+.nav-item:active{transform:scale(.985)}
 .sb-foot{padding:14px 16px;border-top:1px solid rgba(255,255,255,.12);position:relative;z-index:1}
 .sb-foot .lbl{font-size:9px;text-transform:uppercase;letter-spacing:1.4px;color:rgba(255,255,255,.42);margin-bottom:8px;font-weight:var(--fw-semibold)}
 .swatches{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
@@ -206,6 +221,7 @@ a{color:var(--primary)}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
 .icon-btn{width:37px;height:37px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;font-size:16px;color:var(--text-muted);background:var(--surface2);border:1px solid transparent;transition:all var(--dur) var(--ease);flex-shrink:0}
 .icon-btn:hover{background:var(--primary-soft);color:var(--primary);border-color:var(--primary-soft);transform:translateY(-1px)}
+.icon-btn svg{width:16px;height:16px}
 .icon-btn:active{transform:translateY(0) scale(.95)}
 
 /* ── Content / pages ── */
@@ -230,6 +246,7 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:14px 0}
 .btn.primary{background:var(--grad);color:var(--on-primary);border-color:transparent;box-shadow:var(--shadow-sm)}
 .btn.primary:hover{color:var(--on-primary);filter:brightness(1.12)}
 .btn.sm{padding:6px 13px;font-size:12.5px;border-radius:10px}
+.btn svg{width:1em;height:1em}
 .inp{width:100%;padding:10px 14px;background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;font-size:14px;transition:border-color var(--dur),box-shadow var(--dur)}
 .inp:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft)}
 .select{padding:8px 12px;background:var(--surface2);border:1.5px solid var(--border);border-radius:11px;font-size:13px;cursor:pointer;max-width:240px;transition:border-color var(--dur)}
@@ -395,6 +412,7 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:14px 0}
 .msh-ar{font-family:var(--font-quran);font-weight:var(--fw-bold);font-size:clamp(21px,4vw,27px);color:var(--frame);line-height:1.5}
 .msh-sub{display:flex;justify-content:center;align-items:center;gap:9px;flex-wrap:wrap;margin-top:2px;font-size:10.5px;letter-spacing:.6px;text-transform:uppercase;color:var(--ink-soft);font-weight:700}
 .msh-sub .msh-play{border:1.4px solid var(--frame);color:var(--frame);background:transparent;border-radius:20px;font-size:10.5px;font-weight:800;padding:4px 13px;cursor:pointer;letter-spacing:.4px;transition:all var(--dur) var(--ease)}
+.msh-play svg{width:1.05em;height:1.05em;vertical-align:-.18em}
 .msh-sub .msh-play:hover{background:var(--frame);color:#fff}
 .mushaf-bismillah{text-align:center;font-family:var(--font-quran);font-size:calc(var(--rd-font,26px) * 1.18);color:var(--ink);margin:8px 0 18px;line-height:2}
 .mushaf-flow{font-family:var(--font-quran);font-size:var(--rd-font,26px);line-height:var(--rd-line,2.05);color:var(--ink);text-align:justify;text-align-last:center;word-spacing:.06em}
@@ -736,31 +754,47 @@ h1,h2,h3,.card-h,.sec-lbl{text-wrap:balance}
    targets), which is what keeps the new blocks from reading as bolted on.
    ───────────────────────────────────────────────────────────────────────── */
 
-/* ── Downloads ── */
+/* ── Download page ──
+   A list, not a bento of equal cards: these three rows are not peers — one is
+   the thing you came for and two are secondary — so each gets a full-width row
+   where the button sits at the end of the line the eye is already travelling
+   along. Same rhythm as Settings (72px rows, 14px radius, 44px targets). */
+.dl-page{max-width:960px}
+.dl-head{margin-bottom:16px}
+.dl-title{font-size:22px;font-weight:800;letter-spacing:-.022em;line-height:1.2}
+/* Focused only by the router, never by Tab — a ring on a heading is noise. */
+.dl-title:focus{outline:none}
+.dl-lead{font-size:13px;color:var(--text-muted);line-height:1.55;max-width:68ch;margin-top:5px}
 .dl-bar{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);
-  box-shadow:var(--shadow-sm);padding:16px 18px;margin-top:16px}
-.dlb-head{display:flex;flex-direction:column;gap:3px;margin-bottom:12px}
-.dlb-title{font-size:16px;font-weight:800;letter-spacing:-.01em;line-height:1.25}
-.dlb-lead{font-size:12.5px;color:var(--text-muted);line-height:1.5;max-width:72ch}
-.dlb-list{list-style:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-.dlb-item{display:flex;align-items:center;gap:10px;min-width:0;min-height:66px;padding:10px 11px;
-  background:var(--surface2);border:1px solid var(--border);border-radius:14px;
-  transition:border-color var(--dur),box-shadow var(--dur)}
+  box-shadow:var(--shadow-sm);padding:12px}
+.dlb-list{list-style:none;display:grid;grid-template-columns:1fr;gap:8px}
+.dlb-item{display:flex;align-items:center;gap:12px;min-width:0;min-height:72px;padding:11px 12px;
+  background:var(--surface2);border:1px solid transparent;border-radius:14px;
+  transition:border-color var(--dur),background var(--dur),box-shadow var(--dur)}
 .dlb-item:hover,.dlb-item:focus-within{border-color:var(--primary);box-shadow:var(--shadow-sm)}
-.dl-ico{width:34px;height:34px;border-radius:11px;background:var(--primary-soft);color:var(--primary);
+.dl-ico{width:38px;height:38px;border-radius:12px;background:var(--primary-soft);color:var(--primary);
   display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.dl-ico svg{width:19px;height:19px}
-.dlb-txt{display:flex;flex-direction:column;min-width:0;flex:1}
-.dlb-name{font-size:13px;font-weight:700;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dlb-meta{font-size:11px;color:var(--text-muted);line-height:1.35;font-variant-numeric:tabular-nums;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dlb-btn{flex-shrink:0;min-height:44px;justify-content:center;padding:9px 12px;font-size:12.5px}
+.dl-ico svg{width:20px;height:20px}
+.dlb-txt{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.dlb-name{font-size:14px;font-weight:700;line-height:1.3}
+.dlb-meta{font-size:11.5px;color:var(--text-muted);line-height:1.4;font-variant-numeric:tabular-nums}
+.dlb-btn{flex-shrink:0;min-height:44px;min-width:168px;justify-content:center;padding:9px 14px;font-size:12.5px}
 .dl-btni{width:1em;height:1em;flex-shrink:0}
-.dlb-foot{display:flex;align-items:flex-start;gap:7px;font-size:11px;color:var(--text-muted);line-height:1.5;
-  margin-top:12px;padding-top:11px;border-top:1px solid var(--border);max-width:72ch}
+.dlb-foot{display:flex;align-items:flex-start;gap:7px;font-size:11.5px;color:var(--text-muted);line-height:1.5;
+  margin:12px 2px 0;padding-top:11px;border-top:1px solid var(--border)}
+.dlb-foot span{max-width:80ch}
 .dl-footi{width:13px;height:13px;flex-shrink:0;margin-top:2px;color:var(--primary)}
+/* Two quiet cards under the list: the same surface at a lighter weight, so they
+   read as help, not as a second set of actions competing with the buttons. */
+.dl-help{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}
+.dl-help-card{min-width:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:14px 16px}
+.dl-help-t{font-size:12px;font-weight:750;letter-spacing:.04em;text-transform:uppercase;color:var(--text-muted);margin-bottom:9px}
+.dl-steps{margin:0;padding-inline-start:17px;font-size:12.5px;line-height:1.55;color:var(--text)}
+.dl-steps li+li{margin-top:6px}
+.dl-steps b{font-weight:700}
+.dl-help-p{font-size:12.5px;line-height:1.55;color:var(--text)}
 /* Arabic runs wider at the same size — give the copy room rather than clipping. */
-[dir="rtl"] .dlb-name,[dir="rtl"] .dlb-meta,[dir="rtl"] .dlb-lead{line-height:1.6}
+[dir="rtl"] .dlb-name,[dir="rtl"] .dlb-meta,[dir="rtl"] .dl-lead{line-height:1.6}
 /* Touch: no grey flash on tap, and the bar/rows take a hint of pressed state —
    the one cue a pointer gets instead of a hover. */
 .dl-bar,.dlb-item,.rb-st{-webkit-tap-highlight-color:color-mix(in srgb,var(--primary) 28%,transparent)}
@@ -778,7 +812,7 @@ h1,h2,h3,.card-h,.sec-lbl{text-wrap:balance}
 .rb-st{display:flex;align-items:center;gap:10px;min-height:56px;padding:9px 11px;text-align:start;
   background:var(--surface2);border:1.5px solid var(--border);border-radius:14px;
   transition:border-color var(--dur),background var(--dur),transform var(--dur) var(--ease)}
-.rb-st:hover{border-color:var(--primary);transform:translateY(-1px)}
+@media (hover:hover){ .rb-st:hover{border-color:var(--primary);transform:translateY(-1px)} }
 .rb-st.playing{border-color:var(--primary);background:var(--primary-soft)}
 .rb-st.failed{border-color:var(--danger)}
 .rb-ico{width:34px;height:34px;border-radius:11px;background:var(--primary-soft);color:var(--primary);
@@ -808,12 +842,20 @@ h1,h2,h3,.card-h,.sec-lbl{text-wrap:balance}
 .rb-vol-ico svg{width:15px;height:15px}
 .rb-vol{flex:1;min-width:0;height:22px;accent-color:var(--primary);cursor:pointer}
 
-/* ── Responsive: 3 → 2 → 1 column, and the stations stack before they squeeze ── */
-@media (max-width:1080px){ .dlb-list{grid-template-columns:1fr} }
+/* ── Responsive: the rows stay rows, then stack once the button stops fitting ── */
 @media (max-width:760px){
-  .dlb-list{grid-template-columns:1fr}
-  .dl-bar{padding:14px 13px}
+  .dl-page{max-width:none}
+  .dl-bar{padding:10px}
+  .dl-title{font-size:19px}
+  .dlb-item{min-height:64px;padding:10px}
+  .dlb-btn{min-width:0;padding:9px 12px}
+  .dl-help{grid-template-columns:1fr}
   .rb-stations{grid-template-columns:1fr}
+}
+@media (max-width:560px){
+  .dlb-item{flex-wrap:wrap;gap:10px 12px}
+  .dlb-txt{flex-basis:calc(100% - 50px)}
+  .dlb-btn{flex:1 0 100%;min-height:46px}
 }
 @media (pointer:coarse){
   .rb-st{min-height:60px}
@@ -822,5 +864,5 @@ h1,h2,h3,.card-h,.sec-lbl{text-wrap:balance}
 }
 @media (prefers-contrast: more){
   .dlb-item,.rb-st{border-color:var(--text)}
-  .dlb-meta,.dlb-foot,.dlb-lead,.rb-sub,.rb-status{color:var(--text)}
+  .dlb-meta,.dlb-foot,.dl-lead,.rb-sub,.rb-status{color:var(--text)}
 }

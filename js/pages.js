@@ -119,7 +119,7 @@ window.calNav = function calNav(dir) {
 };
 
 window.exportMonthCsv = async function exportMonthCsv() {
-  showToast('⬇ …');
+  showToast(t('cal.exportCsv') + ' …');
   const days = new Date(CAL.y, CAL.m + 1, 0).getDate();
   const rows = [['Date', 'Hijri', 'Fajr', 'Sunrise', 'Dhuhr', 'Asr', 'Maghrib', 'Isha']];
   for (let d = 1; d <= days; d++) {
@@ -208,13 +208,13 @@ window.qrToggle = function () {
 window.qrStop = function () {
   qrAudio.pause(); qrAudio.currentTime = 0; qrAudio.src = '';
   qrPlaying = false; qrIdx = -1;
-  $('plPlay').textContent = '▶'; $('plPlay').classList.remove('playing');
+  $('plPlay').innerHTML = '<span data-icon="play"></span>'; paintIcons($('plPlay')); $('plPlay').classList.remove('playing');
   qrSetPlayerVisibility(false); qrUpdateRows();
 };
 
 /* player events */
-qrAudio.addEventListener('play', () => { qrPlaying = true; $('plPlay').textContent = '⏸'; $('plPlay').classList.add('playing'); qrUpdateRows(); });
-qrAudio.addEventListener('pause', () => { qrPlaying = false; $('plPlay').textContent = '▶'; $('plPlay').classList.remove('playing'); qrUpdateRows(); });
+qrAudio.addEventListener('play', () => { qrPlaying = true; $('plPlay').innerHTML = '<span data-icon="pause"></span>'; paintIcons($('plPlay')); $('plPlay').classList.add('playing'); qrUpdateRows(); });
+qrAudio.addEventListener('pause', () => { qrPlaying = false; $('plPlay').innerHTML = '<span data-icon="play"></span>'; paintIcons($('plPlay')); $('plPlay').classList.remove('playing'); qrUpdateRows(); });
 qrAudio.addEventListener('timeupdate', () => {
   if (!qrAudio.duration) return;
   $('plFill').style.width = (qrAudio.currentTime / qrAudio.duration) * 100 + '%';
@@ -230,7 +230,7 @@ qrAudio.addEventListener('error', () => {
     qrAudio.play().catch(() => {});
     return;
   }
-  showToast('⚠️ ' + t('quran.loading'));
+  showToast(t('quran.loading'));
 });
 function fmtSecs(s) {
   if (!s || isNaN(s)) return '0:00';
@@ -312,7 +312,7 @@ function dhikrCount() {
   dh.daily[today].all++;
   dh.totals[dh.preset] = dh.totals[dh.preset] || { all: 0 };
   dh.totals[dh.preset].all++;
-  if (dh.count % dh.target === 0) { showToast('🌟 ' + t('dhikr.done')); beep(); }
+  if (dh.count % dh.target === 0) { showToast(t('dhikr.done')); beep(); }
   saveCfg(); renderDhikr();
 }
 
@@ -506,9 +506,9 @@ function wireSettings() {
   $('imsakMinus').onclick = () => { DB3.prefs.ramadan = DB3.prefs.ramadan || { imsakMode: 'fajrOffset', imsakOffset: 10 }; DB3.prefs.ramadan.imsakOffset = Math.max(0, DB3.prefs.ramadan.imsakOffset - 1); save3(); renderSettings(); };
   $('imsakPlus').onclick = () => { DB3.prefs.ramadan = DB3.prefs.ramadan || { imsakMode: 'fajrOffset', imsakOffset: 10 }; DB3.prefs.ramadan.imsakOffset = Math.min(30, DB3.prefs.ramadan.imsakOffset + 1); save3(); renderSettings(); };
   $('btnTestNotif').onclick = () => {
-    if (PT) { PT.testAlert(); showToast('🔔 ' + t('toast.testIn3')); }
-    else if ('Notification' in window) { Notification.requestPermission().then((p) => { if (p === 'granted') new Notification('Prayer Time 🕌', { body: 'Test notification' }); }); }
-    else showToast('⚠️ ' + t('toast.deskOnly'));
+    if (PT) { PT.testAlert(); showToast(t('toast.testIn3')); }
+    else if ('Notification' in window) { Notification.requestPermission().then((p) => { if (p === 'granted') new Notification('Prayer Time', { body: 'Test notification' }); }); }
+    else showToast(t('toast.deskOnly'));
   };
 
   // Quran controls
