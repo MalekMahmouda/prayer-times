@@ -16,8 +16,8 @@
    "Latest:" chip and the APK href all read from this object, so nothing else
    needs editing and no card can drift onto a file that does not exist. */
 const PT_RELEASE = {
-  version: '1.5.0',
-  apk: 'Prayer-Times-1.5.0-android.apk',
+  version: '1.6.0',
+  apk: 'Prayer-Times-1.6.0-android.apk',
   mb: '49.6',
 };
 const PT_REPO = 'https://github.com/Malekmahmouda/prayer-times';
