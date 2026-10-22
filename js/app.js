@@ -55,7 +55,7 @@ function cfgFingerprint(cfg) {
   try { return JSON.stringify(cfg); } catch (e) { return null; }
 }
 function pushCfg() {
-  if (!PT) return;
+  if (!PT) { pushMobile(); pushWebAlerts(); return; }
   try {    // Active saved location's timezone (empty = system/unknown)
     if ((S.lat != null && !isFiniteLat(S.lat)) || (S.lon != null && !isFiniteLon(S.lon))) {
       showToast((S.lang === 'ar' ? 'إحداثيات غير صالحة — تحقق من الموقع' : 'Invalid coordinates — check your location'));
@@ -256,11 +256,21 @@ function pushMobile() {
       tz: resolveTz(),
       // v1.4.0: the adhan switch + reciter pick the Android notification
       // channel (per-reciter adhan sound) — previously not sent at all.
-      adhanEnabled: !!S.cfg.adhan, adhanType: S.cfg.adhanType,
+      adhanEnabled: !!S.cfg.adhan, adhanType: S.cfg.adhanType, beep: S.cfg.beep,
     });
   } catch (e) { /* never break the UI */ }
 }
-window.addEventListener('load', pushMobile);
+function pushWebAlerts() {
+  if (!window.PTWebAlerts || IS_DESKTOP || (window.Capacitor && window.Capacitor.isNativePlatform())) return;
+  window.PTWebAlerts.configure({
+    ...S.cfg, lat: S.lat, lon: S.lon, tz: resolveTz(), lang: S.lang, adhanEnabled: !!S.cfg.adhan,
+  }, {
+    onAdhan: (prayer) => { showAzanScreen(prayer); playAdhanBrowser(prayer); },
+    onBeep: beep,
+    onError: () => showToast(S.lang === 'ar' ? 'تعذر عرض الإشعار — تحقق من أذونات المتصفح' : 'Could not show notification — check browser permissions'),
+  });
+}
+window.addEventListener('load', () => { pushMobile(); pushWebAlerts(); });
 
 /* ═══ ANDROID: mobile UI + hide desktop-only settings once DOM is up ═══ */
 window.addEventListener('DOMContentLoaded', () => {
@@ -981,12 +991,38 @@ function beep() {
     });
   } catch (e) { /* no audio */ }
 }
-function playAdhanBrowser() {
+function browserAdhanSource(prayer) {
+  const profile = S.cfg.adhanProfiles && S.cfg.adhanProfiles[prayer];
+  const type = profile && profile.reciter || S.cfg.adhanType;
+  const chosen = Object.prototype.hasOwnProperty.call(ADHAN_SOUNDS, type) ? type : 'alafasy';
+  return './adhans/' + (chosen === 'alafasy' ? 'default' : chosen) + '.mp3';
+}
+function unlockBrowserAudio() {
   const a = $('adhanAudio');
-  if (!a.src || !a.src.startsWith('http')) a.src = ADHAN_SOUNDS[S.cfg.adhanType] || ADHAN_SOUNDS.alafasy;
-  a.volume = S.cfg.adhanVol != null ? S.cfg.adhanVol : 1;
+  if (!a || IS_DESKTOP || (window.Capacitor && window.Capacitor.isNativePlatform())) return;
+  a.src = browserAdhanSource();
+  const volume = a.volume;
+  a.volume = 0;
+  try {
+    a.play().then(() => { a.pause(); a.currentTime = 0; a.volume = volume; }).catch(() => { a.volume = volume; });
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+  } catch (e) { a.volume = volume; }
+}
+function playAdhanBrowser(prayer) {
+  const a = $('adhanAudio');
+  const profile = S.cfg.adhanProfiles && S.cfg.adhanProfiles[prayer];
+  a.src = browserAdhanSource(prayer); // always refresh: changing reciter must take effect
+  const volume = profile && profile.vol != null ? profile.vol : S.cfg.adhanVol;
+  a.volume = Number.isFinite(Number(volume)) ? Math.max(0, Math.min(1, Number(volume))) : 1;
   a.currentTime = 0;
-  a.play().catch(() => showToast(t('toast.adhanFail')));
+  a.play().catch((error) => {
+    showToast(t('toast.adhanFail'));
+    const status = $('azanStatus');
+    if (status) status.textContent = error && error.name === 'NotAllowedError'
+      ? (S.lang === 'ar' ? 'المتصفح منع الصوت — اضغط تجربة الأذان لتفعيله' : 'Audio blocked — tap Test Adhan to enable playback')
+      : t('toast.adhanFail');
+  });
 }
 /* ═══ FULL-SCREEN AZAN SCREEN ═══
    One presentation surface shared by the Test Adhan button and the automatic
@@ -1053,10 +1089,10 @@ function testAdhan() {
     showAzanScreen('Test');
     return;
   }
-  // Browser / PWA: same full-screen surface + the CDN preview audio.
+  // Browser / PWA: local bundled audio, including offline playback.
   showToast(t('toast.adhanPlay'));
-  playAdhanBrowser();
   showAzanScreen('Test');
+  playAdhanBrowser();
 }
 
 /* ═══ I18N APPLY ═══ */

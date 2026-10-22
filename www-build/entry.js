@@ -35,7 +35,7 @@ if (Capacitor.isNativePlatform()) {
   const PRAYER_NAMES = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
   const prayerOf = (n) => String((n && n.title) || '').split(/[—–-]/)[0].trim();
   const showIfAdhan = (n) => {
-    if (!window.ptAzanScreen || !ADHAN_BODY.test(String((n && n.body) || ''))) return;
+    if (!window.ptAzanScreen || !n || !n.extra || n.extra.playAdhan !== true || !ADHAN_BODY.test(String(n.body || ''))) return;
     const p = prayerOf(n);
     if (PRAYER_NAMES.includes(p)) window.ptAzanScreen.show(p);
   };

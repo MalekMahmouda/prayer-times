@@ -566,7 +566,7 @@ function runMobileRegressions() {
         async schedule({ notifications }) { state.scheduled.push(...notifications); state.pending.push(...notifications.map((n) => n.id)); return { notifications: notifications.map((n) => ({ id: n.id })) }; },
         async cancel({ notifications }) { state.cancelled.push(...notifications.map((n) => n.id)); state.pending = state.pending.filter((id) => !notifications.some((n) => n.id === id)); },
         async getPending() { return { notifications: state.pending.map((id) => ({ id })) }; },
-        async checkExactNotificationSetting() { return { exact: true }; },
+        async checkExactNotificationSetting() { return { exact_alarm: 'granted' }; },
         async listChannels() { return { channels: state.channels }; },
         async deleteChannel({ id }) { state.channels = state.channels.filter((c) => c.id !== id); },
       };
@@ -574,6 +574,7 @@ function runMobileRegressions() {
 
     let src = fs.readFileSync(path.join(ROOT, 'www-build', 'mobile-scheduler.js'), 'utf8')
       .replace(/import\s*{[^}]*}\s*from\s*'@capacitor\/local-notifications';/, '')
+      .replace(/import\s*{[^}]*}\s*from\s*'@capacitor\/core';/, '')
       .replace(/\bLocalNotifications\b/g, 'LN');
     const runMobile = (LN) => {
       globalThis.__ms = null;
@@ -628,14 +629,14 @@ function runMobileRegressions() {
     const adhanChan = LN3.state.channels.find((c) => c.id === 'adhan-nafees');
     ok(!!adhanChan && adhanChan.sound === 'nafees.mp3', 'adhan-nafees channel created with the bundled raw sound');
     const ptNotifs = LN3.state.scheduled.filter((n) => /is time for/.test(n.body));
-    ok(ptNotifs.length > 0 && ptNotifs.every((n) => n.channelId === (n.title === 'Dhuhr' ? 'prayer' : 'adhan-nafees')),
-      'prayer-time notifications route: unmuted → adhan channel, muted → plain channel');
+    ok(ptNotifs.length > 0 && ptNotifs.every((n) => n.channelId === (n.title === 'Dhuhr' ? 'prayer-silent' : 'adhan-nafees')),
+      'prayer-time notifications route: unmuted → adhan channel, muted → silent channel');
     const preNotifs = LN3.state.scheduled.filter((n) => /is in \d+ minutes/.test(n.body));
     ok(preNotifs.length > 0 && preNotifs.every((n) => n.channelId === 'prayer'), 'pre-alerts never use the adhan channel');
-    // Reciter switch → new channel created, stale one deleted.
+    // Reciter switch → new channel created, old preferences preserved.
     await ms3.setConfig({ ...CFG, adhanEnabled: true, adhanType: 'classic', adhanPerPrayer: {} }); await sleep(750);
-    ok(LN3.state.channels.some((c) => c.id === 'adhan-classic') && !LN3.state.channels.some((c) => c.id === 'adhan-nafees'),
-      'reciter switch creates the new channel and deletes the stale one');
+    ok(LN3.state.channels.some((c) => c.id === 'adhan-classic') && LN3.state.channels.some((c) => c.id === 'adhan-nafees'),
+      'reciter switch creates the new channel and preserves existing user preferences');
     const schedBatches = LN2.state.scheduled.length;
     ok(schedBatches > 0 && schedBatches <= 150, `storm of 6 changes → ONE scheduled batch (${schedBatches})`);
 
@@ -852,7 +853,7 @@ function runArtifactChecks() {
   ok(jsonSrc.includes('.tmp') && jsonSrc.includes('renameSync'), 'settings store writes atomically (tmp + rename)');
 
   // R9/R10/R11/R12: Android channels + mute parity + horizon + exact alarms.
-  ok(mobileSrc.includes("CH_PREFIX = 'adhan-'") && mobileSrc.includes('adhanChannel && !muted ? adhanChannel'),
+  ok(mobileSrc.includes("CH_PREFIX = 'adhan-'") && mobileSrc.includes('adhanChannel && playAdhan ? adhanChannel'),
     'Android per-reciter adhan channel wired to the prayer-time notification');
   ok(!/adhanPerPrayer\[p\] === false\) continue/.test(mobileSrc), 'muted prayers no longer SKIP the Android notification');
   ok(mobileSrc.includes('DAYS = 14') && mobileSrc.includes('MAX_NOTIFS = 150'), '14-day horizon with a 150-notification cap');

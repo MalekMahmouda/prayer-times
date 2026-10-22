@@ -125,7 +125,7 @@ ${
 `);
 
 // ── 5. sw.js — offline app shell (cache key changes every build) ──
-const CACHE = 'pt-cache-' + new Date().toISOString().replace(/\D/g, '').slice(0, 14);const SHELL = ['index.html', 'styles/app.css', 'styles/motion.css', 'styles/fonts.css', 'styles/web.css', 'js/app.js', 'js/motion.js', 'js/pages.js', 'js/pages3.js', 'js/reader.js', 'js/store3.js', 'js/data.js', 'js/platform.js', 'js/adhan-bundle.js', 'js/pt-engine.js', 'js/compass.js', 'js/stats.js', 'js/extras.js', 'data/quran.json', 'manifest.webmanifest', ...fs.readdirSync(path.join(ROOT, 'fonts')).filter((f) => f.endsWith('.woff2')).map((f) => `fonts/${f}`), ...fs.readdirSync(path.join(ROOT, 'assets')).filter((f) => /^icon-(16|32|48|64|128|256)\.png$/.test(f)).map((f) => `icons/${f}`)];
+const CACHE = 'pt-cache-' + new Date().toISOString().replace(/\D/g, '').slice(0, 14);const SHELL = ['index.html', 'styles/app.css', 'styles/motion.css', 'styles/fonts.css', 'styles/web.css', 'js/web-alerts.js', 'js/app.js', 'js/motion.js', 'js/pages.js', 'js/pages3.js', 'js/reader.js', 'js/store3.js', 'js/data.js', 'js/platform.js', 'js/adhan-bundle.js', 'js/pt-engine.js', 'js/compass.js', 'js/stats.js', 'js/extras.js', 'data/quran.json', 'manifest.webmanifest', ...fs.readdirSync(path.join(ROOT, 'assets', 'adhans')).filter((f) => f.endsWith('.mp3')).map((f) => 'adhans/' + f), ...fs.readdirSync(path.join(ROOT, 'fonts')).filter((f) => f.endsWith('.woff2')).map((f) => `fonts/${f}`), ...fs.readdirSync(path.join(ROOT, 'assets')).filter((f) => /^icon-(16|32|48|64|128|256)\.png$/.test(f)).map((f) => `icons/${f}`)];
 fs.writeFileSync(path.join(DIST, 'sw.js'), `/* Prayer Times service worker — offline app shell (v1) */
 const CACHE = '${CACHE}';
 const SHELL = ${JSON.stringify(SHELL)};
@@ -133,7 +133,16 @@ self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', (e) => {
-  e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
+  e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k.startsWith('pt-cache-') && k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
+});
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  const target = new URL('./index.html#/prayers', self.registration.scope).href;
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async (clients) => {
+    const existing = clients.find((client) => client.url.startsWith(self.registration.scope));
+    if (existing) { await existing.focus(); return existing.navigate(target); }
+    return self.clients.openWindow(target);
+  }));
 });
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;

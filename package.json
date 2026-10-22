@@ -16,7 +16,7 @@
     "package:installer": "electron-builder --win nsis",
     "release": "node scripts/make-release.js",
     "www": "node scripts/build-www.js",
-    "test": "node scripts/test-scheduler.js && node scripts/test-contract.js && node scripts/test-motion.js",
+    "test": "node scripts/test-scheduler.js && node scripts/test-contract.js && node scripts/test-motion.js && node scripts/test-alerts.js",
     "apk": "npm run www && node scripts/gen-android-raw.js && npx cap sync android && node scripts/apk-gradle.js assembleRelease",
     "apk:debug": "npm run www && node scripts/gen-android-raw.js && npx cap sync android && node scripts/apk-gradle.js assembleDebug",
     "assets:android": "node scripts/gen-android-icons.js && node scripts/gen-android-splash.js",

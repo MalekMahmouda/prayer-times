@@ -347,7 +347,11 @@ function updateAndroidNotifStatus() {
   const tg = $('tgNotif'); if (!tg) return;
   const isAndroid = !!(window.Capacitor && window.Capacitor.isNativePlatform());
   let el = $('andNotifStatus');
-  if (!isAndroid) { if (el) el.remove(); return; }
+  if (!isAndroid) {
+    if (el) el.remove();
+    updateBrowserNotifStatus();
+    return;
+  }
   if (!el) {
     el = document.createElement('div');
     el.id = 'andNotifStatus';
@@ -387,6 +391,22 @@ function updateAndroidNotifStatus() {
       } else if (btn) btn.remove();
     }).catch(() => { el.textContent = ''; });
   }
+}
+
+function updateBrowserNotifStatus() {
+  if (IS_DESKTOP || !window.PTWebAlerts) return;
+  let el = $('webNotifStatus');
+  if (!el) {
+    el = document.createElement('div'); el.id = 'webNotifStatus'; el.className = 'note';
+    const tg = $('tgNotif'); (tg.closest('.row') || tg.parentElement).insertAdjacentElement('afterend', el);
+  }
+  const ar = S.lang === 'ar', state = window.PTWebAlerts.permission();
+  const labels = ar
+    ? { granted: 'الإشعارات: مسموحة', denied: 'الإشعارات: محظورة — فعّلها من إعدادات الموقع في المتصفح', default: 'فعّل الإشعارات للسماح بها', unsupported: 'هذا المتصفح لا يدعم الإشعارات؛ على iPhone ثبّت الموقع على الشاشة الرئيسية ثم افتحه منها', insecure: 'الإشعارات تحتاج HTTPS أو localhost' }
+    : { granted: 'Notifications: allowed', denied: 'Notifications blocked — allow them in browser site settings', default: 'Enable notifications to allow permission', unsupported: 'Notifications unavailable; on iPhone install to the Home Screen and open from there', insecure: 'Notifications require HTTPS or localhost' };
+  el.textContent = (labels[state] || state) + (ar
+    ? ' · الأذان والتنبيهات تعمل أثناء تشغيل الصفحة فقط؛ إغلاق الموقع أو قفل الشاشة قد يوقفها. اضغط تجربة الأذان لتفعيل الصوت. لتنبيهات أندرويد في الخلفية استخدم التطبيق الأصلي.'
+    : ' · Alerts work only while this page is running; closing it or locking the screen may stop them. Tap Test Adhan to enable sound. Use the native Android app for background alarms.');
 }
 
 window.renderSettings = function renderSettings() {
@@ -485,9 +505,32 @@ function wireSettings() {
   $('setMethod').onchange = (e) => { S.cfg.method = e.target.value; saveCfg(); if (S.lat != null) fetchTimes(S.lat, S.lon); };
   $('setMadhab').onchange = (e) => { S.cfg.madhab = e.target.value; saveCfg(); refreshTodaySchedule(); };
   $('tg24').onclick = () => { S.cfg.h24 = !S.cfg.h24; saveCfg(); renderSettings(); renderDashboard(); };
-  $('tgNotif').onclick = () => { S.cfg.notif = !S.cfg.notif; saveCfg(); renderSettings(); };
+  $('tgNotif').onclick = async () => {
+    if (S.cfg.notif) { S.cfg.notif = false; saveCfg(); renderSettings(); return; }
+    let allowed = true;
+    try {
+      if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+        allowed = !!(window.ptMobile && await window.ptMobile.requestPermissions());
+      } else if (!PT && window.PTWebAlerts) {
+        unlockBrowserAudio();
+        allowed = await window.PTWebAlerts.requestPermission() === 'granted';
+      }
+    } catch (e) { allowed = false; }
+    S.cfg.notif = allowed; saveCfg(); renderSettings();
+    if (!allowed) showToast(S.lang === 'ar' ? 'الإشعارات غير مسموحة — تحقق من أذونات النظام أو المتصفح' : 'Notifications not allowed — check system or browser permissions');
+  };
   $('tgBeep').onclick = () => { S.cfg.beep = !S.cfg.beep; saveCfg(); renderSettings(); };
-  $('tgAdhan').onclick = () => { S.cfg.adhan = !S.cfg.adhan; saveCfg(); renderSettings(); };
+  $('tgAdhan').onclick = async () => {
+    if (!S.cfg.adhan) {
+      unlockBrowserAudio();
+      if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+        if (!window.ptMobile || !await window.ptMobile.requestPermissions()) {
+          showToast(S.lang === 'ar' ? 'الأذان يحتاج إذن الإشعارات على أندرويد' : 'Android adhan requires notification permission'); return;
+        }
+      }
+    }
+    S.cfg.adhan = !S.cfg.adhan; saveCfg(); renderSettings();
+  };
   $('tgOverlay').onclick = () => { S.cfg.desktop.overlay = !S.cfg.desktop.overlay; if (PT) PT.setOverlayEnabled(S.cfg.desktop.overlay); saveCfg(); renderSettings(); };
   $('tgSww').onclick = () => { S.cfg.desktop.startWithWindows = !S.cfg.desktop.startWithWindows; if (PT) PT.setStartWithWindows(S.cfg.desktop.startWithWindows); saveCfg(); renderSettings(); };
   $('tgCtt').onclick = () => { S.cfg.desktop.closeToTray = !S.cfg.desktop.closeToTray; if (PT) PT.setCloseToTray(S.cfg.desktop.closeToTray); saveCfg(); renderSettings(); };
@@ -512,8 +555,18 @@ function wireSettings() {
   $('imsakPlus').onclick = () => { DB3.prefs.ramadan = DB3.prefs.ramadan || { imsakMode: 'fajrOffset', imsakOffset: 10 }; DB3.prefs.ramadan.imsakOffset = Math.min(30, DB3.prefs.ramadan.imsakOffset + 1); save3(); renderSettings(); };
   $('btnTestNotif').onclick = () => {
     if (PT) { PT.testAlert(); showToast(t('toast.testIn3')); }
-    else if ('Notification' in window) { Notification.requestPermission().then((p) => { if (p === 'granted') new Notification('Prayer Time', { body: 'Test notification' }); }); }
-    else showToast(t('toast.deskOnly'));
+    else if (window.Capacitor && window.Capacitor.isNativePlatform() && window.ptMobile) {
+      window.ptMobile.testNotification().then((ok) => {
+        showToast(ok ? t('toast.testIn3') : (S.lang === 'ar' ? 'الإشعارات غير مسموحة' : 'Notifications not allowed'));
+        updateAndroidNotifStatus();
+      }).catch(() => showToast(S.lang === 'ar' ? 'تعذر اختبار الإشعارات' : 'Notification test failed'));
+    } else if (window.PTWebAlerts) {
+      window.PTWebAlerts.requestPermission().then(async (p) => {
+        if (p === 'granted') await window.PTWebAlerts.notify('Prayer Time', S.lang === 'ar' ? 'إشعار تجريبي' : 'Test notification', 'pt-test');
+        else showToast(S.lang === 'ar' ? 'الإشعارات غير مسموحة — تحقق من إعدادات المتصفح' : 'Notifications not allowed — check browser settings');
+        updateBrowserNotifStatus();
+      });
+    } else showToast(t('toast.deskOnly'));
   };
 
   // Quran controls

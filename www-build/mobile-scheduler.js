@@ -14,11 +14,11 @@
  * Sound (v1.4.0): the prayer-time notification plays the CHOSEN ADHAN
  * RECORDING via its notification channel when the azan switch is on:
  *   - channel id `adhan-<type>` carries the res/raw sound (channel sound is
- *     immutable on Android, so the type is part of the id; stale adhan-*
- *     channels are deleted on every reschedule)
+ *     immutable on Android, so the type is part of the id; existing
+ *     channels preserve the user's system preferences)
  *   - per-prayer mute = notification still arrives on a SILENT channel
  *     (desktop parity: mute silences the sound, never the notification)
- *   - azan off / pre-alerts → plain `prayer` channel (default sound)
+ *   - azan off / pre-alerts → plain `prayer` channel (or silent when beep is off)
  * Files land in res/raw via scripts/gen-android-raw.js (npm run apk).
  *
  * Reliability rules:
@@ -38,6 +38,7 @@
  */
 
 import { LocalNotifications } from '@capacitor/local-notifications';
+import { Capacitor } from '@capacitor/core';
 
 const PRAYERS = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
 const PRAYER_AR = { Fajr: 'الفجر', Dhuhr: 'الظهر', Asr: 'العصر', Maghrib: 'المغرب', Isha: 'العشاء' };
@@ -96,19 +97,19 @@ function saveOurIds(ids) {
 async function cancelOurs() {
   const ids = loadOurIds();
   if (!ids.length) return;
-  try {
-    await LocalNotifications.cancel({ notifications: ids.map((id) => ({ id })) });
-  } catch (e) { /* already gone */ }
+  // A failed cancellation must retain IDs and abort replacement, not leave
+  // untracked stale alarms behind. The serialized caller handles the error.
+  await LocalNotifications.cancel({ notifications: ids.map((id) => ({ id })) });
   saveOurIds([]);
 }
 
 /* ── Core reschedule ── */
 async function reschedule(cfg) {
-  if (!cfg || !Number.isFinite(Number(cfg.lat)) || !Number.isFinite(Number(cfg.lon))) return;
+  if (!cfg || cfg.lat == null || cfg.lon == null || !Number.isFinite(Number(cfg.lat)) || !Number.isFinite(Number(cfg.lon))) { await cancelOurs(); return; }
   const E = window.PT_ENGINE, deps = window.__ptAdhan;
   if (!E || !deps) return; // engine not loaded yet — the next setConfig/reschedule retries
 
-  const wantNotifications = !!cfg.notif && isAndroid();
+  const wantNotifications = (!!cfg.notif || cfg.adhanEnabled === true) && isAndroid();
 
   if (!wantNotifications) {
     await cancelOurs(); // remove OUR stale alarms; touch nothing else
@@ -117,14 +118,11 @@ async function reschedule(cfg) {
     return;
   }
 
-  // Android 13+ notification permission (ask once per session).
+  // Never prompt from background config pushes; permission belongs to a user click.
   try {
     const perm = await LocalNotifications.checkPermissions();
-    if (perm.display !== 'granted') {
-      const req = await LocalNotifications.requestPermissions();
-      if (req.display !== 'granted') return;
-    }
-  } catch (e) { /* older Android */ }
+    if (perm.display !== 'granted') { await cancelOurs(); return; }
+  } catch (e) { return; }
 
   // High-importance channel → heads-up + system default sound + vibration.
   try {
@@ -132,7 +130,7 @@ async function reschedule(cfg) {
       id: 'prayer',
       name: 'Prayer times',
       importance: 5, // high
-      visibility: 'PUBLIC',
+      visibility: 1,
       vibration: true,
     });
   } catch (e) { /* channel exists */ }
@@ -141,6 +139,9 @@ async function reschedule(cfg) {
   // (immutable on Android), so the reciter id is part of the channel id.
   // `type` is validated against the raw files we actually ship; unknown →
   // alafasy (the default.mp3 fallback, mirroring the desktop resolver).
+  // Low importance is silent on Android; a normal high-importance channel
+  // would still play the default sound for a per-prayer mute.
+  await LocalNotifications.createChannel({ id: 'prayer-silent', name: 'Silent prayer reminders', importance: 2, visibility: 1, vibration: false });
   let adhanChannel = null;
   if (cfg.adhanEnabled === true) {
     const type = ADHAN_TYPES.includes(cfg.adhanType) ? cfg.adhanType : 'alafasy';
@@ -150,22 +151,13 @@ async function reschedule(cfg) {
         id: adhanChannel,
         name: 'Adhan — ' + type,
         importance: 5,
-        visibility: 'PUBLIC',
+        visibility: 1,
         vibration: true,
         sound: type + '.mp3', // → android.resource://<pkg>/raw/<type> (plugin strips the extension); file ships as res/raw/<type>.mp3 via scripts/gen-android-raw.js
       });
     } catch (e) { adhanChannel = null; /* fall back to default sound */ }
-    // Upgrade hygiene: delete every OTHER adhan-* channel (old reciter or a
-    // v1.3.x leftover). Channels the user customized are not preserved — the
-    // app owns these ids.
-    try {
-      const chans = await LocalNotifications.listChannels();
-      for (const ch of (chans && chans.channels) || []) {
-        if (String(ch.id).startsWith(CH_PREFIX) && ch.id !== adhanChannel) {
-          await LocalNotifications.deleteChannel({ id: ch.id });
-        }
-      }
-    } catch (e) { /* web / older plugin */ }
+    // Keep existing channels: deleting them resets the user's system preferences.
+
   }
 
   const notifications = [];
@@ -181,7 +173,7 @@ async function reschedule(cfg) {
     for (const p of PRAYERS) {
       if (notifications.length >= MAX_NOTIFS) break;
       const atMs = instants[p];
-      if (atMs <= Date.now()) continue;
+      if (!Number.isFinite(atMs) || atMs <= Date.now()) continue;
 
       // v1.4.0: per-prayer mute matches desktop semantics — the notification
       // STILL ARRIVES, on a silent channel; mute never deletes the alert.
@@ -189,17 +181,19 @@ async function reschedule(cfg) {
       const muted = !!(cfg.adhanPerPrayer && cfg.adhanPerPrayer[p] === false);
       // Adhan sound on the prayer-time notification only when the azan switch
       // is on AND this prayer is unmuted; otherwise the plain channel.
-      const channelId = adhanChannel && !muted ? adhanChannel : 'prayer';
-      notifications.push({
+      const playAdhan = cfg.adhanEnabled === true && !muted;
+      const channelId = adhanChannel && playAdhan ? adhanChannel : (muted || cfg.beep === false ? 'prayer-silent' : 'prayer');
+      if (cfg.notif || playAdhan) notifications.push({
         id: notifId(scheduleKey(p, y, m, d, 'adhan')),
         schedule: { at: new Date(atMs), allowWhileIdle: true },
         title: p + (cfg.lang === 'ar' ? ' — ' + PRAYER_AR[p] : ''),
         body: cfg.lang === 'ar' ? `حان الآن وقت صلاة ${PRAYER_AR[p]}` : `It is time for ${p}`,
         channelId,
+        extra: { kind: 'adhan', prayer: p, playAdhan },
       });
 
       const pre = parsePreMin((cfg.preMin && cfg.preMin[p] != null) ? cfg.preMin[p] : cfg.notifMin);
-      if (pre > 0) {
+      if (cfg.notif && pre > 0) {
         const preAt = atMs - pre * 60000;
         if (preAt > Date.now()) {
           notifications.push({
@@ -207,7 +201,8 @@ async function reschedule(cfg) {
             schedule: { at: new Date(preAt), allowWhileIdle: true },
             title: p,
             body: cfg.lang === 'ar' ? `${PRAYER_AR[p]} بعد ${pre} دقيقة` : `${p} is in ${pre} minutes`,
-            channelId: 'prayer',
+            channelId: cfg.beep === false ? 'prayer-silent' : 'prayer',
+            extra: { kind: 'pre', prayer: p, playAdhan: false },
           });
         }
       }
@@ -216,10 +211,13 @@ async function reschedule(cfg) {
 
   try {
     await cancelOurs(); // reschedule = replace OUR alarms, nothing else
+    const ids = [];
     for (let i = 0; i < notifications.length; i += BATCH) {
-      await LocalNotifications.schedule({ notifications: notifications.slice(i, i + BATCH) });
+      const batch = notifications.slice(i, i + BATCH);
+      // Persist BEFORE scheduling: even a partial native failure remains cancellable.
+      ids.push(...batch.map((n) => n.id)); saveOurIds(ids);
+      await LocalNotifications.schedule({ notifications: batch });
     }
-    saveOurIds(notifications.map((n) => n.id));
   } catch (e) {
     console.warn('mobile schedule failed:', e && e.message);
   }
@@ -250,7 +248,7 @@ window.ptMobile = {
     try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) { /* ignore */ }
     const sig = JSON.stringify([cfg && cfg.lat, cfg && cfg.lon, cfg && cfg.method, cfg && cfg.madhab,
       cfg && cfg.offsets, cfg && cfg.preMin, cfg && cfg.notifMin, cfg && cfg.adhanPerPrayer,
-      cfg && cfg.notif, cfg && cfg.lang, cfg && cfg.tz, tz,
+      cfg && cfg.notif, cfg && cfg.beep, cfg && cfg.lang, cfg && cfg.tz, tz,
       // v1.4.0: the adhan switch + reciter choose the notification channel,
       // so they must invalidate the signature like every other sound input.
       cfg && cfg.adhanEnabled, cfg && cfg.adhanType]);
@@ -263,15 +261,34 @@ window.ptMobile = {
   reschedule() {
     if (window.ptMobile._cfg) requestSchedule(window.ptMobile._cfg);
   },
+  async requestPermissions() {
+    if (!isAndroid()) return false;
+    try {
+      let state = await LocalNotifications.checkPermissions();
+      if (state.display !== 'granted') state = await LocalNotifications.requestPermissions();
+      return state.display === 'granted';
+    } catch (e) { return false; }
+  },
+  async testNotification() {
+    if (!await window.ptMobile.requestPermissions()) return false;
+    await LocalNotifications.createChannel({ id: 'prayer', name: 'Prayer times', importance: 5, visibility: 1, vibration: true });
+    await LocalNotifications.schedule({ notifications: [{
+      id: notifId('pt-test-notification'), title: 'Prayer Times',
+      body: window.ptMobile._cfg && window.ptMobile._cfg.lang === 'ar' ? 'إشعار تجريبي' : 'Test notification',
+      channelId: 'prayer', schedule: { at: new Date(Date.now() + 3000), allowWhileIdle: true },
+      extra: { kind: 'test', playAdhan: false },
+    }] });
+    return true;
+  },
   // Honest status for the settings UI (notification + exact-alarm permissions).
   async notifStatus() {
-    const out = { display: 'unknown', exact: window.ptMobile.exactAlarms || 'unknown' };
+    const out = { display: 'unknown', exact: window.ptMobile.exactAlarms ?? 'unknown' };
     try { out.display = (await LocalNotifications.checkPermissions()).display; } catch (e) { /* web */ }
     // Re-check after the user returns from the system settings screen.
     try {
       const s = await LocalNotifications.checkExactNotificationSetting();
-      window.ptMobile.exactAlarms = s.exact;
-      out.exact = s.exact;
+      window.ptMobile.exactAlarms = s.exact_alarm === 'granted';
+      out.exact = window.ptMobile.exactAlarms;
     } catch (e) { /* keep previous */ }
     return out;
   },
@@ -280,8 +297,9 @@ window.ptMobile = {
   async requestExactAlarms() {
     try {
       const s = await LocalNotifications.changeExactNotificationSetting();
-      window.ptMobile.exactAlarms = s.exact;
-      return s.exact;
+      window.ptMobile.exactAlarms = s.exact_alarm === 'granted';
+      window.ptMobile.reschedule();
+      return window.ptMobile.exactAlarms;
     } catch (e) { return undefined; }
   },
 };
@@ -291,6 +309,6 @@ window.ptMobile = {
 // this honestly instead of claiming exact timing.
 try {
   LocalNotifications.checkExactNotificationSetting()
-    .then((s) => { window.ptMobile.exactAlarms = s.exact; })
+    .then((s) => { window.ptMobile.exactAlarms = s.exact_alarm === 'granted'; })
     .catch(() => { window.ptMobile.exactAlarms = 'unknown'; });
 } catch (e) { window.ptMobile.exactAlarms = 'unsupported'; }
