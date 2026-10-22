@@ -47,9 +47,9 @@ html.pt-vt-theme::view-transition-new(root){animation:pt-theme-reveal var(--t-sl
    js/motion.js — only the changed digit moves). direction:ltr keeps the
    HH:MM:SS column order readable under RTL. */
 .cd-face{display:inline-flex;direction:ltr;unicode-bidi:isolate;will-change:contents}
-.cd-face .cell{position:relative;overflow:hidden;display:inline-block}
+.cd-face .cell{position:relative;overflow:hidden;display:inline-block;flex:none}
 .cd-face .cell.f{width:.55ch;text-align:center}
-.cd-face .cell.font{width:.68ch;text-align:center}
+.cd-face .cell.font{width:1ch;text-align:center}
 .cd-face .v{display:inline-block}
 .cd-face .old{position:absolute;inset:0;display:inline-block;pointer-events:none}
 /* Thin progress arc around the countdown chip: rounded-rect stroke with

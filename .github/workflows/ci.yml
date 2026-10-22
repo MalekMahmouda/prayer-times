@@ -19,5 +19,7 @@ jobs:
         run: node scripts/test-scheduler.js
       - name: Contract tests
         run: node scripts/test-contract.js
+      - name: Motion regression tests
+        run: node scripts/test-motion.js
       - name: npm audit (production deps only)
         run: npm audit --omit=dev

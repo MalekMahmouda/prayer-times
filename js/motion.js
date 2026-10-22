@@ -32,8 +32,18 @@
   const faces = new WeakMap();
   PTM.setCountdown = function (elm, str) {
     if (!elm) return;
-    if (reduced() || !('animate' in Element.prototype)) { elm.textContent = str; return; }
+    if (reduced() || !('animate' in Element.prototype)) {
+      faces.delete(elm);
+      elm.classList.remove('cd-face');
+      elm.style.minWidth = '';
+      elm.textContent = str;
+      return;
+    }
     let st = faces.get(elm);
+    if (st && (str.length !== st.cells.length || st.cells.some(v => !elm.contains(v)))) {
+      faces.delete(elm);
+      st = null;
+    }
     if (!st) {
       st = { chars: null, cells: [] };
       elm.innerHTML = '';
@@ -53,10 +63,6 @@
       return;
     }
     const next = Array.from(str);
-    if (next.length !== st.cells.length && next.length !== 8) { elm.textContent = str; return; }
-    if (next.length !== st.cells.length) {
-      elm.textContent = str; faces.delete(elm); return; // format changed — fall back safely
-    }
     for (let i = 0; i < next.length; i++) {
       if (st.chars[i] === next[i]) continue;
       const v = st.cells[i];
@@ -243,22 +249,41 @@
      sensor (shortest-path delta, unwrapped accumulator in compass.js state —
      we re-wrap internally so the spring never fights 359↔0). */
   const springs = new WeakMap();
+  const runningSprings = new Set();
   const SPRING = { k: 0.022, damp: 0.86 }; // per-frame (60fps): stiffness / damping
+  function stopSpring(st) {
+    if (st.frame != null) cancelAnimationFrame(st.frame);
+    st.frame = null;
+    st.running = false;
+    st.vel = 0;
+    runningSprings.delete(st);
+  }
   PTM.springAngle = function (elm, targetDeg) {
-    if (!elm) return;
-    if (reduced()) { elm.style.transform = 'rotate(' + targetDeg + 'deg)'; return; }
+    if (!elm || !Number.isFinite(targetDeg)) return;
     let st = springs.get(elm);
-    if (!st) { st = { next: targetDeg }; springs.set(elm, st); }
+    if (!st) {
+      st = { elm, next: targetDeg, vel: 0, running: false, frame: null };
+      springs.set(elm, st);
+    }
     st.next = targetDeg;
+    if (reduced()) {
+      stopSpring(st);
+      st.cur = targetDeg;
+      elm.style.transform = 'rotate(' + targetDeg + 'deg)';
+      return;
+    }
     if (st.running) return;
     // current rotation from the inline style (compass.js tracks unwrapped)
-    const cur = parseFloat((elm.style.transform.match(/rotate\((-?[\d.]+)deg\)/) || [])[1] || targetDeg);
+    const cur = parseFloat((elm.style.transform.match(/rotate\((-?[\d.]+)deg\)/) || [])[1] ?? targetDeg);
     st.cur = Number.isFinite(cur) ? cur : targetDeg;
+    st.vel = 0;
+    st.running = true;
+    runningSprings.add(st);
     const step = () => {
       if (springs.get(elm) !== st) { st.running = false; return; }
       // retarget mid-flight: prefer the shortest angular path to the new goal
       let delta = st.next - st.cur;
-      delta = ((delta + 540) % 360) - 180;
+      delta = (((delta + 180) % 360) + 360) % 360 - 180;
       const target = st.cur + delta;
       // damped spring: acceleration proportional to displacement, velocity lost
       // to damping each frame — a small, honest overshoot, then settle
@@ -267,13 +292,30 @@
       elm.style.transform = 'rotate(' + st.cur.toFixed(3) + 'deg)';
       if (Math.abs(target - st.cur) < 0.05 && Math.abs(st.vel) < 0.05) {
         elm.style.transform = 'rotate(' + target.toFixed(2) + 'deg)';
-        st.running = false;
+        stopSpring(st);
         return;
       }
-      requestAnimationFrame(step);
+      st.frame = requestAnimationFrame(step);
     };
-    requestAnimationFrame(step);
+    st.frame = requestAnimationFrame(step);
   };
+
+  // Preference changes apply immediately, including to already-running motion.
+  function motionPreferenceChanged() {
+    if (!reduced()) return;
+    document.querySelectorAll('.cd-face').forEach((elm) => {
+      const st = faces.get(elm);
+      if (elm.getAnimations) elm.getAnimations({ subtree: true }).forEach(a => a.cancel());
+      if (st) PTM.setCountdown(elm, st.chars.join(''));
+    });
+    runningSprings.forEach((st) => {
+      stopSpring(st);
+      st.cur = st.next;
+      st.elm.style.transform = 'rotate(' + st.next + 'deg)';
+    });
+  }
+  if (REDUCE.addEventListener) REDUCE.addEventListener('change', motionPreferenceChanged);
+  else if (REDUCE.addListener) REDUCE.addListener(motionPreferenceChanged);
 
   /* ── 5. Dhikr counter feedback ─────────────────────────────────────── */
   const dhikrTap = { last: null }; // last pointerdown position (tap-centered ripple)
