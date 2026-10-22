@@ -121,6 +121,9 @@ const ICONS = {
   monitor:    ICON_SVG('<rect x="3.4" y="5.2" width="17.2" height="11.4" rx="1.8"/><path d="M9.4 20.4h5.2"/><path d="M12 16.6v3.8"/>'),
   disk:       ICON_SVG('<path d="M5.6 4.6h10.2l3.6 3.6v11a1.4 1.4 0 0 1-1.4 1.4H5.6a1.4 1.4 0 0 1-1.4-1.4V6a1.4 1.4 0 0 1 1.4-1.4z"/><path d="M8.4 4.6v4.6h6.4V4.6"/><circle cx="11.9" cy="15.6" r="2.6"/>'),
   palette:    ICON_SVG('<path d="M12 3.8a8.2 8.2 0 0 0 0 16.4c1.2 0 1.9-.9 1.9-1.9 0-1.4-1-1.7-1-2.7 0-.9.7-1.6 1.7-1.6h1.5a4.1 4.1 0 0 0 4.1-4.1c0-3.4-3.6-6.1-8.2-6.1z"/><circle cx="8.6" cy="10.6" r="1.05"/><circle cx="12" cy="8.4" r="1.05"/><circle cx="15.4" cy="10.6" r="1.05"/>'),
+  // keyboard: key rows + space bar, same 1.75 stroke — the ⌨️ glyph never
+  // rendered as an SVG on every platform it appeared in
+  keys:       ICON_SVG('<rect x="4.4" y="7.2" width="15.2" height="9.6" rx="1.8"/><path d="M8.2 10.4h.02"/><path d="M12 10.4h.02"/><path d="M15.8 10.4h.02"/><path d="M9 14h6"/>'),
   trash:      ICON_SVG('<path d="M4.6 6.8h14.8"/><path d="M9.4 6.8V5.1a1 1 0 0 1 1-1h3.2a1 1 0 0 1 1 1v1.7"/><path d="M6.7 6.8l.9 12a1.4 1.4 0 0 0 1.4 1.3h6a1.4 1.4 0 0 0 1.4-1.3l.9-12"/><path d="M10.4 10.6v6"/><path d="M13.6 10.6v6"/>'),
   speaker:    ICON_SVG('<path d="M4.4 9.5h3.5L12 5.6v12.8l-4.1-3.9H4.4z"/><path d="M15.6 9.4a4 4 0 0 1 0 5.2"/><path d="M18.1 7a7.4 7.4 0 0 1 0 10"/>'),
   kaaba:      ICON_SVG('<path d="M12 3.6 20 7.4v9.2L12 20.4 4 16.6V7.4z"/><path d="M4 7.4 12 11.2l8-3.8"/><path d="M12 11.2v9.2"/>'),

@@ -10,15 +10,15 @@
  */
 
 /* ── The release the download cards point at ──────────────────────────────
-   Verified against the public releases API on 2026-10-18:
-     tag v1.5.0 · APK 51,986,418 bytes (49.6 MB) · minSdk 24 = Android 7.0
+   Verified against the freshly built artifacts on 2026-10-22:
+     tag v1.6.3 · APK 52,297,803 bytes (49.9 MB) · minSdk 24 = Android 7.0
    WHEN SHIPPING A RELEASE bump version + apk + mb here — the version text, the
    "Latest:" chip and the APK href all read from this object, so nothing else
    needs editing and no card can drift onto a file that does not exist. */
 const PT_RELEASE = {
-  version: '1.6.0',
-  apk: 'Prayer-Times-1.6.0-android.apk',
-  mb: '49.6',
+  version: '1.6.3',
+  apk: 'Prayer-Times-1.6.3-android.apk',
+  mb: '49.9',
 };
 const PT_REPO = 'https://github.com/Malekmahmouda/prayer-times';
 

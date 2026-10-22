@@ -1,0 +1,196 @@
+/* ═════════════════════════════════════════════════════════════════════
+   PRAYER TIMES — Motion module (styles/motion.css)
+   One commented stylesheet for every animation in the app, so motion is
+   reviewed as a single voice instead of scattered inline spaghetti.
+
+   Language (tokens defined in app.css :root):
+     --t-fast .15s   press feedback, ticks
+     --t-med  .3s    entrances, moves, indicators
+     --t-slow .6s    progress arcs, theme reveal, big transitions
+     --ease-out  cubic-bezier(.22,1,.36,1)    entrances (Anything entering or exiting)
+     --ease-io   cubic-bezier(.77,0,.18,1)    moving on screen
+     --ease-tap  cubic-bezier(.34,1.35,.64,1) touched elements, ≤8% overshoot
+
+   Rules everywhere: transform + opacity only; sprung/interruptible pairs are
+   transitions (never un-restartable keyframes); `prefers-reduced-motion` is
+   satisfied once by the global rule in app.css (all keyframes collapse to
+   instant, transitions keep colour/opacity feedback) plus JS-side gates in
+   js/motion.js for anything driven by WAAPI/View Transitions.
+   ═════════════════════════════════════════════════════════════════════ */
+
+/* ── 1. Page transitions (View Transitions API) ──────────────────────
+   Shared axis: the outgoing page eases toward the trailing edge, the new page
+   arrives from the reading direction. Direction is set per-navigation by
+   js/motion.js as data-vtdir="fwd|back" on <html>; RTL mirrors by itself. */
+main.content{view-transition-name:pt-page}
+::view-transition-old(pt-page),::view-transition-new(pt-page){animation-duration:var(--t-med);animation-fill-mode:both}
+::view-transition-old(pt-page){animation-name:pt-page-out}
+::view-transition-new(pt-page){animation-name:pt-page-in}
+@keyframes pt-page-out{to{opacity:0;transform:translateX(-14px)}}
+@keyframes pt-page-in{from{opacity:0;transform:translateX(14px)}}
+html[data-vtdir="back"]::view-transition-old(pt-page){animation-name:pt-page-in}
+html[data-vtdir="back"]::view-transition-new(pt-page){animation-name:pt-page-out}
+
+/* ── 2. Theme switch: circular reveal from the touched swatch ─────────
+   The new palette un-clips a growing circle from the tap point; the old
+   palette stays pinned underneath. Coordinates are viewport px set as CSS
+   vars on <html> (the pseudo-elements inherit them). */
+html.pt-vt-theme::view-transition-old(root),html.pt-vt-theme::view-transition-new(root){animation:none}
+html.pt-vt-theme::view-transition-new(root){animation:pt-theme-reveal var(--t-slow) var(--ease-out) both}
+@keyframes pt-theme-reveal{
+  from{clip-path:circle(6px at var(--pt-mx,92%) var(--pt-my,90px))}
+  to{clip-path:circle(150vmax at var(--pt-mx,92%) var(--pt-my,90px))}
+}
+
+/* ── 3. Next-prayer countdown ─────────────────────────────────────────
+   Digits roll individually (spans stacked in an overflow cell, WAAPI in
+   js/motion.js — only the changed digit moves). direction:ltr keeps the
+   HH:MM:SS column order readable under RTL. */
+.cd-face{display:inline-flex;direction:ltr;unicode-bidi:isolate;will-change:contents}
+.cd-face .cell{position:relative;overflow:hidden;display:inline-block;flex:none}
+.cd-face .cell.f{width:.55ch;text-align:center}
+.cd-face .cell.font{width:1ch;text-align:center}
+.cd-face .v{display:inline-block}
+.cd-face .old{position:absolute;inset:0;display:inline-block;pointer-events:none}
+/* Thin progress arc around the countdown chip: rounded-rect stroke with
+   pathLength=100 so the dash offset is a plain 0–100 fraction. Linear easing
+   keeps the sweep honest; direction mirrors in RTL. */
+.cd-arc{position:absolute;inset:-8px;pointer-events:none}
+.cd-arc rect{fill:none;stroke:var(--gold);stroke-opacity:.85;stroke-width:2px;
+  /* the chip is far from square: without this the stretched viewBox turns
+     the 2px stroke into a 2px×9px band along two of the four edges */
+  vector-effect:non-scaling-stroke;
+  transition:stroke-dashoffset var(--t-slow) linear}
+/* Loading skeleton (no times yet) — replaces the "—" / "--:--" placeholders */
+.cd-skel{display:block;width:7ch;height:.85em;border-radius:.3em;margin-top:.08em}
+
+/* Sidebar theme rows sit on the HOVER surface of the rail, not on a card:
+   the label must read as rail text (white), never the theme's own --text
+   which can be near-black in light themes on this dark green rail. */
+.sb-foot .sw.active .sw-lbl,.sb-foot .sw:hover .sw-lbl{color:#fff}
+.sb-foot .sw:hover{background:rgba(255,255,255,.08)}
+
+/* Mobile hero: hairline progress below the countdown (same fraction) */
+.mh-prog{position:relative;overflow:hidden;height:3px;border-radius:3px;
+  background:rgba(255,255,255,.22);margin-top:10px;max-width:260px;align-self:flex-start}
+.mh-prog i{position:absolute;inset:0;top:0;inset-inline-start:0;border-radius:3px;background:var(--gold);
+  transform-origin:left center;transition:transform var(--t-slow) linear}
+[dir="rtl"] .mh-prog i{transform-origin:right center}
+
+/* ── 4. Prayer list: staggered entrance + living "next" glow ─────────
+   The stagger is opt-in via a .stagger class (js/motion.js) so the thirtieth
+   second re-render paints instantly instead of replaying the entrance. */
+.prayer-cards.stagger .pcard,.mstrip.stagger .pcard{animation:pt-card-in .34s var(--ease-out) both;
+  animation-delay:calc(var(--i,0) * 55ms)}
+@keyframes pt-card-in{from{opacity:0;transform:translateY(12px) scale(.98)}}
+/* The current prayer breathes — a slow opacity wave on its top ribbon line,
+   no scale, no shadow bloom: alive but resting. */
+.pcard.next::before{animation:pt-breathe 4.2s ease-in-out infinite}
+@keyframes pt-breathe{0%,100%{opacity:.45}50%{opacity:1}}
+
+/* History chip state cycle: spring instead of a bare class flip. The chip
+   relaxes, its state dot pops, the colour ring follows the (existing)
+   transition on border/box-shadow. */
+.hchip.pop{animation:pt-chip-pop .3s var(--ease-tap)}
+@keyframes pt-chip-pop{45%{transform:scale(1.07)}}
+.hchip.pop .hi{animation:pt-dot-pop .3s var(--ease-tap)}
+@keyframes pt-dot-pop{45%{transform:scale(1.25)}}
+
+/* ── 5. Sun & night arc ───────────────────────────────────────────────
+   Whole-line SVG: horizon, day arc, and a marker that travels it. The marker
+   only ever changes its transform, so the frame cost is a composite. */
+.sun-arc{background:var(--surface);border:1px solid var(--border);border-radius:16px;
+  padding:12px 18px 8px;margin-bottom:12px}
+.sun-arc svg{display:block;width:100%;max-width:560px;height:auto;margin-inline:auto}
+.sun-arc .pt-sun-marker{transition:transform var(--t-slow) linear}
+.sun-arc .sa-lbl{display:flex;justify-content:space-between;gap:10px;
+  font-size:10.5px;color:var(--text-muted);font-variant-numeric:tabular-nums;padding-bottom:6px}
+[dir="rtl"] .sun-arc svg .day-fill{transform-origin:60px 60px}
+/* mirror the drawing direction; labels are HTML and mirror naturally */
+[dir="rtl"] .sun-arc svg{transform:scaleX(-1)}
+
+/* ── 6. Qibla compass: aligned pulse ──────────────────────────────────
+   One quiet ring breathing from the rim when the needle is within tolerance
+   (2°, set by compass.js opening the .aligned gate). 2.4s, opacity+scale. */
+.compass{overflow:visible}
+.compass.aligned::before{content:'';position:absolute;inset:-9px;border-radius:50%;
+  border:1.5px solid var(--gold);pointer-events:none;
+  animation:pt-aligned 2.4s ease-out infinite}
+@keyframes pt-aligned{0%{transform:scale(.94);opacity:.55}70%{transform:scale(1.1);opacity:0}100%{transform:scale(1.1);opacity:0}}
+.compass.aligned .q-needle::before{background:var(--gold)}
+/* spring drive (js/motion.js) replaces the old transition — transform set per
+   frame, so a CSS transition would lag the solver */
+.q-needle{transition:none}
+
+/* ── 7. Dhikr counter ─────────────────────────────────────────────────
+   Tap ripple (one element per tap, cleans itself up), number pop, and the
+   milestone burst at a completed tasbih round (33/100/…). */
+.dhikr-ripple{position:absolute;border-radius:50%;background:var(--primary);
+  pointer-events:none;transform:scale(.2);opacity:.3;
+  animation:pt-ripple .45s var(--ease-out) forwards}
+@keyframes pt-ripple{to{transform:scale(1.5);opacity:0}}
+.dhikr-count.pop{animation:pt-num-pop .25s var(--ease-tap)}
+@keyframes pt-num-pop{45%{transform:scale(1.13)}}
+.dhikr-ring.milestone::after{content:'';position:absolute;inset:-14px;border-radius:50%;
+  border:2px solid var(--primary);pointer-events:none;
+  animation:pt-milestone .7s var(--ease-out) forwards}
+@keyframes pt-milestone{0%{transform:scale(.9);opacity:.5}100%{transform:scale(1.25);opacity:0}}
+
+/* ── 8. Sidebar indicator + mobile bottom-nav spring ──────────────────
+   One gold bar shared by the whole rail, moved between rows by transform —
+   the old per-item ::before stayed dead; hide it so the two never double up. */
+.sb-nav{position:relative}
+.sb-nav .nav-item.active::before{opacity:0;transition:opacity var(--t-med)}
+.sb-ind{position:absolute;width:3.5px;border-radius:3px;background:var(--gold);
+  pointer-events:none;z-index:2;transition:transform var(--t-med) var(--ease-io)}
+.bnav .bbtn .bi{transform-origin:center bottom}
+.bnav .bbtn.active .bi{animation:pt-tab-pop .3s var(--ease-tap)}
+@keyframes pt-tab-pop{40%{transform:translateY(-3px) scale(1.12)}}
+
+/* ── 9. Stats: bars grow from the baseline, numbers count up ──────────
+   scaleX/scaleY (transform only) with a per-bar stagger. RTL mirrors the fill
+   direction. Count-up itself is JS (js/motion.js) — once per page load. */
+#stChart .stk-bar{transform-origin:center bottom;transform:scaleY(0);
+  animation:pt-grow .5s var(--ease-out) forwards;
+  animation-delay:calc(var(--i,0) * 16ms)}
+@keyframes pt-grow{to{transform:scaleY(1)}}
+#stByPrayer .stk-fill{transform:scaleX(0);transform-origin:left center;
+  animation:pt-stretch .55s var(--ease-out) forwards;
+  animation-delay:calc(var(--i,0) * 60ms)}
+[dir="rtl"] #stByPrayer .stk-fill{transform-origin:right center}
+@keyframes pt-stretch{to{transform:scaleX(1)}}
+/* Stats page draw-in arrives with a small settle on the section itself */
+#page-stats.active{animation:pt-page-in var(--t-med) var(--ease-out)}
+
+/* ── 10. Downloads: restrained entrance for the rows and steps ─────── */
+#page-downloads .dlb-item{--i:0}
+#page-downloads .dlb-item:nth-child(2){--i:1}
+#page-downloads .dlb-item:nth-child(3){--i:2}
+#page-downloads .dl-head{animation:pt-fade-in .3s var(--ease-out) both}
+#page-downloads.active .dlb-item{animation:pt-card-in .34s var(--ease-out) both;
+  animation-delay:calc(70ms + var(--i) * 70ms)}
+#page-downloads.active .dl-help-card{animation:pt-card-in .34s var(--ease-out) both;
+  animation-delay:calc(90ms + var(--i,0) * 80ms)}
+#page-downloads .dl-help-card:nth-child(2){--i:1}
+@keyframes pt-fade-in{from{opacity:0;transform:translateY(6px)}}
+/* hover only where a pointer exists; press is for everyone */
+.dlb-btn{transition:transform var(--t-fast) var(--ease-out),box-shadow var(--t-fast),filter var(--t-fast)}
+.dlb-btn:active{transform:scale(.985);filter:brightness(1.08)}
+
+/* ── Reduced motion: the global rule in app.css already collapses every
+   animation above to instant and drops transform transitions. Two things
+   still deserve an explicit voice here: the looping "living" decorations
+   (they must freeze, not strobe once per state change), and the arc/marker
+   transitions that would otherwise snap without telling the user why.
+   Crossfades survive: the View Transitions themselves are gated in JS. ── */
+@media (prefers-reduced-motion: reduce){
+  .pcard.next::before,.compass.aligned::before{animation:none}
+  .compass.aligned::before{opacity:.22;transform:none;inset:-7px}
+  .prayer-cards.stagger .pcard,.mstrip.stagger .pcard,
+  #stChart .stk-bar,#stByPrayer .stk-fill,
+  #page-downloads.active .dlb-item,#page-downloads.active .dl-help-card{
+    animation:none;transform:none;opacity:1;animation-delay:0s}
+  #stChart .stk-bar,#stByPrayer .stk-fill{transform:scale(1)}
+  .sun-arc .pt-sun-marker,.cd-arc rect,.mh-prog i,.sb-ind{transition:none}
+  .bnav .bbtn.active .bi{animation:none}
+}

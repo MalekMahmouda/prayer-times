@@ -11,7 +11,7 @@
      Cairo — UI everywhere, latin + arabic; Noto Naskh Arabic — Quran only.
      Weights: 400 body/labels · 600 labels/buttons · 700 headings,
      numerals, Arabic display · higher only in the adhan overlay. */
-  --font: 'Cairo', 'Segoe UI Variable Display', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font: 'Sora', 'Cairo', 'Segoe UI Variable Display', 'Segoe UI', system-ui, -apple-system, sans-serif;
   --font-ar: 'Cairo', 'Segoe UI', Tahoma, Arial, sans-serif;
   --font-quran: 'Amiri Quran', 'Amiri', 'Noto Naskh Arabic', var(--font-ar);
   --fs-countdown: 52px;
@@ -21,7 +21,15 @@
   --sb-w: 232px; --sb-w-compact: 68px;
   --topbar-h: 62px;
   --dur: .22s; --dur-slow: .4s;
+  /* Motion language — 3 durations × 3 curves, reused everywhere (styles/motion.css):
+     fast = press feedback & ticks · med = entrances & moves · slow = progress
+     arcs, theme reveal. quint decelerates (entrances), io moves on screen,
+     tap overshoots ≤8% (touched elements only). */
   --ease: cubic-bezier(.33,1,.68,1);
+  --t-fast:.15s; --t-med:.3s; --t-slow:.6s;
+  --ease-out:cubic-bezier(.22,1,.36,1);
+  --ease-io:cubic-bezier(.77,0,.18,1);
+  --ease-tap: cubic-bezier(.34,1.35,.64,1);
 }
 
 /* ── Themes — 3 dark / 5 light ──
@@ -126,7 +134,12 @@
 /* ── Base ── */
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden}
-body{font-family:var(--font);font-weight:var(--fw-body);line-height:var(--lh-body);background:var(--bg);color:var(--text);transition:background var(--dur-slow),color var(--dur-slow);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+body{font-family:var(--font);font-weight:var(--fw-body);line-height:var(--lh-body);background:var(--bg);background-attachment:fixed;color:var(--text);transition:background var(--dur-slow),color var(--dur-slow);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='52' height='52' viewBox='0 0 52 52'%3E%3Cg fill='none' stroke='%23888' stroke-opacity='.055'%3E%3Crect x='16' y='16' width='20' height='20'/%3E%3Crect x='16' y='16' width='20' height='20' transform='rotate(45 26 26)'/%3E%3Ccircle cx='26' cy='26' r='11'/%3E%3Cpath d='M26 0v9M26 43v9M0 26h9M43 26h9'/%3E%3C/g%3E%3C/svg%3E")}
+/* Subtle identity in the canvas itself: a tiled 8-point-star lattice at ~5%
+   contrast, drawn as inline SVG in the body's own background above — no extra
+   network fetch, no asset file, neutral behind all 8 themes; every card above
+   is opaque, so text never sits on the lattice. */
 /* Android cutouts / gesture bars: keep content clear of system UI */
 .app{padding-top:env(safe-area-inset-top,0)}
 .content{padding-bottom:calc(92px + env(safe-area-inset-bottom,0))}
