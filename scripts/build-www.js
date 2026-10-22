@@ -36,12 +36,13 @@ execSync(
 
 // ── 2. Copy static assets ──
 cp(path.join(ROOT, 'styles', 'app.css'), path.join(WWW, 'styles', 'app.css'));
+cp(path.join(ROOT, 'styles', 'motion.css'), path.join(WWW, 'styles', 'motion.css'));
 cp(path.join(ROOT, 'styles', 'fonts.css'), path.join(WWW, 'styles', 'fonts.css'));
 fs.mkdirSync(path.join(WWW, 'fonts'), { recursive: true });
 for (const f of fs.readdirSync(path.join(ROOT, 'fonts'))) {
   if (f.endsWith('.woff2') || f.startsWith('OFL-') || f === 'OFL-README.md') cp(path.join(ROOT, 'fonts', f), path.join(WWW, 'fonts', f));
 }
-for (const f of ['app.js', 'pages.js', 'pages3.js', 'reader.js', 'store3.js', 'data.js', 'platform.js', 'overlay.js', 'widget.js', 'compass.js', 'stats.js', 'extras.js']) {
+for (const f of ['app.js', 'motion.js', 'pages.js', 'pages3.js', 'reader.js', 'store3.js', 'data.js', 'platform.js', 'overlay.js', 'widget.js', 'compass.js', 'stats.js', 'extras.js']) {
   cp(path.join(ROOT, 'js', f), path.join(WWW, 'js', f));
 }
 // Shared calculation contract — same file the desktop scheduler requires.

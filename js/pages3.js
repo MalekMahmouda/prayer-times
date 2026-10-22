@@ -35,8 +35,18 @@ window.renderHistory = function renderHistory(elId) {
   }).join('');
   chips.querySelectorAll('.hchip').forEach((b) => {
     b.onclick = () => {
-      Store3.historyCycle(DB3, histDate, b.dataset.p);
+      const p = b.dataset.p;
+      Store3.historyCycle(DB3, histDate, p);
       save3(); renderHistory(elId); renderStatsIfVisible();
+      // Satisfying cycle: the re-rendered chip gets one spring (motion.css) —
+      // its state dot pops with it, the colour ring comes from the existing
+      // border/box-shadow transition.
+      const ref = chips.querySelector(`[data-p="${p}"]`);
+      const M = window.PTMotion;
+      if (ref && M) {
+        ref.classList.add('pop');
+        ref.addEventListener('animationend', () => ref.classList.remove('pop'), { once: true });
+      }
     };
   });
 };
@@ -227,14 +237,16 @@ window.renderStats = function renderStats() {
   const wk = Store3.statsForRange(DB3, weekAgo, today);
   const mo = Store3.statsForRange(DB3, monthStart, today);
   const fmtSummary = (x, days) => `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center">
-    <div><div style="font-size:20px;font-weight:800;color:var(--primary)">${x.completed}</div><div style="font-size:10.5px;color:var(--text-muted)">${S.lang === 'ar' ? 'مكتملة' : 'Completed'}</div></div>
-    <div><div style="font-size:20px;font-weight:800;color:var(--warning)">${x.missed}</div><div style="font-size:10.5px;color:var(--text-muted)">${S.lang === 'ar' ? 'فائتة' : 'Missed'}</div></div>
+    <div><div class="stk-num" style="font-size:20px;font-weight:800;color:var(--primary)">${x.completed}</div><div style="font-size:10.5px;color:var(--text-muted)">${S.lang === 'ar' ? 'مكتملة' : 'Completed'}</div></div>
+    <div><div class="stk-num" style="font-size:20px;font-weight:800;color:var(--warning)">${x.missed}</div><div style="font-size:10.5px;color:var(--text-muted)">${S.lang === 'ar' ? 'فائتة' : 'Missed'}</div></div>
     <div><div style="font-size:20px;font-weight:800">${x.recorded}/${days * 5}</div><div style="font-size:10.5px;color:var(--text-muted)">${S.lang === 'ar' ? 'مسجلة' : 'Recorded'}</div></div>
   </div>`;
   $('stWeek').innerHTML = fmtSummary(wk, 7);
   $('stMonth').innerHTML = fmtSummary(mo, new Date().getDate());
 
   // 30-day chart (CSS bars, height = recorded prayers, color = dominant state)
+  // Bars grow from the baseline on entrance (.stk-bar, motion.css — scaleY
+  // with a per-bar stagger; transform-only, RTL-safe by construction).
   const days = [];
   for (let i = 29; i >= 0; i--) {
     const d = new Date(Date.now() - i * 86400000);
@@ -246,10 +258,10 @@ window.renderStats = function renderStats() {
   }
   const maxRec = 5;
   $('stChart').innerHTML = `<div style="display:flex;align-items:flex-end;gap:3px;height:120px">
-    ${days.map((x) => {
+    ${days.map((x, bi) => {
       const h = (x.rec / maxRec) * 100;
       const color = x.missed > 0 && x.done === 0 ? 'var(--danger)' : (x.done > 0 && x.missed === 0 && x.rec === 5 ? 'var(--success)' : (x.rec === 0 ? 'var(--border)' : 'var(--warning)'));
-      return `<div title="${x.k}: ${x.done} completed, ${x.missed} missed" style="flex:1;height:${Math.max(4, h)}%;background:${color};border-radius:3px 3px 0 0;opacity:${x.rec ? 1 : .45}"></div>`;
+      return `<div class="stk-bar" title="${x.k}: ${x.done} completed, ${x.missed} missed" style="--i:${29 - bi};flex:1;height:${Math.max(4, h)}%;background:${color};border-radius:3px 3px 0 0;opacity:${x.rec ? 1 : .45}"></div>`;
     }).join('')}
   </div><div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);margin-top:4px">
     <span>${days[0].d.toLocaleDateString(S.lang === 'ar' ? 'ar-SA' : 'en-US', { month: 'short', day: 'numeric' })}</span>
@@ -267,7 +279,7 @@ window.renderStats = function renderStats() {
     }
   }
   const maxPP = Math.max(1, ...Object.values(perPrayer).map((x) => Math.max(x.done, x.missed)));
-  $('stByPrayer').innerHTML = PRAYERS.map((p) => {
+  $('stByPrayer').innerHTML = PRAYERS.map((p, pi) => {
     const x = perPrayer[p];
     return `<div style="margin-bottom:9px">
       <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
@@ -275,11 +287,25 @@ window.renderStats = function renderStats() {
         <span class="muted">${x.done} done · ${x.missed} missed</span>
       </div>
       <div style="height:9px;background:var(--surface2);border-radius:5px;overflow:hidden;display:flex">
-        <div style="width:${(x.done / maxPP) * 100}%;background:var(--success);transition:width .4s"></div>
-        <div style="width:${(x.missed / maxPP) * 100}%;background:var(--warning);opacity:.75"></div>
+        <div class="stk-fill" style="--i:${pi};width:${(x.done / maxPP) * 100}%;background:var(--success);transition:width .4s"></div>
+        <div class="stk-fill" style="--i:${pi};width:${(x.missed / maxPP) * 100}%;background:var(--warning);opacity:.75"></div>
       </div>
     </div>`;
   }).join('');
+  // Numbers count up once (motion.js owns the once-per-element gate and the
+  // reduced-motion path).
+  const M2 = window.PTMotion;
+  if (M2) {
+    const sv = $('stStreak').querySelectorAll('.stat-mini .v');
+    if (sv[0]) M2.countUp(sv[0], sk.current);
+    if (sv[1]) M2.countUp(sv[1], sk.longest);
+    const wkNums = $('stWeek').querySelectorAll('.stk-num');
+    if (wkNums[0]) M2.countUp(wkNums[0], wk.completed);
+    if (wkNums[1]) M2.countUp(wkNums[1], wk.missed);
+    const moNums = $('stMonth').querySelectorAll('.stk-num');
+    if (moNums[0]) M2.countUp(moNums[0], mo.completed);
+    if (moNums[1]) M2.countUp(moNums[1], mo.missed);
+  }
 };
 
 /* ═══ DAILY CONTENT (deterministic, verified local data only) ═══ */

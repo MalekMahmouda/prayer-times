@@ -28,3 +28,5 @@ release-apk/
 
 # Generated at build time by scripts/gen-android-raw.js (see npm run apk)
 android/app/src/main/res/raw/*.mp3
+sites-dist/
+~/

@@ -45,11 +45,16 @@ Highlights
 
 What's new in ${version}
 ------------------------
-This cycle shipped a new Downloads page reached from the sidebar (with a
-verified, real release asset behind every card), shareable #/ hash routes
-(deep links survive reload and back/forward), and a resilience ladder for
-Quran Radio (ordered HTTPS-relay fallbacks, one station at a time, an
-autoplay-block message instead of a dead feed).
+This cycle is a full hand-crafted redesign of the shell: refined green/paper/
+gold palette, Sora + Cairo type pairing with tabular numerals for every time,
+a faint 8-point-star background lattice, hairline borders, and one consistent
+motion language (150/300/600ms, two easing curves) driving: rolling countdown
+digits, a progress arc between the previous and next prayer, staggered prayer
+list with a breathing live highlight, spring-driven Qibla compass with an
+aligned pulse, tap-ripple dhikr counter with haptics, View-Transition page
+changes with a sliding sidebar indicator, draw-in stats charts, a dignified
+adhan overlay, and full per-theme dark variants. City search gained a Nominatim
+resolver, and the web build now ships from Freebuff Sites (Cloudflare).
 
 De-vibe passes (1.6.1 + 1.6.2)
 - The last text glyphs in the UI (play, pause, plus, stars, info) are now

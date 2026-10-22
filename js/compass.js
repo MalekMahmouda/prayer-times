@@ -214,7 +214,17 @@
     const target = state.heading == null ? b : norm360(b - state.heading);
     if (state.contAngle == null) state.contAngle = target;
     else state.contAngle += signedTurn(target, norm360(state.contAngle));
-    if (needle) needle.style.transform = `rotate(${state.contAngle}deg)`;
+    // Spring drive (v1.6): PTMotion settles the needle toward the target with
+    // a small, honest overshoot (transform-only, reduced-motion → direct set).
+    // Without it (motion module missing) keep the legacy direct set.
+    if (needle) {
+      if (window.PTMotion && window.PTMotion.springAngle) window.PTMotion.springAngle(needle, state.contAngle);
+      else needle.style.transform = `rotate(${state.contAngle}deg)`;
+    }
+    // Aligned ring (v1.6): one quiet breathing rim when on the qibla — CSS
+    // owns the pulse; this class is the only switch.
+    const dialWrap = needle && needle.closest ? needle.closest('.compass') : null;
+    if (dialWrap) dialWrap.classList.toggle('aligned', state.aligned && !isUnreliable());
     if (state.heading == null) {
       renderStatus(state.denied ? 'qibla.denied' : 'qibla.noSensor', state.denied);
     } else if (state.aligned && !isUnreliable()) {

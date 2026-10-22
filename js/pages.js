@@ -306,6 +306,7 @@ window.renderDhikr = function renderDhikr() {
 
 function dhikrCount() {
   const dh = S.cfg.dhikr;
+  const milestoneNow = dh.count > 0 && (dh.count + 1) % dh.target === 0;
   dh.count++;
   const today = localDateKey();
   dh.daily[today] = dh.daily[today] || { all: 0 };
@@ -313,6 +314,10 @@ function dhikrCount() {
   dh.totals[dh.preset] = dh.totals[dh.preset] || { all: 0 };
   dh.totals[dh.preset].all++;
   if (dh.count % dh.target === 0) { showToast(t('dhikr.done')); beep(); }
+  // Motion feedback (js/motion.js): ripple at the tap point, number pop, and
+  // a one-shot burst + double haptic when a tasbih round completes.
+  const M = window.PTMotion;
+  if (M && M.dhikrTap) M.dhikrTap($('dhikrRing'), $('dhikrCount'), milestoneNow);
   saveCfg(); renderDhikr();
 }
 
@@ -476,7 +481,7 @@ window.renderSettings = function renderSettings() {
 /* ═══ SETTINGS EVENT WIRING (once) ═══ */
 function wireSettings() {
   $('setLang').onchange = (e) => { S.lang = e.target.value; localStorage.setItem('ptlg', S.lang); applyLang(); pushCfg(); };
-  $('setTheme').onchange = (e) => { applyTheme(e.target.value); saveCfg(); };
+  $('setTheme').onchange = (e) => { PTMotion.themeChange(() => { applyTheme(e.target.value); saveCfg(); }); };
   $('setMethod').onchange = (e) => { S.cfg.method = e.target.value; saveCfg(); if (S.lat != null) fetchTimes(S.lat, S.lon); };
   $('setMadhab').onchange = (e) => { S.cfg.madhab = e.target.value; saveCfg(); refreshTodaySchedule(); };
   $('tg24').onclick = () => { S.cfg.h24 = !S.cfg.h24; saveCfg(); renderSettings(); renderDashboard(); };
@@ -537,6 +542,8 @@ function wireSettings() {
 
   // Dhikr
   $('dhikrRing').onclick = dhikrCount;
+  // ripple origin follows the pointer; +/− buttons keep the centred ripple
+  $('dhikrRing').addEventListener('pointerdown', (ev) => { if (window.PTMotion) PTMotion.beginTap(ev); });
   $('dhPlus').onclick = dhikrCount;
   $('dhMinus').onclick = () => { S.cfg.dhikr.count = Math.max(0, S.cfg.dhikr.count - 1); saveCfg(); renderDhikr(); };
   $('dhResetBtn').onclick = () => { S.cfg.dhikr.count = 0; saveCfg(); renderDhikr(); };

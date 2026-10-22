@@ -1,6 +1,47 @@
 # Changes — Prayer Times
 
-## Unreleased — Download page, Quran Radio, hash routes, sitemap
+## 1.6.3 — Hand-crafted redesign: palette, type, motion
+
+A full visual-design and motion pass over the same shell, same features, same
+stack — no new framework, no rewrite. The app should feel like a calm companion,
+not a marketing site: motion is breathing, not performing.
+
+### Design system
+- Refined palette as per-theme CSS variables: deep green `#146b47` primary,
+  warm paper background, muted gold accent — matched dark variants.
+- Sora (variable Latin: headings, tabular numerals) + Cairo (UI Arabic),
+  self-hosted; the mushaf text keeps Amiri/Noto Naskh untouched.
+- 8-point-star lattice drawn inline-SVG into the body background (~5% contrast,
+  no fetch); hairline borders and an 8px rhythm.
+- Motion language: `150/300/600ms` + two shared easing curves, once in CSS and
+  JS, reused everywhere. Transform/opacity only; `prefers-reduced-motion`
+  trades movement for short opacity/colour fades.
+- Emoji icons replaced by one inline stroke-SVG icon set.
+
+### Signature moments
+- Next-prayer countdown digits roll per-cell (odometer face); thin progress
+  arc between prev/next prayer; skeleton shimmer replaces `--:--`/`—`.
+- Prayer list staggered entrance + breathing highlight on the live prayer.
+- Record chips cycle Not recorded → Completed → Missed with a spring pop and
+  colour morph.
+- Sun & night arc with a smooth day marker; compass needle on an rAF spring
+  solver with aligned overshoot + facing-Kaaba pulse.
+- Dhikr: tap-centered ripple, number pop, ring fill, milestone burst, haptics.
+- Tab transitions via the View Transitions API, sliding sidebar indicator,
+  springy bottom-nav active state on mobile.
+- Theme switches crossfade; theme builder shows live swatches.
+- Stats bars grow from the baseline; numbers count up once.
+- Adhan overlay: slow dignified fade-in with a soft pulsing ring.
+
+### Infrastructure
+- Web app published on Freebuff Sites (Cloudflare Workers static assets) via
+  `sites-worker.js` + `sites.wrangler.json`; the Android-only local adhan audio
+  is intentionally not part of the web payload (the browser streams it).
+- City lookup gained a Nominatim fallback: AlAdhan's `addressInfo` now answers
+  404 to plain city names (verified 2026-10-22); both resolvers supply only
+  coordinates — the local engine still computes all timings.
+
+## Earlier — Download page, Quran Radio, hash routes, sitemap
 
 Everything ships inside the existing single-page shell. No new dependencies, no
 backend, no extra build step: the same HTML/CSS/JS goes to Electron, Android

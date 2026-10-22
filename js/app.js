@@ -323,7 +323,7 @@ function buildMSwatches() {
     const b = document.createElement('button');
     b.className = 'sw' + (th.id === S.cfg.theme ? ' active' : '');
     b.dataset.theme = th.id; b.style.background = th.color; b.title = S.lang === 'ar' ? th.ar : th.en;
-    b.onclick = () => { applyTheme(th.id); saveCfg(); buildSwatches(); buildMSwatches(); };
+    b.onclick = (e) => { PTMotion.themeChange(() => { applyTheme(th.id); saveCfg(); buildSwatches(); buildMSwatches(); }, e); };
     wrap.appendChild(b);
   });
 }
@@ -364,6 +364,7 @@ function renderMHomeSun() {
   const src = $('sunGrid'); if (!src) return;
   const dst = $('sunGridM'); if (!dst) return;
   dst.innerHTML = src.innerHTML;
+  if (window.PTMotion) { try { PTMotion.updateSunArc(); } catch (e) { /* no times yet */ } }
 }
 
 function renderMHomeCards() {
@@ -496,19 +497,36 @@ function buildSwatches() {
       b.style.background = th.color;
       b.title = S.lang === 'ar' ? th.ar : th.en;
     }
-    b.onclick = () => { applyTheme(th.id); saveCfg(); };
+    b.onclick = (e) => { PTMotion.themeChange(() => { applyTheme(th.id); saveCfg(); }, e); };
     wrap.appendChild(b);
   });
 }
 
 /* ═══ NAVIGATION ═══ */
+const PAGE_ORDER = ['prayers', 'mhome', 'calendar', 'qibla', 'quran', 'names', 'dhikr', 'stats', 'downloads', 'settings'];
 function gotoPage(name) {
   if (document.body.classList.contains('m-mode') && name === 'prayers') name = 'mhome';
   if (window.PTCompass && name !== 'qibla') window.PTCompass.stop();
+  // Sidebar active states update instantly (responsiveness); the page swap
+  // itself rides a shared-axis View Transition when supported + motion OK.
+  document.querySelectorAll('[data-page]').forEach((b) => b.classList.toggle('active', b.dataset.page === name));
+  if (window.PTMotion) {
+    const prevName = ((document.querySelector('.page.active') || {}).id || '').replace('page-', '');
+    PTMotion.navigate(() => _activatePage(name), PAGE_ORDER.indexOf(name), PAGE_ORDER.indexOf(prevName));
+  } else _activatePage(name);
+}
+function _activatePage(name) {
   document.querySelectorAll('.page').forEach((p) => p.classList.remove('active'));
   const pg = $('page-' + name); if (pg) pg.classList.add('active');
   if (name === 'mhome') { renderMHome(); renderMHomeCards(); }
-  document.querySelectorAll('[data-page]').forEach((b) => b.classList.toggle('active', b.dataset.page === name));
+  if (window.PTMotion && name === 'mhome') PTMotion.stagger($('mStrip'));
+  // Sidebar indicator + list stagger + sun arc — the motion module keeps one
+  // gold bar for the whole rail and slides it to the active row (transform-only).
+  if (window.PTMotion) {
+    PTMotion.layoutIndicators();
+    PTMotion.stagger($('prayerCards'));
+    try { PTMotion.updateSunArc(); } catch (e) { /* times not ready */ }
+  }
   if (name === 'calendar' && window.renderCalendar) renderCalendar();
   if (name === 'quran' && window.renderSurahList) renderSurahList();
   if (name === 'names' && window.renderNames) renderNames();
@@ -617,18 +635,37 @@ async function fetchTimes(lat, lon) {
 async function fetchByCity(city, country) {
   // Geocoding only (lat/lon) — timings are ALWAYS computed by the local engine
   // so there is exactly one source of prayer times.
+  // Primary: AlAdhan addressInfo. Verified 2026-10-22: the endpoint now answers
+  // 404 for plain city names, so a second resolver (Nominatim, already in CSP)
+  // fills in when AlAdhan can't geocode. Both only ever supply coordinates.
   const url = `https://api.aladhan.com/v1/addressInfo?address=${encodeURIComponent(city + (country ? ',' + country : ''))}`;
+  let geo = null;                 // { lat, lon } — the ONLY thing these APIs give us
   try {
     const r = await netFetch(url); const d = await r.json();
-    if (d.code !== 200 || !d.data || !Number.isFinite(Number(d.data.latitude)) || !Number.isFinite(Number(d.data.longitude))) throw new Error('geocode');
-    S.lat = Number(d.data.latitude); S.lon = Number(d.data.longitude);
-    S.city = city; S.country = country;
-    saveLoc();
-    S.times = null; S.hijri = null;            // drop any stale API cache
-    localStorage.removeItem('ptt');
-    await refreshTodaySchedule();
-    renderAll(); closeLocModal(); showToast(t('toast.locSet'));
-  } catch (e) { showToast(t('toast.locFail')); }
+    if (d.code === 200 && d.data && Number.isFinite(Number(d.data.latitude)) && Number.isFinite(Number(d.data.longitude))) {
+      geo = { lat: Number(d.data.latitude), lon: Number(d.data.longitude) };
+    }
+  } catch (e) { /* AlAdhan down / 404 — try OSM below */ }
+  if (!geo) {
+    // Fallback: Nominatim (already allowed by CSP). Nominatim asks for an app
+    // identity; keep it honest and minimal.
+    try {
+      const oUrl = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(city + (country ? ',' + country : ''));
+      const r2 = await netFetch(oUrl); const list = await r2.json();
+      const hit = Array.isArray(list) && list[0];
+      if (hit && Number.isFinite(Number(hit.lat)) && Number.isFinite(Number(hit.lon))) {
+        geo = { lat: Number(hit.lat), lon: Number(hit.lon) };
+      }
+    } catch (e) { /* offline or geocoder down */ }
+  }
+  if (!geo) { showToast(t('toast.locFail')); return; }
+  S.lat = geo.lat; S.lon = geo.lon;
+  S.city = city; S.country = country;
+  saveLoc();
+  S.times = null; S.hijri = null;            // drop any stale API cache
+  localStorage.removeItem('ptt');
+  await refreshTodaySchedule();
+  renderAll(); closeLocModal(); showToast(t('toast.locSet'));
 }
 
 /* ═══ OFFLINE SCHEDULE (platform adapter: main process on desktop, adhan lib on mobile/browser) ═══ */
@@ -767,6 +804,7 @@ function renderSunSection() {
     { i: ICONS.lastThird, k: 'lastThird', lbl: t('lastThird'), v: ts && ts.lastThird ? ts.lastThird : '—' },
   ];
   el.innerHTML = rows.map((r) => `<div class="sun-cell"><div class="ic">${r.i}</div><div class="lbl">${r.lbl}</div><div class="tm">${r.v}</div></div>`).join('');
+  if (window.PTMotion) { try { PTMotion.updateSunArc(); } catch (e) { /* no times yet */ } }
 }
 
 /* ═══ COUNTDOWN ═══ */
@@ -778,12 +816,30 @@ function startCountdown() {
   tick();
 }
 function tick() {
-  if (!S.times) return;
+  if (!S.times) {
+    // Loading state: skeleton where the digits will be (no more "--:--:--").
+    const M = window.PTMotion;
+    if (M) { M.skeleton($('heroCd')); const mCd0 = $('mCd'); if (mCd0) M.skeleton(mCd0); }
+    return;
+  }
   const info = nextPrayerInfo();
   if (!info) return;
   const cdStr = fmtCountdown(info.next.at - instantNow());
-  $('heroCd').textContent = cdStr;
-  const mCd = $('mCd'); if (mCd) mCd.textContent = cdStr;
+  const M = window.PTMotion;
+  if (M) M.setCountdown($('heroCd'), cdStr); else $('heroCd').textContent = cdStr;
+  const mCd = $('mCd'); if (mCd) { if (M) M.setCountdown(mCd, cdStr); else mCd.textContent = cdStr; }
+  // Progress arc / strip bar: fraction elapsed between the previous and next prayer.
+  if (M) {
+    const frac = M.prayerIntervalFrac();
+    if (frac != null) {
+      const glass = document.querySelector('.hero-glass');
+      if (glass) { M.mountArc(glass); M.setArc(glass, frac); }
+      if (mCd) {
+        M.mountBar(mCd.parentElement);
+        M.setBar(mCd.parentElement, frac);
+      }
+    }
+  }
   // Refresh card states (next/past) every 30s; full re-render keeps headers fresh.
   if (++tickN % 30 === 0) { renderDashboard(); renderMHome(); }
 }
@@ -1221,6 +1277,12 @@ async function init() {
 
   refreshTodaySchedule();
   startCountdown();
+  // Sun & night arc cards (desktop dashboard + mobile home) mount once here;
+  // tick + renders keep the marker honest.
+  if (window.PTMotion) {
+    const sg = $('sunGrid'); if (sg) PTMotion.mountSunArc(sg);
+    const sgm = $('sunGridM'); if (sgm) PTMotion.mountSunArc(sgm);
+  }
   if (window.initPhase3) initPhase3();   // Phase 3: history, dhikr library, locations, backup, theme builder
   loadQuranDataset();                     // Phase 3: bundled Quran text (async, non-blocking)
   wireKeyboardShortcuts();
