@@ -171,6 +171,24 @@ if (!exists('dist-web/manifest.webmanifest')) {
         ? pass(`${size}px PWA icon is present and listed in the manifest`)
         : fail(`${size}px PWA icon missing from manifest or build output`);
     }
+    const swPath = path.join(ROOT, 'dist-web', 'sw.js');
+    if (!fs.existsSync(swPath)) {
+      fail('dist-web/sw.js missing; cannot validate PWA icon precache');
+    } else {
+      const sw = fs.readFileSync(swPath, 'utf8');
+      const match = sw.match(/const SHELL = (\[[\s\S]*?\]);/);
+      if (!match) {
+        fail('dist-web/sw.js shell list is missing or malformed');
+      } else {
+        try {
+          const shell = JSON.parse(match[1]);
+          const missing = (manifest.icons || []).filter((icon) => !shell.includes(icon.src));
+          missing.length
+            ? fail('manifest icons missing from offline precache: ' + missing.map((icon) => icon.src).join(', '))
+            : pass('all manifest icons are included in the offline precache');
+        } catch (e) { fail('dist-web service-worker shell is invalid JSON: ' + e.message); }
+      }
+    }
   } catch (e) { fail('dist-web manifest is invalid JSON: ' + e.message); }
 }
 
