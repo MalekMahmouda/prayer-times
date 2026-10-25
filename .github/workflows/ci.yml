@@ -15,11 +15,19 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - name: Build Pages and Android web shells
+        run: npm run web
       - name: Scheduler tests
         run: node scripts/test-scheduler.js
       - name: Contract tests
         run: node scripts/test-contract.js
       - name: Motion regression tests
         run: node scripts/test-motion.js
+      - name: Alert and notification regression tests
+        run: node scripts/test-alerts.js
+      - name: UI accessibility regression tests
+        run: node scripts/test-ui-accessibility.js
+      - name: Location date regression tests
+        run: node scripts/test-location-date.js
       - name: npm audit (production deps only)
         run: npm audit --omit=dev

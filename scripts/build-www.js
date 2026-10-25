@@ -43,7 +43,7 @@ fs.mkdirSync(path.join(WWW, 'fonts'), { recursive: true });
 for (const f of fs.readdirSync(path.join(ROOT, 'fonts'))) {
   if (f.endsWith('.woff2') || f.startsWith('OFL-') || f === 'OFL-README.md') cp(path.join(ROOT, 'fonts', f), path.join(WWW, 'fonts', f));
 }
-for (const f of ['web-alerts.js', 'app.js', 'motion.js', 'pages.js', 'pages3.js', 'reader.js', 'store3.js', 'data.js', 'platform.js', 'overlay.js', 'widget.js', 'compass.js', 'stats.js', 'extras.js']) {
+for (const f of ['early-locale.js', 'web-alerts.js', 'app.js', 'motion.js', 'pages.js', 'pages3.js', 'reader.js', 'store3.js', 'data.js', 'platform.js', 'overlay.js', 'widget.js', 'compass.js', 'stats.js', 'extras.js']) {
   cp(path.join(ROOT, 'js', f), path.join(WWW, 'js', f));
 }
 // Shared calculation contract — same file the desktop scheduler requires.

@@ -150,17 +150,14 @@ button{cursor:pointer;border:none;background:none}
 ::-webkit-scrollbar-thumb:hover{background:var(--text-muted);background-clip:padding-box}
 ::selection{background:var(--primary-soft)}
 a{color:var(--primary)}
-/* Reduced motion = a gentler equivalent, not a blanket kill (Apple §14).
-   Movement (transform / keyframes / smooth scroll) is neutralised, but short
-   opacity + colour fades survive so state changes still read as feedback
-   instead of snapping. */
+/* Reduced motion removes transitions and movement instead of leaving subtle
+   fades for users who explicitly request that motion be minimized. */
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{
     animation-duration:.01ms !important;animation-iteration-count:1 !important;
-    transition-property:opacity,color,background-color,border-color,box-shadow,fill,stroke !important;
-    transition-duration:.15s !important;
+    transition-property:none !important;transition-duration:0s !important;transition-delay:0s !important;
+    scroll-behavior:auto !important;
   }
-  html{scroll-behavior:auto}
   .page.active{animation:none}
 }
 /* Translucency is a preference too: swap the glass layers for solid ones. */
@@ -550,6 +547,7 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:14px 0}
 .chip.active{background:var(--grad);color:var(--on-primary);border-color:transparent;box-shadow:var(--shadow-sm)}
 .dhikr-stage{display:flex;flex-direction:column;align-items:center;gap:16px;padding:26px 0 12px}
 .dhikr-ring{width:236px;height:236px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;user-select:none;-webkit-tap-highlight-color:transparent}
+.dhikr-ring:focus-visible{outline:3px solid var(--primary);outline-offset:5px;border-radius:50%}
 .dhikr-ring:active .inner{transform:scale(.96)}
 .dhikr-ring svg{position:absolute;inset:0;transform:rotate(-90deg)}
 .dhikr-ring .circle-bg{fill:none;stroke:var(--border);stroke-width:9}

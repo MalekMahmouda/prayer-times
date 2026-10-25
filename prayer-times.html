@@ -11,6 +11,7 @@
      all silently blocked (media-load 'URL safety check'). Explicit https:
      matches on both http(s) pages and file:// pages. -->
 <title>Prayer Times | أوقات الصلاة</title>
+<script src="js/early-locale.js"></script>
 <link rel="stylesheet" href="styles/app.css">
 <link rel="stylesheet" href="styles/motion.css">
 <link rel="stylesheet" href="styles/fonts.css">
@@ -41,7 +42,7 @@
       <button class="nav-item" data-page="settings"><span class="ni" data-icon="sliders"></span><span class="t">Settings</span></button>
     </nav>
     <div class="sb-foot">
-      <div class="lbl">Theme</div>
+      <div class="lbl" id="sbThemeLbl">Theme</div>
       <div class="swatches" id="sbSwatches"></div>
     </div>
   </aside>
@@ -57,7 +58,7 @@
       <span class="tb-spacer"></span>
       <span class="badge-off" id="offBadge">Offline</span>
       <button class="icon-btn" id="langBtn" title="Language / اللغة"><span data-icon="globe"></span></button>
-      <button class="icon-btn nav-jump" data-page="settings" title="Settings"><span data-icon="sliders"></span></button>
+      <button class="icon-btn nav-jump" id="navSettingsJump" data-page="settings" title="Settings"><span data-icon="sliders"></span></button>
     </header>
 
     <main class="content" id="content">
@@ -424,7 +425,7 @@
         <div id="dhikrLibList" style="margin-bottom:18px"></div>
         <div class="card" style="display:flex;flex-direction:column;align-items:center">
           <div class="dhikr-stage">
-            <div class="dhikr-ring" id="dhikrRing" title="Tap to count">
+            <button class="dhikr-ring" id="dhikrRing" type="button" aria-describedby="dhikrHint" aria-label="Count dhikr">
               <svg viewBox="0 0 230 230" width="230" height="230">
                 <circle class="circle-bg" cx="115" cy="115" r="106"></circle>
                 <circle class="circle-fg" id="ringFg" cx="115" cy="115" r="106" stroke-dasharray="666" stroke-dashoffset="666"></circle>
@@ -434,7 +435,7 @@
                 <div class="dhikr-word" id="dhikrWord">—</div>
                 <div class="dhikr-target" id="dhikrTargetLbl">—</div>
               </div>
-            </div>
+            </button>
             <div class="stepper" style="margin-top:4px">
               <button id="dhMinus">−</button>
               <div class="val" id="dhVal">0</div>
@@ -671,7 +672,7 @@
 </div>
 
 <!-- ══ FULL-SCREEN AZAN (mobile Test Adhan + foreground prayer time) ══ -->
-<div class="azan-screen" id="azanOverlay" role="dialog" aria-modal="true" aria-labelledby="azanArName" aria-hidden="true">
+<div class="azan-screen" id="azanOverlay" role="dialog" aria-modal="true" aria-labelledby="azanArName" aria-hidden="true" tabindex="-1">
   <div class="azan-inner">
     <div class="azan-city" id="azanCity">—</div>
     <div class="azan-ar" id="azanArName">الفجر</div>

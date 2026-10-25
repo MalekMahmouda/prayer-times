@@ -87,14 +87,15 @@ Outputs land in `android/app/build/outputs/apk/` and are copied to `release-apk/
 
 ## Versioning
 
-`versionName` mirrors the desktop release version in `package.json` (currently 1.5.0); `versionCode` is an integer that must increase with every distributed build (8 at v1.4.0, 9 at v1.5.0).
+`package.json` and `android/app/build.gradle` currently agree on `versionName 1.6.4`; Android uses `versionCode 12`. The version code must increase with every distributed Android update. This audit candidate intentionally keeps the current version and code unchanged; it is not a release.
 
-## Tested here (build-level)
+## Verified for the current source candidate
 
-- Web bundle smoke test in a browser: dashboard, hero countdown, sun section from the offline engine, calendar, Arabic RTL, themes.
-- `aapt badging`: package/id/label/permissions/SDK levels.
-- `apksigner verify`: v2 scheme, cert `CN=Prayer Times, O=Malek`.
-- Desktop regression suite: 4/4 (ISNA ordering, Makkah unchanged, madhab Asr delta, DST day) + clean Electron boot.
+- `npm test`: scheduler, contract, motion, alert, UI-accessibility, and location-date suites pass.
+- `npm audit --omit=dev`: zero production dependency vulnerabilities.
+- `npm run web`: regenerated `dist-web/` and Android `www/` shells.
+- Simulated Chromium: desktop English/Arabic controls, calendar/dhikr/Quran keyboard actions, adhan focus handling, reduced motion, and 390px RTL layout passed.
+- Not verified here: Gradle build/signing, AAB/APK installation, Android merged manifest, GPS/geocoding on a phone, notification/alarm behavior, locked-screen audio, Doze, or reboot recovery.
 
 ## Device test checklist (needs a real phone)
 
@@ -109,9 +110,18 @@ Outputs land in `android/app/build/outputs/apk/` and are copied to `release-apk/
 - [ ] Portrait + landscape, small + large screens, all themes, EN/AR RTL
 - [ ] Quran offline (reader, search, bookmarks); audio focus on calls
 
-## Play Store notes (future)
+## Google Play readiness
 
-- Target SDK must track current Play requirements (built against 36).
-- Keystore: `keystore/prayertimes.properties` (gitignored) is REQUIRED — `assembleRelease` now fails with a clear GradleException when it is missing instead of silently producing an unsigned APK (v1.4.0). Play App Signing recommended.
-- Consider an AAB (`bundleRelease`) instead of APK for Play distribution.
-- Privacy policy URL required (app is offline-first; only optional network calls are location lookup / Quran audio).
+- [x] `targetSdkVersion` / `compileSdkVersion` are 36, `minSdkVersion` is 24; application ID is `com.malek.prayertimes`.
+- [ ] Add and test a repeatable Play App Bundle (`bundleRelease`) path; the current `apk` script only builds an APK.
+- [ ] Provide the existing private signing keystore and verify the signed AAB/certificate. The required `keystore/prayertimes.properties` is absent from this checkout; never replace or regenerate an existing signing key.
+- [ ] Publish a privacy-policy URL and link it both in the Play listing and inside the app; complete Data safety, location/permission, ads, target-audience, content-rating, and app-access declarations.
+- [ ] Prepare the title, short/full descriptions, phone/tablet screenshots, icon, feature graphic, support contact, and localized English/Arabic listing.
+- [ ] Complete Play Console account/app verification, required testing track and tester period where applicable, pre-review checks, and staged rollout.
+- [ ] Install and test the signed release on real Android devices, including notification/exact-alarm permission, Doze, reboot restore, GPS denial/manual location, and audio.
+
+## Windows distribution readiness
+
+- The project has an Electron NSIS installer script, but no Windows installer was built from this candidate.
+- Configure a trusted code-signing certificate or distribute through Microsoft Store/MSIX; the current installer configuration is unsigned and can trigger SmartScreen warnings.
+- Test installation, upgrade, uninstall/data retention, notifications, tray/startup behavior, and Windows Defender/SmartScreen on a clean Windows machine.

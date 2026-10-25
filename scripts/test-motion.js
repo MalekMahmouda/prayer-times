@@ -84,4 +84,12 @@ test('digit cells fit a whole tabular digit and cannot flex-shrink', () => {
   assert.match(css, /\.cd-face \.cell\.font\{width:1ch;/);
   assert.match(css, /\.cd-face \.cell\{[^}]*flex:none/);
 });
+test('reduced-motion CSS removes transitions instead of leaving residual fades', () => {
+  const css = fs.readFileSync(path.join(__dirname, '../styles/app.css'), 'utf8');
+  const block = css.match(/@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{([\s\S]*?)\n\}/);
+  assert.ok(block, 'reduced-motion media query exists');
+  assert.match(block[1], /transition-property:none\s*!important/);
+  assert.match(block[1], /transition-duration:0s\s*!important/);
+  assert.doesNotMatch(block[1], /transition-duration:\.15s/);
+});
 console.log(`${tests} motion regression tests passed.`);
