@@ -144,7 +144,7 @@ const HMA = ['محرم','صفر','ربيع الأول','ربيع الثاني','
 /* ═══ I18N ═══ */
 const T = {
   en: {
-    appName: 'Prayer Times', sub: 'Islamic Companion',
+    appName: 'SalahNest', sub: 'Islamic Companion',
     nav: { prayers: 'Prayers', calendar: 'Calendar', qibla: 'Qibla', quran: 'Quran', names: '99 Names', dhikr: 'Dhikr', stats: 'Stats', downloads: 'Download', settings: 'Settings' },
     more: 'More', language: 'Language', location: 'Location',
     nextPrayer: 'Next Prayer', startsIn: 'Starts in', today: 'Today',
@@ -176,7 +176,7 @@ const T = {
     toast: { locSet: 'Location updated!', locFail: 'City not found. Try again.', noCity: 'Please enter a city', gpsDenied: 'Location denied. Set manually.', gpsNo: 'Geolocation not supported', gpsFail: 'Location unavailable — set your city manually', switchedEn: 'Switched to English', switchedAr: 'تم التبديل للعربية', testIn3: 'Test notification in 3s…', deskOnly: 'Desktop mode only', adhanPlay: 'Playing adhan preview…', adhanOverlay: 'Playing adhan — fullscreen overlay', adhanFail: 'Could not play the adhan preview', makkahDefault: 'No location set yet — showing Makkah by default. Set your city from Location.' },
     /* Downloads + Quran Radio (added with the GitHub/downloads section). */
     dl: {
-      title: 'Get Prayer Times',
+      title: 'Get SalahNest',
       lead: 'Install it on your phone, read the source, or pick an older release.',
       androidT: 'Android app',
       androidBtn: 'Download for Android',
@@ -207,7 +207,7 @@ const T = {
     dh: { subhan: 'SubhanAllah', subhanAr: 'سُبْحَانَ اللَّه', alhamd: 'Alhamdulillah', alhamdAr: 'الْحَمْدُ لِلَّه', akbar: 'Allahu Akbar', akbarAr: 'اللَّهُ أَكْبَر', tahlil: 'La ilaha illa Allah', tahlilAr: 'لَا إِلَٰهَ إِلَّا اللَّه', istighfar: 'Astaghfirullah', istighfarAr: 'أَسْتَغْفِرُ اللَّه', salawat: 'Salawat', salawatAr: 'صَلَّى اللَّهُ عَلَيْهِ وَسَلَّمَ' },
   },
   ar: {
-    appName: 'أوقات الصلاة', sub: 'رفيق إسلامي',
+    appName: 'SalahNest', sub: 'رفيق إسلامي',
     nav: { prayers: 'الصلوات', calendar: 'التقويم', qibla: 'القبلة', quran: 'القرآن', names: 'أسماء الله', dhikr: 'الذكر', stats: 'الإحصاءات', downloads: 'تحميل التطبيق', settings: 'الإعدادات' },
     more: 'المزيد', language: 'اللغة', location: 'الموقع',
     nextPrayer: 'الصلاة القادمة', startsIn: 'تبدأ بعد', today: 'اليوم',
@@ -238,7 +238,7 @@ const T = {
     },
     toast: { locSet: 'تم تحديث الموقع!', locFail: 'لم يتم العثور على المدينة. حاول مجدداً.', noCity: 'الرجاء إدخال مدينة', gpsDenied: 'تم رفض الموقع. حدد يدوياً.', gpsNo: 'تحديد الموقع غير مدعوم', gpsFail: 'تعذر تحديد الموقع — حدد مدينتك يدوياً', switchedEn: 'Switched to English', switchedAr: 'تم التبديل للعربية', testIn3: 'تنبيه تجريبي بعد ٣ ثوان…', deskOnly: 'يعمل في وضع سطح المكتب فقط', adhanPlay: 'تجربة الأذان…', adhanOverlay: 'تشغيل الأذان — شاشة كاملة', adhanFail: 'تعذر تشغيل معاينة الأذان', makkahDefault: 'لم يتم تحديد موقع بعد — تُعرض مكة افتراضياً. حدد مدينتك من صفحة الموقع.' },
     dl: {
-      title: 'حمّل تطبيق أوقات الصلاة',
+      title: 'حمّل تطبيق SalahNest',
       lead: 'ثبّته على هاتفك، أو اطّلع على الكود المصدري، أو اختر إصدارًا أقدم.',
       androidT: 'تطبيق أندرويد',
       androidBtn: 'تحميل لأندرويد',

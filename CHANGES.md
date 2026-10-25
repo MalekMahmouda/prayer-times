@@ -1,4 +1,4 @@
-# Changes — Prayer Times
+# Changes — SalahNest
 
 ## 1.6.3 — Hand-crafted redesign: palette, type, motion
 

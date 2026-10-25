@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * Prayer Times — Electron main process.
+ * SalahNest — Electron main process.
  * Window + tray lifecycle, IPC bridge to the renderer, native notifications,
  * adhan overlay window (local bundled audio, configured volume), widget/mini
  * consumers, start-with-Windows, sleep/resume recovery.
@@ -52,6 +52,10 @@ if (!isPrimary) {
   // File/Edit/View/Window/Help menu (with its shortcut keys) is never shown.
   Menu.setApplicationMenu(null);
 
+  // Preserve the established data folder even though the visible app name changes.
+  const legacyUserDataDir = path.join(app.getPath('appData'), 'Prayer Times');
+  fs.mkdirSync(legacyUserDataDir, { recursive: true });
+  app.setPath('userData', legacyUserDataDir);
 
   store = new JsonStore({
     dir: () => app.getPath('userData'),
@@ -113,7 +117,7 @@ if (!isPrimary) {
         win.hide();
         if (!shownTrayHint) {
           shownTrayHint = true;
-          notify('Prayer Times still running', 'Minimized to the system tray. Right-click its icon to quit.', () => showMainWindow());
+          notify('SalahNest still running', 'Minimized to the system tray. Right-click its icon to quit.', () => showMainWindow());
         }
       }
     });
@@ -143,7 +147,7 @@ if (!isPrimary) {
     const body = ar
       ? `تبدأ صلاة ${nm} بعد ${minutes} دقيقة`
       : `${prayer} starts in ${minutes} minute${minutes === 1 ? '' : 's'}`;
-    notify('Prayer Time 🕌', body, () => showMainWindow('prayers'));
+    notify('SalahNest', body, () => showMainWindow('prayers'));
   }
 
   function firePrayerTime({ prayer, time, lang }) {
@@ -347,7 +351,7 @@ if (!isPrimary) {
     azlog('test-alert requested (fires in 3s)');
     // Fires a real pre-alert 3 s later so the user can see the whole pipeline.
     setTimeout(() => {
-      notify('Prayer Time 🕌 (test)', 'This is how prayer alerts look. Click to open the app.', () => showMainWindow('prayers'));
+      notify('SalahNest (test)', 'This is how prayer alerts look. Click to open the app.', () => showMainWindow('prayers'));
     }, 3000);
   });
 

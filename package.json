@@ -1,6 +1,6 @@
 {
   "name": "prayertimes",
-  "productName": "Prayer Times",
+  "productName": "SalahNest",
   "version": "1.6.4",
   "description": "Islamic desktop companion with prayer times, Quran, Dhikr and Qibla.",
   "main": "main/main.js",
@@ -16,7 +16,7 @@
     "package:installer": "electron-builder --win nsis",
     "release": "node scripts/make-release.js",
     "www": "node scripts/build-www.js",
-    "test": "node scripts/test-scheduler.js && node scripts/test-contract.js && node scripts/test-motion.js && node scripts/test-alerts.js && node scripts/test-ui-accessibility.js && node scripts/test-location-date.js",
+    "test": "node scripts/test-scheduler.js && node scripts/test-contract.js && node scripts/test-motion.js && node scripts/test-alerts.js && node scripts/test-ui-accessibility.js && node scripts/test-location-date.js && node scripts/test-branding.js",
     "apk": "npm run www && node scripts/gen-android-raw.js && npx cap sync android && node scripts/apk-gradle.js assembleRelease",
     "apk:debug": "npm run www && node scripts/gen-android-raw.js && npx cap sync android && node scripts/apk-gradle.js assembleDebug",
     "assets:android": "node scripts/gen-android-icons.js && node scripts/gen-android-splash.js",
@@ -24,7 +24,7 @@
   },
   "build": {
     "appId": "com.malek.prayertimes",
-    "productName": "Prayer Times",
+    "productName": "SalahNest",
     "copyright": "Copyright © 2026 Malek Mahmoud",
     "directories": {
       "output": "dist",
@@ -50,7 +50,7 @@
     ],
     "win": {
       "icon": "assets/icon.ico",
-      "artifactName": "Prayer-Times-Setup-${version}.${ext}",
+      "artifactName": "SalahNest-Setup-${version}.${ext}",
       "target": [
         {
           "target": "nsis",
@@ -67,10 +67,10 @@
       "allowElevation": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Prayer Times",
+      "shortcutName": "SalahNest",
       "runAfterFinish": true,
       "deleteAppDataOnUninstall": false,
-      "uninstallDisplayName": "Prayer Times ${version}"
+      "uninstallDisplayName": "SalahNest ${version}"
     }
   },
   "dependencies": {

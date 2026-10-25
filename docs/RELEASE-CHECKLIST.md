@@ -1,8 +1,10 @@
-# Prayer Times — Release Readiness
+# SalahNest — Release Readiness
 
 ## Bottom line
 
 The published site and source are **not ready for a new Google Play or Windows release yet**. The current source is version **1.6.4** (Android `versionCode 12`); this audit did not change the version, publish anything, create a tag, or upload a file. The live Pages site remains `https://malekmahmouda.github.io/prayer-times/` at Pages commit `c45f29d00ee139f952fa05867e138c72eba509c8`; its source baseline is `e8d649563f2dfa5cee859ae923aa944c5ea81987`.
+
+The owner approved **SalahNest** as the visible product name for this unpublished candidate.
 
 A local-only candidate branch, `candidate/release-audit-2026-10-25`, contains the fixes below. Its generated web outputs are `dist-web/` (Pages/PWA) and `www/` (Android/Capacitor web shell). Neither has been pushed to GitHub Pages.
 
@@ -14,10 +16,12 @@ A local-only candidate branch, `candidate/release-audit-2026-10-25`, contains th
 - Applies a saved Arabic preference before styles load, avoiding an initial English/LTR render on reload.
 - Uses the selected location’s calendar date for the AlAdhan API fallback when a timezone is known, including an `Intl` fallback if the local calculation engine is unavailable. If no location timezone can be resolved, the app still has to fall back to the device date.
 - Adds regression tests and CI steps for the generated web shells, alerts, accessibility, and location-date behavior; corrects stale 1.5.0 documentation to 1.6.4.
+- Applies the approved **SalahNest** name to the website/PWA, Android app labels, desktop installer/tray, widgets, and notifications, while preserving the existing app IDs, URLs, and data folder.
 
 ## What passed
 
 - Automated suites: **74** scheduler, **298** calculation/contract, **7** motion, **46** alert/notification, **8** UI-accessibility, and **3** location-date checks all pass.
+- Branding tests: **9** source-level checks and **4** generated Pages/PWA/Android-shell checks pass, including the Capacitor native asset copy.
 - `npm audit --omit=dev` reports **zero production dependency vulnerabilities**.
 - `npm run web` successfully builds both `dist-web/` and `www/`; every PWA precache entry exists.
 - Chromium on desktop and a 390px phone-width viewport passed the tested English/Arabic controls, calendar and Dhikr keyboard actions, Quran interaction, Adhan focus handling, reduced motion, and RTL overflow checks; no browser errors were observed.
@@ -60,17 +64,18 @@ These are source and simulated-browser checks—not a physical-device or end-to-
 
 Two already-staged files exist outside the candidate repository: `/workspace/Prayer-Times-1.6.4.apk` (SHA-256 `10aab42136477125e1162ba04fea9d928bc31f7c09bac8102005c65aa4498808`) and `/workspace/Prayer-Times-Setup-1.6.4.exe` (SHA-256 `b50db5c51fd4727df79a47c667030c21d273142b2d4dfae5aa0fa7316b05b580`). They are **not** candidate releases: the APK’s packaged `js/app.js` and `js/pages.js` differ from the audited candidate, and its signature could not be independently verified because `apksigner` is unavailable. The EXE’s Authenticode signature and exact source provenance could not be checked here. Do not upload either as the current audit build.
 
-## Name recommendation — owner decision required
+## Approved product name: SalahNest
 
-“Prayer Times” is already used by multiple products: [Google Play: Islamic Prayer Times & Tracker](https://play.google.com/store/apps/details?id=whizpool.salahalarm&hl=en_US), [App Store: Prayer times!](https://apps.apple.com/us/app/prayer-times/id563334488), and [App Store: Prayer Times – Qibla & Salah](https://apps.apple.com/us/app/prayer-times-qibla-salah/id430204572). A more distinctive working title is **SalahNest**. The exact Google Play search returned no results, the Apple search response had no exact “SalahNest” title, and GitHub repository search returned zero matches. This is not trademark or legal clearance.
+“Prayer Times” is already used by multiple products: [Google Play: Islamic Prayer Times & Tracker](https://play.google.com/store/apps/details?id=whizpool.salahalarm&hl=en_US), [App Store: Prayer times!](https://apps.apple.com/us/app/prayer-times/id563334488), and [App Store: Prayer Times – Qibla & Salah](https://apps.apple.com/us/app/prayer-times-qibla-salah/id430204572). Exact-name searches previously found no “SalahNest” app title or GitHub repository; this is not trademark or legal clearance.
 
-No brand or identifier was renamed. If approved, the visible product name would need to be updated consistently in the app title, PWA manifest, installer, icons/store assets, and listings. Keep the application IDs (`com.malek.prayertimes`), repository slug, data folders, and existing URLs unchanged unless separately approved.
+The candidate now uses SalahNest in app titles, PWA metadata, installer labels, Android launcher labels, widgets, tray labels, and test notifications. The Android ID (`com.malek.prayertimes`), npm package name (`prayertimes`), repository slug, existing site/release URLs, and stored-data folder (`%APPDATA%\\Prayer Times`) are unchanged. Electron is explicitly pinned to the legacy user-data folder so the new `productName` cannot move existing settings.
 
 ## Publish checklist
 
 - [x] Preserve current release version `1.6.4` / Android `versionCode 12`; no tag, push, release, or upload performed.
 - [x] Build and test the isolated web/Android-shell candidate; all current local suites pass.
-- [ ] Owner chooses or approves the product name before any visible branding changes.
+- [x] Owner approved SalahNest; visible app branding updated in the unpublished candidate.
+- [x] Keep Android/application IDs, package name, repository slug, existing URLs, and data folder unchanged.
 - [ ] Restore the existing Android signing material in a secure build environment; add and test a signed AAB path; verify signing certificate and merged manifest.
 - [ ] Complete privacy policy, Play app-content declarations, localized store listing, screenshots/icon/feature graphic, testing track, and review.
 - [ ] Install the signed Android build on real devices; verify GPS, timezone changes, notification/exact-alarm permissions, Doze, reboot restore, lock-screen Adhan, audio, and upgrade.

@@ -18,7 +18,7 @@ const { execSync } = require('child_process');
 const SITE_URL = 'https://malekmahmouda.github.io';
 const SITE_PATH = '/prayer-times/';
 const SITE = SITE_URL + SITE_PATH;
-const SITE_TITLE = 'Prayer Times | أوقات الصلاة — مسبحة، قرآن، قبلة، تقويم هجري';
+const SITE_TITLE = 'SalahNest | Prayer Times — أوقات الصلاة، مسبحة، قرآن، قبلة، تقويم هجري';
 const SITE_DESC = 'Free offline prayer times app: accurate Muslim prayer times with adhan notifications, Qibla compass, full Quran reader with mushaf verses, electronic tasbih (dhikr counter), Hijri calendar, and 99 Names of Allah. Works with no account — install or use right in the browser.';
 const ROOT = path.join(__dirname, '..');
 const DIST = path.join(ROOT, 'dist-web');
@@ -45,7 +45,7 @@ html = html.replace(
 <meta property="og:image" content="${SITE}icons/icon-256.png">
 <meta property="og:locale" content="en_US">
 <meta property="og:locale:alternate" content="ar_AR">
-<meta property="og:site_name" content="Prayer Times">
+<meta property="og:site_name" content="SalahNest">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="${SITE_TITLE}">
 <meta name="twitter:description" content="${SITE_DESC}">
@@ -78,9 +78,9 @@ body.web-mode .mushaf{box-shadow:0 18px 44px rgba(80,58,12,.16),var(--shadow)}
 const icons = [192, 256, 512].filter((s) => fs.existsSync(path.join(ROOT, 'assets', `icon-${s}.png`)))
   .map((s) => ({ src: `icons/icon-${s}.png`, sizes: `${s}x${s}`, type: 'image/png', purpose: 'any maskable' }));
 fs.writeFileSync(path.join(DIST, 'manifest.webmanifest'), JSON.stringify({
-  name: 'Prayer Times — Islamic Companion',
-  short_name: 'Prayer Times',
-  description: 'Prayer times, Quran, Qibla, Dhikr and more — offline, private, no account.',
+  name: 'SalahNest — Islamic Companion',
+  short_name: 'SalahNest',
+  description: 'SalahNest: prayer times, Quran, Qibla, Dhikr and more — offline, private, no account.',
   lang: 'en',
   dir: 'ltr',
   start_url: './index.html',

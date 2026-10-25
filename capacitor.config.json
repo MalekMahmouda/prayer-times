@@ -1,6 +1,6 @@
 {
   "appId": "com.malek.prayertimes",
-  "appName": "Prayer Times",
+  "appName": "SalahNest",
   "webDir": "www",
   "android": {
     "allowMixedContent": false

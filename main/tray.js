@@ -28,7 +28,7 @@ function icon() {
 function createTray({ onOpen, onQuit, onNavigate }) {
   if (tray) return tray;
   tray = new Tray(icon());
-  tray.setToolTip('Prayer Times');
+  tray.setToolTip('SalahNest');
 
   // Left-click toggles the window.
   tray.on('click', () => onOpen());
@@ -50,7 +50,7 @@ function createTray({ onOpen, onQuit, onNavigate }) {
       if (!tray) return;
       tray.setToolTip(info && info.next
         ? `Next: ${info.next.prayer} at ${info.next.hhmm} (in ${info.next.countdown})`
-        : 'Prayer Times');
+        : 'SalahNest');
       rebuild(info);
     },
     destroy() { if (tray) { tray.destroy(); tray = null; } },
@@ -78,7 +78,7 @@ function buildTemplate(info, { onOpen, onQuit, onNavigate }) {
     tpl.push({ type: 'separator' });
   }
 
-  tpl.push({ label: 'Open Prayer Times', click: () => onOpen() });
+  tpl.push({ label: 'Open SalahNest', click: () => onOpen() });
   tpl.push({ type: 'separator' });
   tpl.push({ label: 'Quit', click: () => onQuit() });
   return tpl;

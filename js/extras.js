@@ -96,7 +96,7 @@ function ptRadioPaintMediaSession() {
     navigator.mediaSession.metadata = new MediaMetadata({
       title: t(ptRadioStation.nameKey),
       artist: t('radio.title'),
-      album: 'Prayer Times',
+      album: 'SalahNest',
     });
   } catch (e) { /* older WebView */ }
 }

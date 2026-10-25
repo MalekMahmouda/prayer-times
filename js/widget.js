@@ -34,7 +34,7 @@ function renderInfo(info) {
   el('wCd').textContent = info.next.countdown || '--:--:--';
   el('wLbl').textContent = ar ? 'الصلاة القادمة' : 'Next Prayer';
   el('wCdLbl').textContent = ar ? 'تبدأ بعد' : 'starts in';
-  el('wTitle').textContent = ar ? 'أوقات الصلاة' : 'Prayer Times';
+  el('wTitle').textContent = 'SalahNest';
   if (mode.mini && Array.isArray(info.times)) {
     el('wTimes').innerHTML = info.times.map((t) =>
       `<span class="tchip">${ar ? arabicName(t.prayer) : String(t.prayer || '').slice(0, 3)} <b>${t.time}</b></span>`).join('');

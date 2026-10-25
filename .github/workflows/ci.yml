@@ -17,6 +17,10 @@ jobs:
       - run: npm ci
       - name: Build Pages and Android web shells
         run: npm run web
+      - name: Product branding source tests
+        run: node scripts/test-branding.js
+      - name: Generated product branding tests
+        run: node scripts/test-built-branding.js
       - name: Scheduler tests
         run: node scripts/test-scheduler.js
       - name: Contract tests

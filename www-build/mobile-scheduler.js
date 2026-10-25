@@ -273,7 +273,7 @@ window.ptMobile = {
     if (!await window.ptMobile.requestPermissions()) return false;
     await LocalNotifications.createChannel({ id: 'prayer', name: 'Prayer times', importance: 5, visibility: 1, vibration: true });
     await LocalNotifications.schedule({ notifications: [{
-      id: notifId('pt-test-notification'), title: 'Prayer Times',
+      id: notifId('pt-test-notification'), title: 'SalahNest',
       body: window.ptMobile._cfg && window.ptMobile._cfg.lang === 'ar' ? 'إشعار تجريبي' : 'Test notification',
       channelId: 'prayer', schedule: { at: new Date(Date.now() + 3000), allowWhileIdle: true },
       extra: { kind: 'test', playAdhan: false },

@@ -574,7 +574,7 @@ function wireSettings() {
       }).catch(() => showToast(S.lang === 'ar' ? 'تعذر اختبار الإشعارات' : 'Notification test failed'));
     } else if (window.PTWebAlerts) {
       window.PTWebAlerts.requestPermission().then(async (p) => {
-        if (p === 'granted') await window.PTWebAlerts.notify('Prayer Time', S.lang === 'ar' ? 'إشعار تجريبي' : 'Test notification', 'pt-test');
+        if (p === 'granted') await window.PTWebAlerts.notify('SalahNest', S.lang === 'ar' ? 'إشعار تجريبي' : 'Test notification', 'pt-test');
         else showToast(S.lang === 'ar' ? 'الإشعارات غير مسموحة — تحقق من إعدادات المتصفح' : 'Notifications not allowed — check browser settings');
         updateBrowserNotifStatus();
       });

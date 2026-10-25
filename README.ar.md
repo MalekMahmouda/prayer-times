@@ -1,4 +1,4 @@
-# أوقات الصلاة · Prayer Times
+# SalahNest · أوقات الصلاة
 
 رفيق إسلامي مكتبي (ويندوز) ومحمول (أندرويد) — أوقات الصلاة، القرآن، الأذكار، القبلة، والمزيد، بجوهر يعمل دون اتصال بالإنترنت.
 
@@ -58,7 +58,7 @@ npm start
 ### بناء مثبّت ويندوز
 
 ```bash
-npm run package:installer   # → dist/Prayer-Times-Setup-1.5.0.exe
+npm run package:installer   # → dist/SalahNest-Setup-1.6.4.exe
 npm run release             # → مجلد release/ مع بصمات SHA-256
 ```
 
@@ -69,7 +69,7 @@ npm run apk        # → release-apk/ (تتطلب JDK 17+ و Android SDK)
 npm run web        # → dist-web/ (نسخة الويب PWA)
 ```
 
-بيانات المستخدم تُحفظ في `%APPDATA%\Prayer Times` على ويندوز، وتبقى بعد الترقية وإزالة التثبيت.
+للحفاظ على البيانات الحالية، يبقى مجلد المستخدم في `%APPDATA%\Prayer Times` على ويندوز، وتبقى البيانات بعد الترقية وإزالة التثبيت.
 
 ## البنية
 

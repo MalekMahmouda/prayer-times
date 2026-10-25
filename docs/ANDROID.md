@@ -1,6 +1,8 @@
-# Prayer Times — Android (APK)
+# SalahNest — Android (APK)
 
 The Android app is a **Capacitor wrapper around the same renderer** the desktop app uses. One UI, one design system, one storage model — with a thin platform layer (`js/platform.js`, `www-build/mobile-scheduler.js`) that swaps Electron APIs for Android ones.
+
+The visible launcher name is **SalahNest**; the Android application ID remains `com.malek.prayertimes` so existing installs and store identity are preserved.
 
 ## Architecture
 

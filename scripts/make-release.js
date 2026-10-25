@@ -2,7 +2,7 @@
 
 /**
  * Assembles the release/ folder after a successful installer build:
- *   release/Prayer-Times-Setup-<version>.exe  (copied from dist/)
+ *   release/SalahNest-Setup-<version>.exe  (copied from dist/)
  *   release/SHA256SUMS.txt
  *   release/RELEASE-NOTES.txt
  *   release/TEST-CHECKLIST.md
@@ -19,10 +19,11 @@ const OUT = path.join(ROOT, 'release');
 
 const pkg = require(path.join(ROOT, 'package.json'));
 const version = pkg.version;
-const exeName = `Prayer-Times-Setup-${version}.exe`;
+const productName = pkg.productName;
+const exeName = `${productName.replace(/\s+/g, '-')}-Setup-${version}.exe`;
 const exePath = path.join(DIST, exeName);
 
-const NOTES = `Prayer Times ${version}
+const NOTES = `${productName} ${version}
 ======================
 
 Islamic desktop companion — prayer times, Quran, Dhikr, Qibla, calendar,
@@ -96,7 +97,7 @@ Notes
   trust this build. SHA-256 checksums ship alongside the installer.
 `;
 
-const CHECKLIST = `# Manual Test Checklist — Prayer Times ${version}
+const CHECKLIST = `# Manual Test Checklist — ${productName} ${version}
 
 Run this on a clean Windows machine (or a fresh VM) if possible.
 

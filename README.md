@@ -1,4 +1,4 @@
-# Prayer Times · أوقات الصلاة
+# SalahNest · Prayer Times · أوقات الصلاة
 
 A native Windows desktop & Android Islamic companion built with Electron — prayer times, Quran, Dhikr, Qibla, and more, with a fully offline-first core.
 
@@ -53,11 +53,11 @@ npm start
 ### Build the Windows installer
 
 ```bash
-npm run package:installer   # → dist/Prayer-Times-Setup-1.6.4.exe
+npm run package:installer   # → dist/SalahNest-Setup-1.6.4.exe
 npm run release             # → release/ folder with SHA-256 checksums
 ```
 
-User data lives in `%APPDATA%\Prayer Times` and survives upgrades and uninstallation.
+For upgrade compatibility, user data stays in the existing `%APPDATA%\Prayer Times` folder and survives upgrades and uninstallation.
 
 ## Architecture
 

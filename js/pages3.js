@@ -600,9 +600,9 @@ window.initPhase3 = function initPhase3() {
   // About line: version from the platform (desktop main process / mobile label)
   const about = $('aboutLine');
   if (about) {
-    const fallback = 'Prayer Times';
+    const fallback = 'SalahNest';
     if (window.Plat) {
-      window.Plat.getVersion().then((v) => { about.textContent = v ? `Prayer Times v${v} · data stored locally` : fallback; }).catch(() => { about.textContent = fallback; });
+      window.Plat.getVersion().then((v) => { about.textContent = v ? `SalahNest v${v} · data stored locally` : fallback; }).catch(() => { about.textContent = fallback; });
     } else about.textContent = fallback;
   }
 };
