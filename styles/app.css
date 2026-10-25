@@ -1,8 +1,7 @@
 /* ════════════════════════════════════════════════════════════
    PRAYER TIMES — Design System v2
-   Inspired by 2025/26 dashboard trends: bento grids, soft glass
-   surfaces (with solid fallbacks), layered soft shadows, muted
-   palettes, big numerals, calm motion. RTL via logical properties.
+   A quiet daily companion: paper, pine, an editorial type hierarchy,
+   and a timetable that stays readable. RTL via logical properties.
    ════════════════════════════════════════════════════════════ */
 
 /* ── Tokens ── */
@@ -17,8 +16,9 @@
   --fs-countdown: 52px;
   --lh-body: 1.55; --lh-numeric: 1.04;
   --fw-body: 400; --fw-medium: 500; --fw-semibold: 600; --fw-bold: 700;
-  --r-xl: 26px; --r-lg: 20px; --r-md: 14px; --r-sm: 10px;
-  --sb-w: 232px; --sb-w-compact: 68px;
+  --font-display: Georgia, 'Times New Roman', serif;
+  --r-xl: 22px; --r-lg: 16px; --r-md: 12px; --r-sm: 8px;
+  --sb-w: 224px; --sb-w-compact: 76px;
   --topbar-h: 62px;
   --dur: .22s; --dur-slow: .4s;
   /* Motion language — 3 durations × 3 curves, reused everywhere (styles/motion.css):
@@ -90,12 +90,12 @@
   --h-fajr:#5178b8; --h-dhuhr:#cf9d1d; --h-asr:#d97b3a; --h-maghrib:#bb5085; --h-isha:#4d6aa0;
 }
 [data-theme="islamic"]{
-  --bg:#f2f6ee; --surface:#fffdf7; --surface2:#f0f5ec;
-  --primary:#146b47; --primary-soft:rgba(20,107,71,.11);
-  --text:#1b2d20; --text-muted:#5b7462; --border:#d8e5cf;
+  --bg:#f7f6f0; --surface:#fffefa; --surface2:#efefe7;
+  --primary:#245d4d; --primary-soft:rgba(36,93,77,.08);
+  --text:#243e35; --text-muted:#606d64; --border:#dedfd4;
   --success:#15803d; --warning:#b45309; --danger:#b91c1c;
-  --grad:linear-gradient(140deg,#146b47 0%,#093f28 100%);
-  --shadow-lg:0 18px 44px rgba(15,75,48,.15); --shadow:0 8px 24px rgba(15,75,48,.1); --shadow-sm:0 2px 10px rgba(15,75,48,.07);
+  --grad:linear-gradient(115deg,#204f42,#143a31);
+  --shadow-lg:0 12px 30px rgba(29,55,43,.07); --shadow:0 6px 16px rgba(29,55,43,.05); --shadow-sm:0 2px 6px rgba(29,55,43,.025);
   --glass:rgba(255,253,247,.8); --glass-brd:rgba(255,255,255,.7);
   /* v1.5: --gold (#b8860b) measured 3.20:1 as 11px text on --surface — below the
      4.5:1 AA floor. --gold now means "bright accent for on-gradient/on-brand
@@ -134,12 +134,7 @@
 /* ── Base ── */
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden}
-body{font-family:var(--font);font-weight:var(--fw-body);line-height:var(--lh-body);background:var(--bg);background-attachment:fixed;color:var(--text);transition:background var(--dur-slow),color var(--dur-slow);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='52' height='52' viewBox='0 0 52 52'%3E%3Cg fill='none' stroke='%23888' stroke-opacity='.055'%3E%3Crect x='16' y='16' width='20' height='20'/%3E%3Crect x='16' y='16' width='20' height='20' transform='rotate(45 26 26)'/%3E%3Ccircle cx='26' cy='26' r='11'/%3E%3Cpath d='M26 0v9M26 43v9M0 26h9M43 26h9'/%3E%3C/g%3E%3C/svg%3E")}
-/* Subtle identity in the canvas itself: a tiled 8-point-star lattice at ~5%
-   contrast, drawn as inline SVG in the body's own background above — no extra
-   network fetch, no asset file, neutral behind all 8 themes; every card above
-   is opaque, so text never sits on the lattice. */
+body{font-family:var(--font);font-weight:var(--fw-body);line-height:var(--lh-body);background:var(--bg);background-attachment:fixed;color:var(--text);transition:background var(--dur-slow),color var(--dur-slow);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
 /* Android cutouts / gesture bars: keep content clear of system UI */
 .app{padding-top:env(safe-area-inset-top,0)}
 .content{padding-bottom:calc(92px + env(safe-area-inset-bottom,0))}

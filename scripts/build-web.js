@@ -51,7 +51,7 @@ html = html.replace(
 <meta name="twitter:description" content="${SITE_DESC}">
 <meta name="twitter:image" content="${SITE}icons/icon-256.png">
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#0e6b43">
+<meta name="theme-color" content="#f7f6f0">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -64,14 +64,11 @@ fs.writeFileSync(path.join(DIST, 'index.html'), html);
 
 // ── 3. web.css — polish layer on top of the app's own tokens ──
 fs.writeFileSync(path.join(DIST, 'styles', 'web.css'), `/* ── Web build polish layer (loaded only in the PWA build) ── */
-body.web-mode::before{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
-  background:radial-gradient(60% 42% at 18% -4%,var(--primary-soft),transparent 62%),
-             radial-gradient(48% 38% at 88% 108%,rgba(185,138,47,.14),transparent 64%)}
-body.web-mode .app{max-width:1560px;margin:0 auto;box-shadow:0 0 0 1px var(--border),0 24px 70px rgba(15,40,30,.14)}
+body.web-mode .app{max-width:1560px;margin:0 auto;border-inline:1px solid var(--border)}
 body.web-mode .topbar{padding-top:max(0px,env(safe-area-inset-top))}
-body.web-mode .card{border-radius:20px}
+body.web-mode .card{border-radius:16px}
 body.web-mode .btn{border-radius:13px}
-body.web-mode .bnav{max-width:560px;margin:0 auto;border-radius:20px 20px 0 0;border:1px solid var(--border);border-bottom:none}
+body.web-mode .bnav{max-width:560px;margin:0 auto;border-radius:16px 16px 0 0;border:1px solid var(--border);border-bottom:none}
 @media(min-width:769px){body.web-mode .mushaf-wrap{max-width:900px}}
 body.web-mode .mushaf{box-shadow:0 18px 44px rgba(80,58,12,.16),var(--shadow)}
 @media(display-mode:standalone){body.web-mode .topbar{padding-top:env(safe-area-inset-top)}}
@@ -90,8 +87,8 @@ fs.writeFileSync(path.join(DIST, 'manifest.webmanifest'), JSON.stringify({
   scope: './',
   display: 'standalone',
   orientation: 'any',
-  background_color: '#f4f1e8',
-  theme_color: '#0e6b43',
+  background_color: '#f7f6f0',
+  theme_color: '#f7f6f0',
   icons,
 }, null, 2));
 
@@ -125,7 +122,7 @@ ${
 `);
 
 // ── 5. sw.js — offline app shell (cache key changes every build) ──
-const CACHE = 'pt-cache-' + new Date().toISOString().replace(/\D/g, '').slice(0, 14);const SHELL = ['index.html', 'styles/app.css', 'styles/motion.css', 'styles/fonts.css', 'styles/web.css', 'js/web-alerts.js', 'js/app.js', 'js/motion.js', 'js/pages.js', 'js/pages3.js', 'js/reader.js', 'js/store3.js', 'js/data.js', 'js/platform.js', 'js/adhan-bundle.js', 'js/pt-engine.js', 'js/compass.js', 'js/stats.js', 'js/extras.js', 'data/quran.json', 'manifest.webmanifest', ...fs.readdirSync(path.join(ROOT, 'assets', 'adhans')).filter((f) => f.endsWith('.mp3')).map((f) => 'adhans/' + f), ...fs.readdirSync(path.join(ROOT, 'fonts')).filter((f) => f.endsWith('.woff2')).map((f) => `fonts/${f}`), ...fs.readdirSync(path.join(ROOT, 'assets')).filter((f) => /^icon-(16|32|48|64|128|256)\.png$/.test(f)).map((f) => `icons/${f}`)];
+const CACHE = 'pt-cache-' + new Date().toISOString().replace(/\D/g, '').slice(0, 14);const SHELL = ['index.html', 'styles/app.css', 'styles/motion.css', 'styles/fonts.css', 'styles/companion.css', 'styles/web.css', 'js/web-alerts.js', 'js/app.js', 'js/motion.js', 'js/pages.js', 'js/pages3.js', 'js/reader.js', 'js/store3.js', 'js/data.js', 'js/platform.js', 'js/adhan-bundle.js', 'js/pt-engine.js', 'js/compass.js', 'js/stats.js', 'js/extras.js', 'data/quran.json', 'manifest.webmanifest', ...fs.readdirSync(path.join(ROOT, 'assets', 'adhans')).filter((f) => f.endsWith('.mp3')).map((f) => `adhans/${f}`), ...fs.readdirSync(path.join(ROOT, 'fonts')).filter((f) => f.endsWith('.woff2')).map((f) => `fonts/${f}`), ...fs.readdirSync(path.join(ROOT, 'assets')).filter((f) => /^icon-(16|32|48|64|128|256)\.png$/.test(f)).map((f) => `icons/${f}`)];
 fs.writeFileSync(path.join(DIST, 'sw.js'), `/* Prayer Times service worker — offline app shell (v1) */
 const CACHE = '${CACHE}';
 const SHELL = ${JSON.stringify(SHELL)};

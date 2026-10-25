@@ -1,0 +1,192 @@
+/* Prayer Times — Quiet Companion
+   A presentation-only layer. Calculation, scheduling, compass and digit-motion
+   code remain independent. Loaded after the base UI and motion modules. */
+
+/* Shell: calm paper, restrained surfaces, no wallpaper or glass haze. */
+html{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
+.app{height:100dvh}
+body{background-image:none}
+.topbar{background:var(--bg);backdrop-filter:none;-webkit-backdrop-filter:none;padding-inline:34px;border-bottom-color:var(--border);gap:12px}
+.tb-loc{padding:8px 0;max-width:55%;font-size:12px;min-height:44px;border-radius:6px}
+.tb-loc .loc-name{font-weight:500}
+.tb-date{margin-inline-start:auto;font-size:11px}
+.tb-spacer{flex:0}
+.icon-btn{border:1px solid var(--border);background:transparent;border-radius:50%;width:34px;height:34px;transition:background-color .15s,color .15s,transform .15s}
+.content{padding:32px 34px 48px;scrollbar-gutter:stable}
+.content>.page{max-width:1220px;margin-inline:auto}
+.card,.set-card,.sun-arc{box-shadow:none}
+.card,.set-card{border-radius:16px}
+button,a,[role="button"]{touch-action:manipulation}
+button,[role="button"]{user-select:none;-webkit-user-select:none}
+
+/* A quiet rail: every destination is visible, appearance is a compact tool. */
+.sb{background:var(--surface);color:var(--text);border-inline-end:1px solid var(--border)}
+.sb::after{display:none}
+.sb-logo{padding:24px 24px 22px;border-bottom:0}
+.sb-logo-title{font-size:14px;letter-spacing:-.4px;font-weight:600;gap:10px}
+.sb-logo-title .lg{display:flex;align-items:center;justify-content:center;width:34px;height:38px;background:var(--primary);color:var(--on-primary);border-radius:18px 18px 5px 5px;filter:none}
+.sb-logo-title .lg svg{width:21px;height:21px}
+.sb-logo-sub{color:var(--text-muted);font-size:10px;letter-spacing:.1px;margin-top:9px}
+.sb-nav{padding:8px 14px 16px;gap:2px}
+.nav-item{min-height:40px;padding:8px 13px;border-radius:8px;color:var(--text-muted);font-size:12px;font-weight:400;gap:12px;transition:background-color .15s,color .15s}
+.nav-item .ni{width:20px;font-size:18px}
+.nav-item.active{color:var(--primary);background:var(--primary-soft);font-weight:600;box-shadow:none}
+.sb-ind{display:none}
+.nav-item.active::before{display:none}
+.nav-item.nav-dl{background:none;border:0;color:var(--text-muted);margin:0}
+.nav-item.nav-dl .ni{color:inherit}
+.nav-item.nav-dl.active{background:var(--primary-soft);color:var(--primary);box-shadow:none}
+.sb :focus-visible{outline-color:var(--primary)}
+.sb-foot{padding:14px 24px 18px;border-top:1px solid var(--border)}
+.sb-foot .lbl{color:var(--text-muted);font-size:9px;letter-spacing:1.4px;margin-bottom:12px}
+.sb-foot .swatches{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.sb-foot .sw{width:100%;min-height:31px;display:flex;justify-content:center;padding:5px;border:1px solid transparent;border-radius:6px}
+.sb-foot .sw-lbl{display:none}
+.sb-foot .sw-dot{width:16px;height:16px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+.sb-foot .sw.active{border-color:var(--primary);background:var(--primary-soft)}
+.sb-foot .sw:hover{background:var(--primary-soft)}
+
+/* Editorial hierarchy: the title is human; times are precise and tabular. */
+.day-heading{display:flex;align-items:center;justify-content:space-between;gap:24px;margin-bottom:26px}
+.day-eyebrow{font-size:10px;letter-spacing:1.7px;font-weight:500;color:var(--text-muted);margin-bottom:8px}
+.day-heading h1{font-family:var(--font-display);font-size:clamp(30px,3vw,42px);font-weight:400;letter-spacing:-1.1px;line-height:1.2;color:var(--text)}
+.hero-dates{display:flex;flex-direction:column;align-items:flex-end;gap:5px;margin:0;font-size:11px;color:var(--text-muted);white-space:nowrap}
+.hero-hijri{font-size:13px;font-weight:500;color:var(--text)}
+.sec-lbl{font-size:10px;font-weight:500;letter-spacing:1.3px;margin:28px 0 14px;color:var(--text-muted)}
+.sec-lbl::after{background:var(--border);opacity:.6}
+
+/* Next prayer: one dark focal surface, no glass pill or competing colors. */
+.hero{padding:32px 36px;margin-bottom:28px;border-radius:18px;box-shadow:none;min-height:236px;background:var(--grad)}
+.hero::before{inset-inline-end:36px;top:30px;width:210px;height:270px;border:1px solid rgba(255,255,255,.075);border-radius:120px 120px 0 0;background:none;filter:none;transform:none}
+.hero::after{inset-inline-start:auto;inset-inline-end:20px;bottom:-48px;width:244px;height:300px;border:1px solid rgba(255,255,255,.06);border-radius:130px 130px 0 0;background:none;filter:none}
+.hero .hz{display:flex;align-items:center;justify-content:space-between;gap:36px}
+.hero-prayer{min-width:0}
+.hero-next-lbl{margin:0 0 12px;color:#d5e1d8;font-size:10px;font-weight:500;letter-spacing:1.8px;display:flex;align-items:center;gap:8px}
+.hero-next-lbl::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--gold)}
+.hero-name{font-family:var(--font-display);font-size:64px;font-weight:400;letter-spacing:-1.7px;line-height:1.1;text-shadow:none;color:#fffdf4}
+.hero-time{font-size:16px;font-weight:400;color:#f0dfb5;letter-spacing:.1px;margin-top:8px}
+.hero-loc{padding:0;background:none;border:0;border-radius:4px;color:#d5e1d8;font-size:10px;font-weight:400;margin-top:19px;min-height:24px;max-width:100%;white-space:normal;text-align:start}
+.hero-loc svg{width:12px;height:12px;flex-shrink:0}
+.hero-glass{background:rgba(0,0,0,.07);backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none;border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:20px 24px 19px;margin:0 0 0 8px;align-items:center;flex-shrink:0}
+.hero-cd{font-size:clamp(30px,3.6vw,48px);font-weight:400;color:#fffdf4;letter-spacing:-1.5px;line-height:1.15;margin-top:10px}
+.hero-cd-lbl{font-size:9px;font-weight:400;color:#d5e1d8;letter-spacing:1.5px}
+.cd-units{display:flex;justify-content:space-between;width:100%;direction:ltr;color:#d5e1d8;margin-top:10px;font-size:7px;letter-spacing:.8px}
+.cd-units span{flex:1;text-align:center}
+.hero-glass .cd-arc{inset:-1px;width:calc(100% + 2px);height:calc(100% + 2px)}
+.hero-glass .cd-arc rect{stroke:#d6bc83;stroke-width:1px;stroke-opacity:.65}
+
+/* The timetable is information, not a wall of interactive cards. */
+.prayer-cards{gap:0;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--surface)}
+.pcard{border:0;border-inline-end:1px solid var(--border);border-radius:0;background:transparent;padding:22px 14px 20px;text-align:start;min-width:0;box-shadow:none;transition:none}
+.pcard:last-child{border-inline-end:0}
+.pcard .ic{font-size:23px;color:var(--text-muted);margin-bottom:18px}
+.pcard .nm{font-size:12px;font-weight:500;margin-top:0;color:var(--text)}
+.pcard .nm-ar{font-family:var(--font-ar);font-size:12px;margin-top:2px;color:var(--text-muted);line-height:1.5}
+.pcard .tm{font-size:clamp(15px,1.65vw,23px);font-weight:500;letter-spacing:-.7px;margin-top:12px;white-space:nowrap;line-height:1.3;direction:ltr;unicode-bidi:isolate;text-align:start}
+.pcard .sr{font-size:10px;border-top:0;padding-top:0;margin-top:9px;white-space:nowrap}
+.pcard.past{opacity:1}
+.pcard.past .ic{opacity:.7}
+.pcard.next{border-color:var(--border);background:var(--primary-soft);box-shadow:none}
+.pcard.next .ic,.pcard.next .nm{color:var(--primary)}
+.pcard.next::before{height:2px;background:var(--primary);opacity:1;animation:none}
+.pcard .ribbon{top:15px;inset-inline-end:12px;background:transparent;box-shadow:none;color:var(--primary);padding:0;font-size:7px;letter-spacing:.8px;font-weight:600}
+.pcard:hover,.pcard.past:hover{transform:none;box-shadow:none;opacity:1}
+.pcard:not(.next):hover::before{opacity:0}
+.sun-grid{gap:0;background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;grid-template-columns:repeat(6,minmax(0,1fr))}
+.sun-cell{border:0;border-inline-end:1px solid var(--border);border-radius:0;background:none;padding:16px 10px;transition:none}
+.sun-cell:last-child{border-inline-end:0}
+.sun-cell .ic{font-size:17px;color:var(--text-muted)}
+.sun-cell .lbl{font-size:10px;font-weight:400;margin-top:6px}
+.sun-cell .tm{font-size:12px;font-weight:500;letter-spacing:-.3px;margin-top:4px;white-space:nowrap}
+.sun-cell:hover,.gcell:hover{transform:none;box-shadow:none}
+.sun-arc{border-radius:14px;padding-top:6px;margin-bottom:10px}
+.sun-arc svg{max-width:400px;max-height:86px}
+.sun-arc .sa-lbl{font-size:9px}
+.glance{gap:12px}
+.gcell{border:0;border-radius:0;background:transparent;padding:8px 0;box-shadow:none}
+.gcell .gi{background:none;border:1px solid var(--border);border-radius:50%;width:34px;height:34px;font-size:16px;color:var(--primary)}
+.gcell .gv{font-size:12px;font-weight:500}
+.gcell .gl{font-size:10px}
+
+/* Arabic follows the same hierarchy with appropriate, non-compressed leading. */
+[dir="rtl"] .day-heading h1,[dir="rtl"] .hero-name,[dir="rtl"] .mh-name{font-family:var(--font-ar);letter-spacing:0;line-height:1.4}
+[dir="rtl"] .hero-name{font-size:54px}
+[dir="rtl"] .day-heading h1{font-size:34px}
+[dir="rtl"] .pcard .tm{text-align:right}
+[dir="rtl"] .day-eyebrow,[dir="rtl"] .sec-lbl,[dir="rtl"] .hero-next-lbl{letter-spacing:0}
+
+@media (hover:hover) and (pointer:fine){
+  .nav-item:hover,.nav-item.nav-dl:hover{background:var(--surface2);color:var(--text)}
+  .nav-item:hover .ni{transform:none}
+  .nav-item.active:hover{background:var(--primary-soft);color:var(--primary)}
+  .hero-loc:hover{background:rgba(255,255,255,.06)}
+}
+@media (hover:none){.nav-item:hover{background:transparent;color:var(--text-muted)}.nav-item.active:hover{background:var(--primary-soft);color:var(--primary)}}
+@media(max-width:1080px) and (min-width:769px){
+  .sb-logo{padding:28px 20px}.sb .sb-logo-title .lg{flex-shrink:0}
+  .sb-nav{padding-inline:12px}.nav-item{min-height:46px}
+  .content{padding:28px}.topbar{padding-inline:28px}
+  .hero{padding:30px}.hero-name{font-size:54px}.hero .hz{gap:20px}
+}
+@media(max-width:900px) and (min-width:769px){
+  .day-heading{align-items:flex-start}.day-heading h1{font-size:32px}.hero-dates{font-size:9px}.hero-hijri{font-size:11px}
+  .hero-glass{padding:20px 18px}.hero-cd{font-size:32px}
+  .sun-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.sun-cell:nth-child(3){border-inline-end:0}.sun-cell:nth-child(-n+3){border-bottom:1px solid var(--border)}
+}
+
+/* Phone: all five prayers stay in view as a legible timetable, no hidden cards. */
+@media(max-width:768px){
+  .main{height:100dvh}.topbar{height:60px;padding-inline:20px;background:var(--bg)}
+  .tb-loc{max-width:calc(100% - 65px);font-size:11px}.tb-spacer{flex:1}
+  .topbar .icon-btn{width:36px;height:36px}
+  .content{padding:0 0 calc(106px + env(safe-area-inset-bottom,0px));scrollbar-gutter:auto}
+  .content>.page,.content>section[id^=page-]{padding:22px 20px 0}
+  .day-heading{margin-bottom:20px}.day-eyebrow{font-size:10px;letter-spacing:1.5px;margin-bottom:7px}.day-heading h1{font-size:34px}
+  .mhero{margin:0;padding:20px 24px 20px;border-radius:16px;background:var(--grad);box-shadow:none}
+  .mhero::before{top:40px;inset-inline-end:-36px;width:160px;height:230px;border:1px solid rgba(255,255,255,.07);border-radius:90px 90px 0 0;background:none;filter:none}
+  .mhero::after{display:none}
+  .mh-top{align-items:center;gap:12px}.mh-loc{display:none!important}
+  .mh-loc{padding:0;border:0;background:none;font-size:9px;color:#d5e1d8;max-width:56%;min-height:32px;white-space:normal;text-align:start;border-radius:4px}
+  .mh-loc svg{width:11px;height:11px;flex-shrink:0}.mh-hijri{font-size:10px;color:#d5e1d8;line-height:1.6;text-align:start}
+  .mh-next-lbl{margin-top:16px;font-size:10px;color:#d5e1d8;letter-spacing:1.5px;font-weight:400}
+  .mh-name{font-family:var(--font-display);font-size:48px;font-weight:400;letter-spacing:-1.3px;line-height:1.2;text-shadow:none;color:#fffdf4;margin-top:5px}
+  .mh-time{font-size:14px;color:#f0dfb5;font-weight:400;margin-top:4px}
+  .mh-cd{font-size:30px;font-weight:400;letter-spacing:-1px;color:#fffdf4;line-height:1.2;margin-top:16px}
+  .mh-cd-lbl{font-size:10px;font-weight:400;letter-spacing:1.3px;color:#d5e1d8;margin-top:4px}
+  .mh-prog{max-width:none;width:100%;height:2px;margin-top:14px;background:rgba(255,255,255,.16)}
+  .mh-prog i{background:#d6bc83}
+  .mhome .sec-lbl{margin:24px 0 12px;font-size:9px}
+  .mstrip{display:flex;flex-direction:column;padding:0;gap:0;overflow:visible;border:1px solid var(--border);border-radius:14px;background:var(--surface)}
+  .mstrip .pcard{flex:none;display:grid;grid-template-columns:24px 1fr auto;align-items:center;gap:14px;text-align:start;padding:14px 18px;border:0;border-bottom:1px solid var(--border);border-radius:0;min-height:58px}
+  .mstrip .pcard:first-child{border-radius:13px 13px 0 0}.mstrip .pcard:last-child{border:0;border-radius:0 0 13px 13px}
+  .mstrip .pcard .ic{font-size:19px;margin:0}.mstrip .pcard .nm{font-size:12px;margin:0}.mstrip .pcard .tm{font-size:17px;margin:0;letter-spacing:-.4px;font-weight:500}
+  .mstrip .pcard.next::before{top:0;bottom:0;inset-inline-start:0;inset-inline-end:auto;width:3px;height:auto}
+  .mquick{gap:10px;margin-top:14px}.mq{flex-direction:row;justify-content:center;gap:10px;min-height:48px;border-radius:10px;padding:12px;font-size:11px;box-shadow:none}
+  .mq span:first-child{font-size:17px}
+  .sun-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.sun-cell{padding:14px 8px}.sun-cell:nth-child(3){border-inline-end:0}.sun-cell:nth-child(-n+3){border-bottom:1px solid var(--border)}
+  .sun-cell .tm{font-size:12px}.sun-cell .lbl{font-size:10px}
+  .bnav{background:var(--surface);backdrop-filter:none;-webkit-backdrop-filter:none;padding-top:8px;box-shadow:0 -4px 20px rgba(0,0,0,.025)}
+  .bnav .bbtn{font-size:9px;gap:5px}.bnav .bbtn .bi{font-size:19px}.bnav .bbtn.active{font-weight:500}
+  .msheet{max-height:88dvh;overscroll-behavior:contain}.modal{max-height:92dvh;overflow-y:auto;overscroll-behavior:contain}
+  .msheet-theme .swatches{grid-template-columns:repeat(4,1fr);gap:10px}.msheet-theme .sw{min-height:44px}
+  input,select,textarea,.inp,.select{font-size:16px}
+  [dir="rtl"] .day-heading h1{font-size:28px;line-height:1.5}
+  [dir="rtl"] .mh-name{font-size:44px;line-height:1.45}
+}
+@media(max-width:360px){.content>.page,.content>section[id^=page-]{padding-inline:16px}.day-heading h1{font-size:30px}.mhero{padding-inline:20px}.mh-hijri{font-size:8px}}
+@media (pointer:coarse){.sb-foot .sw{min-height:44px}.hero-loc{min-height:44px}.tb-loc{min-height:44px}}
+@media (prefers-reduced-transparency:reduce){.hero-glass{background:#193c32!important;color:#fff;backdrop-filter:none!important}.topbar{background:var(--bg)!important}}
+@media (prefers-contrast:more){.hero-glass{background:#153a30!important;border-color:#fff}.hero-cd{color:#fff}.hero-cd-lbl,.cd-units{color:#fff}.pcard.next{outline:2px solid var(--primary);outline-offset:-2px}}
+
+/* Essential utility text stays selectable; only status decoration is hidden. */
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.mobile-next{display:block;font-size:9px;line-height:1.3;color:var(--primary);font-weight:500;margin-top:3px}
+.hero-time,.mh-time{direction:ltr;unicode-bidi:isolate;text-align:start}
+[dir="rtl"] .hero-time,[dir="rtl"] .mh-time{text-align:right}
+@media(min-width:769px) and (max-height:720px){.sb-logo{padding-block:19px}.sb-foot{padding-block:12px}.sb-nav{gap:0}.nav-item{min-height:38px;padding-block:7px}}
+
+/* Light palettes need deeper hero ink than their regular button color. */
+[data-theme="blue"] .hero,[data-theme="blue"] .mhero{background:linear-gradient(115deg,#085588,#063f68)}
+[data-theme="emerald"] .hero,[data-theme="emerald"] .mhero{background:linear-gradient(115deg,#176136,#0b4a27)}
+[data-theme="sahara"] .hero,[data-theme="sahara"] .mhero{background:linear-gradient(115deg,#904207,#643006)}
+.hero-next-lbl::before{background:#d6bc83}

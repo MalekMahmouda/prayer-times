@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * Generates assets/icon-{16,32,48,64,128,256}.png from the largest PNG
+ * Generates assets/icon-{16,32,48,64,128,192,256,512}.png from the largest PNG
  * entry inside icon.ico (256x256), using pngjs for resizing.
  * Run: node scripts/gen-assets.js
  */
@@ -12,7 +12,7 @@ const { PNG } = require('pngjs');
 
 const ROOT = path.join(__dirname, '..');
 const OUT = path.join(ROOT, 'assets');
-const SIZES = [16, 32, 48, 64, 128, 256];
+const SIZES = [16, 32, 48, 64, 128, 192, 256, 512];
 
 function icoLargestPng(icoPath) {
   const buf = fs.readFileSync(icoPath);

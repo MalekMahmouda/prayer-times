@@ -14,6 +14,7 @@
 <link rel="stylesheet" href="styles/app.css">
 <link rel="stylesheet" href="styles/motion.css">
 <link rel="stylesheet" href="styles/fonts.css">
+<link rel="stylesheet" href="styles/companion.css">
 </head>
 <body data-theme="islamic">
 
@@ -49,9 +50,9 @@
   <div class="main">
 
     <header class="topbar">
-      <div class="tb-loc" id="tbLoc">
+      <button class="tb-loc" id="tbLoc" type="button" aria-label="Change location">
         <span data-icon="pin"></span><span class="loc-name" id="locName">Detecting…</span><span style="font-size:11px" data-icon="pencil"></span>
-      </div>
+      </button>
       <span class="tb-date" id="tbDate">—</span>
       <span class="tb-spacer"></span>
       <span class="badge-off" id="offBadge">Offline</span>
@@ -63,6 +64,7 @@
 
       <!-- ══════════ MOBILE HOME (phones only — Android / ≤768px viewport) ══════════ -->
       <section class="page mhome" id="page-mhome">
+        <div class="day-heading mobile-heading"><div><p class="day-eyebrow" data-design-copy="eyebrow">YOUR DAILY COMPANION</p><h1 data-design-copy="title">Your day, in prayer.</h1></div></div>
         <div class="mhero">
           <div class="mh-top">
             <button class="mh-loc" id="mLocChip"><span data-icon="pin"></span> <span id="mLocName">—</span></button>
@@ -74,7 +76,8 @@
           <div class="mh-cd" id="mCd">--:--:--</div>
           <div class="mh-cd-lbl" id="mCdLbl">Starts in</div>
         </div>
-        <div class="mstrip" id="mStrip"></div>
+        <h2 class="sec-lbl" data-design-copy="schedule">Today’s prayer times</h2>
+        <div class="mstrip" id="mStrip" role="list"></div>
         <div class="mquick">
           <button class="mq" id="mQiblaBtn"><span data-icon="compass"></span><span id="mQiblaLbl">Qibla</span></button>
           <button class="mq" id="mHomeMore"><span data-icon="more"></span><span id="mHomeMoreLbl">More</span></button>
@@ -92,25 +95,28 @@
 
       <!-- ══════════ PRAYERS (dashboard) ══════════ -->
       <section class="page active" id="page-prayers">
+        <div class="day-heading">
+          <div><p class="day-eyebrow" data-design-copy="eyebrow">YOUR DAILY COMPANION</p><h1 data-design-copy="title">Your day, in prayer.</h1></div>
+          <div class="hero-dates"><span class="hero-hijri" id="heroHijri">—</span><span id="heroGreg">—</span></div>
+        </div>
         <div class="hero" id="heroCard">
           <div class="hz">
-            <div class="hero-dates">
-              <span id="heroGreg">—</span>
-              <span class="hero-hijri" id="heroHijri">—</span>
-              <span class="hero-loc" id="heroLoc"><span data-icon="pin"></span> <span id="heroLocName">—</span></span>
+            <div class="hero-prayer">
+              <div class="hero-next-lbl" id="heroNextLbl">Next Prayer</div>
+              <h2 class="hero-name" id="heroName">—</h2>
+              <div class="hero-time" id="heroTime">—</div>
+              <button class="hero-loc" id="heroLoc" type="button"><span data-icon="pin"></span> <span id="heroLocName">—</span></button>
             </div>
-            <div class="hero-next-lbl" id="heroNextLbl">Next Prayer</div>
-            <div class="hero-name" id="heroName">—</div>
-            <div class="hero-time" id="heroTime">—</div>
             <div class="hero-glass">
-              <div class="hero-cd" id="heroCd">--:--:--</div>
               <div class="hero-cd-lbl" id="heroCdLbl">Starts in</div>
+              <div class="hero-cd" id="heroCd">--:--:--</div>
+              <div class="cd-units" aria-hidden="true"><span data-design-copy="hours">HOURS</span><span data-design-copy="minutes">MINUTES</span><span data-design-copy="seconds">SECONDS</span></div>
             </div>
           </div>
         </div>
 
         <div class="sec-lbl" id="lblToday">Today's Prayers</div>
-        <div class="prayer-cards" id="prayerCards"></div>
+        <div class="prayer-cards" id="prayerCards" role="list"></div>
 
         <div class="sec-lbl" style="margin-top:18px" id="lblSun">Sun & Night</div>
         <div class="sun-grid" id="sunGrid"></div>
@@ -332,7 +338,7 @@
            a block buried under Stats: the three destinations are the only
            things a first-time visitor is looking for, so they get room, a clear
            heading, and nothing competing beside them. Every href points at the
-           real v1.5.0 release; js/extras.js owns the version/size strings so
+           real v1.6.4 release; js/extras.js owns the version/size strings so
            they cannot drift onto a file that does not exist. -->
       <section class="page" id="page-downloads">
         <div class="dl-page">
@@ -351,9 +357,9 @@
               </span>
               <span class="dlb-txt">
                 <span class="dlb-name" id="dlAndroidT">Android app</span>
-                <span class="dlb-meta" id="dlAndroidMeta">Version 1.5.0 · 49.6 MB · Android 7.0+</span>
+                <span class="dlb-meta" id="dlAndroidMeta">Version 1.6.4 · 49.9 MB · Android 7.0+</span>
               </span>
-              <a class="btn primary dlb-btn" id="dlAndroidBtn" href="https://github.com/MalekMahmouda/prayer-times/releases/download/v1.5.0/Prayer-Times-1.5.0-android.apk" rel="noopener noreferrer" target="_blank">
+              <a class="btn primary dlb-btn" id="dlAndroidBtn" href="https://github.com/MalekMahmouda/prayer-times/releases/download/v1.6.4/Prayer-Times-1.6.4.apk" rel="noopener noreferrer" target="_blank">
                 <svg class="dl-btni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="M7.5 10.5 12 15l4.5-4.5"/><path d="M5 20h14"/></svg><span id="dlAndroidBtnT">Download for Android</span>
               </a>
             </li>
@@ -379,7 +385,7 @@
               </span>
               <span class="dlb-txt">
                 <span class="dlb-name" id="dlRelT">All versions</span>
-                <span class="dlb-meta" id="dlRelTag">Latest: v1.5.0</span>
+                <span class="dlb-meta" id="dlRelTag">Latest: v1.6.4</span>
               </span>
               <a class="btn dlb-btn" id="dlRelBtn" href="https://github.com/malekmahmouda/prayer-times/releases" rel="noopener noreferrer" target="_blank">
                 <svg class="dl-btni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7 12 12l8.7-5"/><path d="M12 22V12"/></svg><span id="dlRelBtnT">View all releases</span>

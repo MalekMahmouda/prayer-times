@@ -38,6 +38,7 @@ execSync(
 cp(path.join(ROOT, 'styles', 'app.css'), path.join(WWW, 'styles', 'app.css'));
 cp(path.join(ROOT, 'styles', 'motion.css'), path.join(WWW, 'styles', 'motion.css'));
 cp(path.join(ROOT, 'styles', 'fonts.css'), path.join(WWW, 'styles', 'fonts.css'));
+cp(path.join(ROOT, 'styles', 'companion.css'), path.join(WWW, 'styles', 'companion.css'));
 fs.mkdirSync(path.join(WWW, 'fonts'), { recursive: true });
 for (const f of fs.readdirSync(path.join(ROOT, 'fonts'))) {
   if (f.endsWith('.woff2') || f.startsWith('OFL-') || f === 'OFL-README.md') cp(path.join(ROOT, 'fonts', f), path.join(WWW, 'fonts', f));

@@ -329,10 +329,14 @@ function closeMoreSheet() { const sh = $('mMoreSheet'); if (sh) sh.classList.rem
 function buildMSwatches() {
   const wrap = $('mSwatches'); if (!wrap) return;
   wrap.innerHTML = '';
+  wrap.setAttribute('role', 'group');
+  wrap.setAttribute('aria-label', S.lang === 'ar' ? 'اختر المظهر' : 'Choose appearance');
   THEMES.forEach((th) => {
     const b = document.createElement('button');
     b.className = 'sw' + (th.id === S.cfg.theme ? ' active' : '');
     b.dataset.theme = th.id; b.style.background = th.color; b.title = S.lang === 'ar' ? th.ar : th.en;
+    b.setAttribute('aria-label', b.title);
+    b.setAttribute('aria-pressed', String(th.id === S.cfg.theme));
     b.onclick = (e) => { PTMotion.themeChange(() => { applyTheme(th.id); saveCfg(); buildSwatches(); buildMSwatches(); }, e); };
     wrap.appendChild(b);
   });
@@ -362,9 +366,9 @@ function renderMHome() {
     const at = atOf(p);
     const isNext = info.idx === i && !info.isTomorrow;
     const isPast = at < now && !isNext;
-    return `<div class="pcard pt-${p.toLowerCase()}${isNext ? ' next' : ''}${isPast ? ' past' : ''}">
+    return `<div role="listitem" class="pcard pt-${p.toLowerCase()}${isNext ? ' next' : ''}${isPast ? ' past' : ''}">
       <div class="ic">${ICON_PRAYER[p]}</div>
-      <div class="nm">${S.lang === 'ar' ? AR_PRAYER[p] : p}</div>
+      <div class="nm">${S.lang === 'ar' ? AR_PRAYER[p] : p}${isNext ? `<span class="mobile-next">${t('next')}</span>` : ''}</div>
       <div class="tm">${showAt(p)}</div>
     </div>`;
   }).join('');
@@ -478,7 +482,13 @@ function applyTheme(id) {
   }
   S.cfg.theme = id;
   document.body.dataset.theme = id;
-  document.querySelectorAll('.sw').forEach((el) => el.classList.toggle('active', el.dataset.theme === id));
+  const themeColor = document.querySelector?.('meta[name="theme-color"]');
+  if (themeColor && window.getComputedStyle) themeColor.content = window.getComputedStyle(document.body).getPropertyValue('--bg').trim();
+  document.querySelectorAll('.sw').forEach((el) => {
+    const active = el.dataset.theme === id;
+    el.classList.toggle('active', active);
+    el.setAttribute('aria-pressed', String(active));
+  });
   const sel = $('setTheme'); if (sel) sel.value = id;
   if (PT) { PT.setTheme(id, themeIsDark(id)); if (S.cfg.widget) PT.widgetToggle(true); }
   // Android status bar icons follow the theme's luminance
@@ -491,10 +501,15 @@ function applyTheme(id) {
 function buildSwatches() {
   const wrap = $('sbSwatches'); if (!wrap) return;
   wrap.innerHTML = '';
+  wrap.setAttribute('role', 'group');
+  wrap.setAttribute('aria-label', S.lang === 'ar' ? 'اختر المظهر' : 'Choose appearance');
   THEMES.forEach((th) => {
     const b = document.createElement('button');
     b.className = 'sw' + (th.id === S.cfg.theme ? ' active' : '');
     b.dataset.theme = th.id;
+    b.title = S.lang === 'ar' ? th.ar : th.en;
+    b.setAttribute('aria-label', b.title);
+    b.setAttribute('aria-pressed', String(th.id === S.cfg.theme));
     // Sidebar variant: colour dot + theme name. Mobile sheet keeps bare
     // colour squares (.ms .sw), where saving space matters more because the
     // sheet covers content.
@@ -780,8 +795,9 @@ function renderDashboard() {
     const sunrise = (I && Number.isFinite(I.Sunrise))
       ? `<div class="sr">${t('sunrise')} ${fmtAtLoc(new Date(I.Sunrise))}</div>`
       : (S.times.Sunrise ? `<div class="sr">${t('sunrise')} ${fmt(timeStrToDate(S.times.Sunrise))}</div>` : '');
-    return `<div class="pcard pt-${p.toLowerCase()}${isNext ? ' next' : ''}${isPast ? ' past' : ''}">
+    return `<div role="listitem" class="pcard pt-${p.toLowerCase()}${isNext ? ' next' : ''}${isPast ? ' past' : ''}">
       ${isNext ? `<span class="ribbon">${t('next')}</span>` : ''}
+      <span class="sr-only">${isNext ? (S.lang === 'ar' ? 'الصلاة القادمة' : 'Next prayer') : isPast ? (S.lang === 'ar' ? 'مضى وقتها اليوم' : 'Time passed today') : (S.lang === 'ar' ? 'لاحقًا اليوم' : 'Later today')}</span>
       <div class="ic">${ICON_PRAYER[p]}</div>
       <div class="nm">${S.lang === 'ar' ? AR_PRAYER[p] : p}</div>
       <div class="nm-ar">${S.lang === 'ar' ? p : AR_PRAYER[p]}</div>
@@ -1089,7 +1105,7 @@ function testAdhan() {
     showAzanScreen('Test');
     return;
   }
-  // Browser / PWA: local bundled audio, including offline playback.
+  // Browser / PWA: bundled audio, including offline playback.
   showToast(t('toast.adhanPlay'));
   showAzanScreen('Test');
   playAdhanBrowser();
@@ -1097,6 +1113,12 @@ function testAdhan() {
 
 /* ═══ I18N APPLY ═══ */
 function applyLang() {
+  // Presentation copy belongs to the existing language switch, not a second state.
+  const designCopy = S.lang === 'ar'
+    ? { eyebrow: 'رفيقك كل يوم', title: 'يومك، على وقت الصلاة.', schedule: 'أوقات الصلاة اليوم', hours: 'ساعة', minutes: 'دقيقة', seconds: 'ثانية' }
+    : { eyebrow: 'YOUR DAILY COMPANION', title: 'Your day, in prayer.', schedule: 'Today’s prayer times', hours: 'HOURS', minutes: 'MINUTES', seconds: 'SECONDS' };
+  document.querySelectorAll('[data-design-copy]').forEach(el => { el.textContent = designCopy[el.dataset.designCopy]; });
+  $('tbLoc').setAttribute('aria-label', S.lang === 'ar' ? 'تغيير الموقع' : 'Change location');
   document.documentElement.lang = S.lang;
   document.documentElement.dir = S.lang === 'ar' ? 'rtl' : 'ltr';
 
@@ -1218,6 +1240,11 @@ function applyLang() {
 
   // Re-render data views in the new language
   renderAll();
+  // History chips exist in separate desktop and mobile trees; refresh both.
+  if (window.renderHistory) {
+    window.renderHistory('histChips');
+    window.renderHistory('histChipsM');
+  }
   if (window.renderNames && document.getElementById('page-names').classList.contains('active')) renderNames();
   if (window.renderDhikr && document.getElementById('page-dhikr').classList.contains('active')) renderDhikr();
   if (window.renderCalendar && document.getElementById('page-calendar').classList.contains('active')) renderCalendar();

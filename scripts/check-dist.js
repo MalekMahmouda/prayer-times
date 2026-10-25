@@ -159,6 +159,21 @@ if (!fs.existsSync(androidPublic)) {
     : console.log('  – android pt-engine.js not synced yet (cap sync) — skipped');
 }
 
+console.log('— 5. PWA manifest icons —');
+if (!exists('dist-web/manifest.webmanifest')) {
+  console.log('  – dist-web not built (npm run web) — skipped');
+} else {
+  try {
+    const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'dist-web', 'manifest.webmanifest'), 'utf8'));
+    for (const size of [192, 512]) {
+      const icon = (manifest.icons || []).find((item) => item.sizes === `${size}x${size}`);
+      (icon && exists('dist-web/' + icon.src))
+        ? pass(`${size}px PWA icon is present and listed in the manifest`)
+        : fail(`${size}px PWA icon missing from manifest or build output`);
+    }
+  } catch (e) { fail('dist-web manifest is invalid JSON: ' + e.message); }
+}
+
 console.log('');
 if (problems) {
   console.error(`${problems} problem(s) found — build artifacts incomplete`);
