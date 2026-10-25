@@ -493,7 +493,7 @@
             <div class="row"><span class="lbl" id="slTheme">Theme</span>
               <select class="select" id="setTheme"></select></div>
             <div class="row"><span class="lbl" id="sl24">24-Hour Format</span>
-              <button class="toggle" id="tg24"></button></div>
+              <button class="toggle" id="tg24" type="button" role="switch" aria-checked="false" aria-labelledby="sl24"></button></div>
           </div>
 
           <div class="card set-card">             <div class="card-h"><span data-icon="chart"></span><span id="shCalc">Prayer Calculation</span></div>
@@ -507,13 +507,13 @@
 
           <div class="card set-card">             <div class="card-h"><span data-icon="bell"></span><span id="shNotif">Notifications</span></div>
             <div class="row"><div><span class="lbl" id="slNotif">Prayer Alerts</span><div class="sub" id="slNotifS">Notify before each prayer</div></div>
-              <button class="toggle" id="tgNotif"></button></div>
+              <button class="toggle" id="tgNotif" type="button" role="switch" aria-checked="false" aria-labelledby="slNotif"></button></div>
             <div class="row"><span class="lbl" id="slMinBefore">Minutes before</span>
               <div class="stepper"><button id="nbMinus">−</button><div class="val" id="nbVal">10</div><button id="nbPlus">+</button></div></div>
             <div class="row"><span class="lbl" id="slBeep">Pre-prayer beep</span>
-              <button class="toggle" id="tgBeep"></button></div>
+              <button class="toggle" id="tgBeep" type="button" role="switch" aria-checked="false" aria-labelledby="slBeep"></button></div>
             <div class="row"><span class="lbl" id="slAdhan">Play adhan at prayer time</span>
-              <button class="toggle" id="tgAdhan"></button></div>
+              <button class="toggle" id="tgAdhan" type="button" role="switch" aria-checked="false" aria-labelledby="slAdhan"></button></div>
           </div>
 
           <div class="card set-card">             <div class="card-h"><span data-icon="mosque"></span><span id="shAdhan">Adhan</span></div>
@@ -522,7 +522,7 @@
             <div class="row"><span class="lbl" id="slAdhanStyle">Adhan style</span>
               <select class="select" id="setAdhanType"></select></div>
             <div class="row only-desktop"><span class="lbl" id="slOverlay">Fullscreen Adhan overlay</span>
-              <button class="toggle" id="tgOverlay"></button></div>
+              <button class="toggle" id="tgOverlay" type="button" role="switch" aria-checked="false" aria-labelledby="slOverlay"></button></div>
             <div class="row only-desktop"><span class="lbl" id="slVol">Volume</span>
               <input type="range" id="setVol" min="0" max="1" step="0.05" value="1" style="width:130px"></div>
             <div class="note" id="androidAzanNote" style="display:none">On Android the adhan plays as the notification sound of the prayer-time alert. Per-prayer off = a silent notification (the alert still arrives).</div>
@@ -538,10 +538,10 @@
 
           <div class="card set-card only-desktop">             <div class="card-h"><span data-icon="monitor"></span><span id="shDesktop">Desktop</span></div>
             <div class="row"><div><span class="lbl" id="slSww">Start with Windows</span><div class="sub" id="slSwwS">Launch automatically at login</div></div>
-              <button class="toggle" id="tgSww"></button></div>
+              <button class="toggle" id="tgSww" type="button" role="switch" aria-checked="false" aria-labelledby="slSww"></button></div>
             <div class="row"><div><span class="lbl" id="slCtt">Close to Tray</span><div class="sub" id="slCttS">Keep running in the system tray when closed</div></div>
-              <button class="toggle" id="tgCtt"></button></div>
-            <div class="row"><span class="lbl" id="slTestNotif">Test Notification</span>               <button class="btn sm" id="btnTestNotif"><span data-icon="bell"></span> Test</button></div>
+              <button class="toggle" id="tgCtt" type="button" role="switch" aria-checked="false" aria-labelledby="slCtt"></button></div>
+            <div class="row"><span class="lbl" id="slTestNotif">Test Notification</span>               <button class="btn sm" id="btnTestNotif"><span data-icon="bell"></span> <span id="slTestNotifBtn">Test</span></button></div>
             <div class="note" id="dataNote">All data is stored locally on this device. No account, no analytics.</div>
             <div class="note" id="creditsNote">Quran text: Tanzil (quran-uthmani) · Translation: Saheeh International · Adhan recordings: courtesy of AlAdhan.com · Prayer engine: adhan-js</div>
             <div class="note" style="border-top:none;padding-top:6px" id="aboutLine">Prayer Times</div>
@@ -568,9 +568,9 @@
 
           <div class="card set-card only-desktop">             <div class="card-h"><span data-icon="monitor"></span><span id="shWidget">Widget & Mini Mode</span></div>
             <div class="row"><div><span class="lbl" id="slWidget">Desktop Mini Widget</span><div class="sub" id="slWidgetS">Compact always-on-top next-prayer card</div></div>
-              <button class="toggle" id="tgWidget"></button></div>
+              <button class="toggle" id="tgWidget" type="button" role="switch" aria-checked="false" aria-labelledby="slWidget"></button></div>
             <div class="row"><div><span class="lbl" id="slMini">Mini Mode</span><div class="sub" id="slMiniS">Compact always-on-top window</div></div>
-              <button class="toggle" id="tgMini"></button></div>
+              <button class="toggle" id="tgMini" type="button" role="switch" aria-checked="false" aria-labelledby="slMini"></button></div>
           </div>
 
           <div class="card set-card">             <div class="card-h"><span data-icon="pin"></span><span id="shLocation">Location</span></div>
@@ -632,11 +632,11 @@
 </div>
 
 <!-- ══ LOCATION MODAL ══ -->
-<div class="overlay" id="locOverlay">
-  <div class="modal">
+<div class="overlay" id="locOverlay" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="locTitle" tabindex="-1">
     <h3 id="locTitle">Set Location</h3>     <button class="btn" id="btnGps2" style="width:100%;margin-bottom:11px"><span data-icon="pin"></span> <span id="locGpsLbl">Use GPS / Current Location</span></button>
-    <div class="fgrp"><label id="lblCity">City</label><input class="inp" id="cityInp" placeholder="e.g. Riyadh, Cairo, London…"></div>
-    <div class="fgrp"><label id="lblCountry">Country</label><input class="inp" id="cntryInp" placeholder="e.g. Saudi Arabia, Egypt…"></div>     <button class="btn primary" id="btnSetLoc" style="width:100%;margin-bottom:9px"><span data-icon="search"></span> <span id="locSearchLbl">Search & Set Location</span></button>
+    <div class="fgrp"><label id="lblCity" for="cityInp">City</label><input class="inp" id="cityInp" placeholder="e.g. Riyadh, Cairo, London…"></div>
+    <div class="fgrp"><label id="lblCountry" for="cntryInp">Country</label><input class="inp" id="cntryInp" placeholder="e.g. Saudi Arabia, Egypt…"></div>     <button class="btn primary" id="btnSetLoc" style="width:100%;margin-bottom:9px"><span data-icon="search"></span> <span id="locSearchLbl">Search & Set Location</span></button>
     <button class="btn" id="btnCancelLoc" style="width:100%">Cancel</button>
   </div>
 </div>

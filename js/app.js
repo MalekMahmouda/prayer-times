@@ -24,7 +24,7 @@ const engineReady = new Promise((resolve) => {
 
 /* ═══ STATE ═══ */
 const S = {
-  lat: null, lon: null, city: '', country: '',
+  lat: null, lon: null, city: '', country: '', locLabelKey: '',
   times: null, hijri: null,
   nextIdx: -1, lang: 'en',
   todaySchedule: null, // { timings, sun } from main-process scheduler (offline)
@@ -95,8 +95,14 @@ function pushCfg() {
    ALWAYS wins. Callers layer computed lookups (e.g. tz-lookup from GPS
    coordinates) underneath, never over this. */
 function activeLocTz() {
-  const actLoc = (typeof DB3 !== 'undefined' && DB3) ? DB3.locations.find((l) => l.id === DB3.prefs.activeLoc) : null;
-  return actLoc ? actLoc.timezone : '';
+  const prefs = (typeof DB3 !== 'undefined' && DB3 && DB3.prefs) ? DB3.prefs : null;
+  const actLoc = prefs ? DB3.locations.find((l) => l.id === prefs.activeLoc) : null;
+  if (!actLoc || S.lat == null || S.lon == null) return '';
+  const lat = Number(actLoc.latitude), lon = Number(actLoc.longitude);
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)
+    || lat.toFixed(4) !== Number(S.lat).toFixed(4)
+    || lon.toFixed(4) !== Number(S.lon).toFixed(4)) return '';
+  return actLoc.timezone || '';
 }
 
 /* Resolve the IANA timezone for the current location:
@@ -429,7 +435,21 @@ function hijriDayNum(date) {
 function load() {
   try {
     const s = localStorage.getItem('pts'); if (s) S.cfg = deepMerge(defaultCfg(), JSON.parse(s));
-    const l = localStorage.getItem('ptl'); if (l) { const d = JSON.parse(l); S.lat = d.lat; S.lon = d.lon; S.city = d.city; S.country = d.country; }
+    const l = localStorage.getItem('ptl');
+    if (l) {
+      const d = JSON.parse(l), lat = Number(d.lat), lon = Number(d.lon);
+      if (d.lat != null && d.lon != null && isFiniteLat(lat) && isFiniteLon(lon)) {
+        S.lat = lat; S.lon = lon;
+        const key = roundKey(lat, lon);
+        if (d.labelKey === key) {
+          S.city = typeof d.city === 'string' ? d.city : '';
+          S.country = typeof d.country === 'string' ? d.country : '';
+          S.locLabelKey = key;
+        } else {
+          S.city = ''; S.country = ''; S.locLabelKey = '';
+        }
+      }
+    }
     const c = localStorage.getItem('ptt'); if (c) { const d = JSON.parse(c); S.times = d.times; S.hijri = d.hijri; }
     const lg = localStorage.getItem('ptlg'); if (lg) S.lang = lg;
     // Normalize numeric settings (old saves may hold 0 that was mis-stored, or junk)
@@ -456,7 +476,9 @@ function deepMerge(base, over) {
 }
 const saveCfg = () => { localStorage.setItem('pts', JSON.stringify(S.cfg)); pushCfg(); };
 const saveLoc = () => {
-  localStorage.setItem('ptl', JSON.stringify({ lat: S.lat, lon: S.lon, city: S.city, country: S.country }));
+  const labelKey = (S.lat != null && S.lon != null && (S.city || S.country)) ? roundKey(S.lat, S.lon) : '';
+  S.locLabelKey = labelKey;
+  localStorage.setItem('ptl', JSON.stringify({ lat: S.lat, lon: S.lon, city: S.city, country: S.country, labelKey }));
   // Location changed → the coordinate→timezone cache is meaningless now.
   try {
     const cached = localStorage.getItem('pttz');
@@ -658,6 +680,7 @@ async function fetchTimes(lat, lon) {
 }
 
 async function fetchByCity(city, country) {
+  const requestId = ++_locationRequestSeq;
   // Geocoding only (lat/lon) — timings are ALWAYS computed by the local engine
   // so there is exactly one source of prayer times.
   // Primary: AlAdhan addressInfo. Verified 2026-10-22: the endpoint now answers
@@ -667,10 +690,11 @@ async function fetchByCity(city, country) {
   let geo = null;                 // { lat, lon } — the ONLY thing these APIs give us
   try {
     const r = await netFetch(url); const d = await r.json();
-    if (d.code === 200 && d.data && Number.isFinite(Number(d.data.latitude)) && Number.isFinite(Number(d.data.longitude))) {
+    if (d.code === 200 && d.data && isFiniteLat(d.data.latitude) && isFiniteLon(d.data.longitude)) {
       geo = { lat: Number(d.data.latitude), lon: Number(d.data.longitude) };
     }
   } catch (e) { /* AlAdhan down / 404 — try OSM below */ }
+  if (requestId !== _locationRequestSeq) return;
   if (!geo) {
     // Fallback: Nominatim (already allowed by CSP). Nominatim asks for an app
     // identity; keep it honest and minimal.
@@ -678,14 +702,17 @@ async function fetchByCity(city, country) {
       const oUrl = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(city + (country ? ',' + country : ''));
       const r2 = await netFetch(oUrl); const list = await r2.json();
       const hit = Array.isArray(list) && list[0];
-      if (hit && Number.isFinite(Number(hit.lat)) && Number.isFinite(Number(hit.lon))) {
+      if (hit && isFiniteLat(hit.lat) && isFiniteLon(hit.lon)) {
         geo = { lat: Number(hit.lat), lon: Number(hit.lon) };
       }
     } catch (e) { /* offline or geocoder down */ }
   }
+  if (requestId !== _locationRequestSeq) return;
   if (!geo) { showToast(t('toast.locFail')); return; }
+  clearActiveSavedLocation();
   S.lat = geo.lat; S.lon = geo.lon;
   S.city = city; S.country = country;
+  S.locLabelKey = roundKey(S.lat, S.lon);
   saveLoc();
   S.times = null; S.hijri = null;            // drop any stale API cache
   localStorage.removeItem('ptt');
@@ -902,59 +929,99 @@ function updateLocNames() {
   $('setCoords').textContent = fmtCoords(4);
   const cd = $('coordsDisp'); if (cd) { cd.textContent = fmtCoords(4); cd.dir = 'ltr'; }
 }
-function openLocModal() { $('locOverlay').classList.add('open'); }
-function closeLocModal() { $('locOverlay').classList.remove('open'); }
-function useGPS() {
-  if (!navigator.geolocation) { showToast(t('toast.gpsNo')); return; }
-  $('locName').textContent = t('detecting');
-  // GPS accuracy tiers (Phase 9): imperfect accuracy must never block prayer
-  // calculation, but a bad fix must not silently replace a good location.
-  const POOR_ACCURACY_M = 1000;
-  navigator.geolocation.getCurrentPosition((pos) => {
-    const acc = (pos.coords && Number.isFinite(pos.coords.accuracy)) ? pos.coords.accuracy : null;
-    const hadPrevious = S.lat != null && S.lon != null;
-    if (acc != null && acc > POOR_ACCURACY_M && hadPrevious) {
-      // Keep the previous reliable location; just tell the user why.
-      showToast((S.lang === 'ar'
-        ? `دقة GPS ضعيفة (±${Math.round(acc)} م) — تم الاحتفاظ بالموقع السابق`
-        : `GPS accuracy poor (±${Math.round(acc)}m) — keeping previous location`));
-      closeLocModal();
-      return;
-    }
-    S.lat = pos.coords.latitude; S.lon = pos.coords.longitude; S.city = ''; S.country = '';
-    saveLoc(); revGeo(S.lat, S.lon); fetchTimes(S.lat, S.lon); refreshTodaySchedule(); closeLocModal();
-    if (acc != null && acc > POOR_ACCURACY_M) {
-      showToast((S.lang === 'ar'
-        ? `دقة GPS ضعيفة (±${Math.round(acc)} م)`
-        : `GPS accuracy poor (±${Math.round(acc)}m)`));
-    }
-  }, (err) => {
-    // v1.4.0: “denied” was shown for EVERY failure — a missing Windows
-    // location provider or a timeout is not a permission denial.
-    const key = err && err.code === 1 ? 'toast.gpsDenied' : 'toast.gpsFail';
-    showToast(t(key));
-  }, { timeout: 10000, maximumAge: 600000 });
+let _locModalOpener = null;
+let _locationRequestSeq = 0;
+const GPS_OPTIONS = Object.freeze({ timeout: 15000, maximumAge: 0, enableHighAccuracy: true });
+function openLocModal() {
+  const overlay = $('locOverlay');
+  if (!overlay.classList.contains('open')) _locModalOpener = document.activeElement;
+  overlay.classList.add('open'); overlay.setAttribute('aria-hidden', 'false');
+  const input = $('cityInp'); if (input && input.focus) input.focus();
 }
+function closeLocModal() {
+  const overlay = $('locOverlay');
+  if (!overlay.classList.contains('open')) return;
+  overlay.classList.remove('open'); overlay.setAttribute('aria-hidden', 'true');
+  const opener = _locModalOpener; _locModalOpener = null;
+  if (opener && opener.isConnected && typeof opener.focus === 'function') opener.focus();
+}
+function invalidateLocationRequests() { _locationRequestSeq++; }
+function clearActiveSavedLocation() {
+  if (typeof DB3 === 'undefined' || !DB3 || !DB3.prefs || !DB3.prefs.activeLoc) return;
+  delete DB3.prefs.activeLoc;
+  if (typeof save3 === 'function') save3();
+}
+function applyGPSPosition(pos, requestId, userInitiated) {
+  if (requestId !== _locationRequestSeq) return false;
+  const coords = pos && pos.coords;
+  const lat = coords ? Number(coords.latitude) : NaN;
+  const lon = coords ? Number(coords.longitude) : NaN;
+  if (!coords || !Number.isFinite(lat) || !Number.isFinite(lon) || !isFiniteLat(lat) || !isFiniteLon(lon)) {
+    showToast(S.lang === 'ar' ? 'إحداثيات GPS غير صالحة — تحقق من إعدادات الموقع' : 'GPS returned invalid coordinates — check your location settings');
+    updateLocNames();
+    if (userInitiated) closeLocModal();
+    return false;
+  }
+  const acc = Number.isFinite(coords.accuracy) && coords.accuracy >= 0 ? coords.accuracy : null;
+  const hadPrevious = S.lat != null && S.lon != null;
+  if (acc != null && acc > 1000 && hadPrevious) {
+    showToast((S.lang === 'ar'
+      ? `دقة GPS ضعيفة (±${Math.round(acc)} م) — تم الاحتفاظ بالموقع السابق`
+      : `GPS accuracy poor (±${Math.round(acc)}m) — keeping previous location`));
+    updateLocNames();
+    if (userInitiated) closeLocModal();
+    return false;
+  }
+  clearActiveSavedLocation();
+  S.lat = lat; S.lon = lon; S.city = ''; S.country = ''; S.locLabelKey = '';
+  saveLoc(); updateLocNames();
+  revGeo(S.lat, S.lon); fetchTimes(S.lat, S.lon); refreshTodaySchedule();
+  if (userInitiated) closeLocModal();
+  if (acc != null && acc > 1000) {
+    showToast((S.lang === 'ar' ? `دقة GPS ضعيفة (±${Math.round(acc)} م)` : `GPS accuracy poor (±${Math.round(acc)}m)`));
+  }
+  return true;
+}
+function requestCurrentLocation(userInitiated, startup) {
+  if (!navigator.geolocation) {
+    if (startup) makkahFallback(); else showToast(t('toast.gpsNo'));
+    return false;
+  }
+  const requestId = ++_locationRequestSeq;
+  if (userInitiated) $('locName').textContent = t('detecting');
+  navigator.geolocation.getCurrentPosition((pos) => applyGPSPosition(pos, requestId, userInitiated), (err) => {
+    if (requestId !== _locationRequestSeq) return;
+    if (startup && S.lat == null) { makkahFallback(); return; }
+    showToast(t(err && err.code === 1 ? 'toast.gpsDenied' : 'toast.gpsFail'));
+    updateLocNames();
+    if (userInitiated) closeLocModal();
+  }, GPS_OPTIONS);
+  return true;
+}
+function useGPS() { requestCurrentLocation(true, false); }
 /* Nominatim reverse geocoding — an OPTIONAL service for a friendly city
    name. Coordinates keep working when it is unavailable. Cache: rounded
    coordinates → { city, country } with a TTL; throttle between requests;
    skip when the rounded coordinates already match the current location. */
 const _revGeo = { cache: null, lastCall: 0, inflight: null };
-const REV_GEO = { TTL_MS: 7 * 24 * 3600 * 1000, MIN_GAP_MS: 2000, ROUND_DP: 2 };
+const REV_GEO = { TTL_MS: 7 * 24 * 3600 * 1000, MIN_GAP_MS: 2000, ROUND_DP: 2, CACHE_VERSION: 2 };
 function revGeoCache() {
   if (_revGeo.cache) return _revGeo.cache;
-  try { _revGeo.cache = JSON.parse(localStorage.getItem('ptrevgeo') || '{}'); } catch (e) { _revGeo.cache = {}; }
+  try {
+    const stored = JSON.parse(localStorage.getItem('ptrevgeo') || 'null');
+    _revGeo.cache = stored && stored._version === REV_GEO.CACHE_VERSION ? stored : { _version: REV_GEO.CACHE_VERSION };
+  } catch (e) { _revGeo.cache = { _version: REV_GEO.CACHE_VERSION }; }
   return _revGeo.cache;
 }
 const roundKey = (lat, lon) => `${Number(lat).toFixed(REV_GEO.ROUND_DP)},${Number(lon).toFixed(REV_GEO.ROUND_DP)}`;
 async function revGeo(lat, lon) {
   const key = roundKey(lat, lon);
   const curKey = (S.lat != null && S.lon != null) ? roundKey(S.lat, S.lon) : '';
-  if (key === curKey && S.city) return;          // same place — already named
+  if (key === curKey && S.city && S.locLabelKey === key) return; // only trust a label tied to these coordinates
   const c = revGeoCache();
   const hit = c[key];
-  if (hit && (Date.now() - hit.t) < REV_GEO.TTL_MS) {
-    S.city = hit.city; S.country = hit.country; saveLoc(); updateLocNames();
+  if (hit && typeof hit.city === 'string' && typeof hit.country === 'string' && (Date.now() - hit.t) < REV_GEO.TTL_MS) {
+    S.city = hit.city; S.country = hit.country; S.locLabelKey = key; saveLoc(); updateLocNames();
     return;
   }
   // Reuse the single inflight ONLY when it targets the same coordinates —
@@ -971,12 +1038,12 @@ async function revGeo(lat, lon) {
       _revGeo.lastCall = Date.now();
       const r = await netFetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
       const d = await r.json();
-      const city = (d.address && (d.address.city || d.address.town || d.address.village || d.address.county)) || '';
+      const city = (d.address && (d.address.city || d.address.town || d.address.village || d.address.municipality || d.address.hamlet)) || '';
       const country = (d.address && d.address.country) || '';
       if (city || country) {
         c[key] = { city, country, t: Date.now() };
         try { localStorage.setItem('ptrevgeo', JSON.stringify(c)); } catch (e) { /* full */ }
-        if (key === roundKey(S.lat, S.lon)) { S.city = city; S.country = country; saveLoc(); updateLocNames(); }
+        if (key === roundKey(S.lat, S.lon)) { S.city = city; S.country = country; S.locLabelKey = key; saveLoc(); updateLocNames(); }
       }
     } catch (e) { /* offline / throttled / down — coordinates keep working */ }
     finally { if (_revGeo.inflight && _revGeo.inflight.key === key) _revGeo.inflight = null; }
@@ -1183,6 +1250,8 @@ function applyLang() {
   $('shAdhan').textContent = t('set.adhanSec');
   $('shDesktop').textContent = t('set.desktop');
   $('shLocation').textContent = t('set.location');
+  $('shLocs').textContent = S.lang === 'ar' ? 'المواقع المحفوظة' : 'Saved Locations';
+  $('slAddLoc').textContent = S.lang === 'ar' ? 'حفظ الموقع الحالي' : 'Save current as location';
   $('slLang').textContent = t('set.language');
   $('slTheme').textContent = t('set.theme');
   $('sl24').textContent = t('set.h24');
@@ -1201,11 +1270,16 @@ function applyLang() {
   $('slOverlay').textContent = t('set.overlay');
   $('slPerPrayer').textContent = t('set.perPrayer');
   $('slTestAdhan').textContent = t('set.testAdhan');
+  $('slImsak').textContent = S.lang === 'ar' ? 'إزاحة تقديرية للإمساك' : 'Imsak estimate offset';
+  $('imsakNote').textContent = S.lang === 'ar'
+    ? 'وقت الإمساك تقديري (قبل الفجر بهذه الدقائق). عدّل الرقم حسب الممارسة المحلية.'
+    : 'Imsak is shown as an estimate (Fajr minus this many minutes). Adjust to follow your local practice.';
   $('slSww').textContent = t('set.sww');
   $('slSwwS').textContent = t('set.swwS');
   $('slCtt').textContent = t('set.ctt');
   $('slCttS').textContent = t('set.cttS');
   $('slTestNotif').textContent = t('set.testNotif');
+  $('slTestNotifBtn').textContent = S.lang === 'ar' ? 'اختبار' : 'Test';
   $('dataNote').textContent = t('set.dataNote');
   $('creditsNote').textContent = t('set.credits');
   // About card + full-screen Azan labels (both languages)
@@ -1225,6 +1299,8 @@ function applyLang() {
   $('locGpsLbl').textContent = t('set.gps');
   $('lblCity').textContent = t('set.city');
   $('lblCountry').textContent = t('set.country');
+  $('cityInp').placeholder = S.lang === 'ar' ? 'مثال: الرياض، القاهرة، لندن…' : 'e.g. Riyadh, Cairo, London…';
+  $('cntryInp').placeholder = S.lang === 'ar' ? 'مثال: السعودية، مصر…' : 'e.g. Saudi Arabia, Egypt…';
   $('locSearchLbl').textContent = t('set.setLoc');
   $('btnCancelLoc').textContent = t('set.cancel');
 
@@ -1249,6 +1325,8 @@ function applyLang() {
   if (window.renderDhikr && document.getElementById('page-dhikr').classList.contains('active')) renderDhikr();
   if (window.renderCalendar && document.getElementById('page-calendar').classList.contains('active')) renderCalendar();
   if (window.renderSurahList && document.getElementById('page-quran').classList.contains('active')) renderSurahList();
+  if (window.renderSettings && document.getElementById('page-settings').classList.contains('active')) renderSettings();
+  if (window.renderLocations) renderLocations();
 
   // Downloads + Quran Radio labels live in js/extras.js (loaded after this file).
   if (window.applyExtrasLang) window.applyExtrasLang();
@@ -1304,6 +1382,20 @@ async function init() {
   $('btnSetLoc').onclick = setManualLoc;
   $('btnCancelLoc').onclick = closeLocModal;
   $('locOverlay').addEventListener('click', (e) => { if (e.target === $('locOverlay')) closeLocModal(); });
+  document.addEventListener('keydown', (e) => {
+    const overlay = $('locOverlay');
+    if (!overlay.classList.contains('open') || $('txtModal').classList.contains('open')) return;
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeLocModal(); return; }
+    if (e.key !== 'Tab') return;
+    const dialog = overlay.querySelector('[role="dialog"]');
+    if (!dialog) return;
+    const items = [...dialog.querySelectorAll('button:not([disabled]),input:not([disabled]),select:not([disabled]),[tabindex]:not([tabindex="-1"])')];
+    if (!items.length) { e.preventDefault(); dialog.focus(); return; }
+    const first = items[0], last = items[items.length - 1];
+    if (!dialog.contains(document.activeElement)) { e.preventDefault(); (e.shiftKey ? last : first).focus(); }
+    else if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }, true);
 
   // Push the loaded config to the main scheduler immediately — without this,
   // notifications/adhan stay silent until the first settings change.
@@ -1316,6 +1408,9 @@ async function init() {
   // on desktop this await is instant. Bounded — a missing bundle degrades to
   // the API fallback after 2s, and a late bundle still re-triggers below.
   const engineOnTime = await engineReady;
+  // The mobile/PWA bundle supplies timezone lookup after app.js has begun.
+  // Re-push so native/web alert schedulers replace any device-zone fallback.
+  pushCfg();
   if (!engineOnTime && !Plat.isElectron()) {
     console.warn('[pt] calculation engine not loaded at startup — using API fallback until it arrives');
     // Degraded mode must not become permanent: when the bundle finally
@@ -1324,19 +1419,17 @@ async function init() {
     const iv = setInterval(() => {
       if (window.__ptAdhan && window.PT_ENGINE) {
         clearInterval(iv);
+        pushCfg();
         if (S.lat != null) refreshTodaySchedule();
       } else if (Date.now() - t0 > 30000) clearInterval(iv);
     }, 250);
   }
 
-  if (S.lat != null) { fetchTimes(S.lat, S.lon); }
-  else if (S.city) { fetchByCity(S.city, S.country); }
-  else if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition((pos) => {
-      S.lat = pos.coords.latitude; S.lon = pos.coords.longitude;
-      saveLoc(); revGeo(S.lat, S.lon); fetchTimes(S.lat, S.lon); refreshTodaySchedule();
-    }, () => makkahFallback(), { timeout: 10000, maximumAge: 600000 });
-  } else makkahFallback();
+  if (S.lat != null) {
+    if (S.locLabelKey !== roundKey(S.lat, S.lon)) { S.city = ''; S.country = ''; revGeo(S.lat, S.lon); }
+    fetchTimes(S.lat, S.lon);
+  } else if (S.city) { fetchByCity(S.city, S.country); }
+  else if (_locationRequestSeq === 0) requestCurrentLocation(false, true);
 
   refreshTodaySchedule();
   startCountdown();
@@ -1422,6 +1515,8 @@ function toggleMiniMode() {
 }
 
 function makkahFallback() {
+  invalidateLocationRequests();
+  clearActiveSavedLocation();
   S.lat = 21.3891; S.lon = 39.8579; S.city = 'Makkah'; S.country = 'Saudi Arabia';
   saveLoc(); updateLocNames(); fetchTimes(S.lat, S.lon); refreshTodaySchedule();
   // Honest default: the location chip alone was easy to miss — say why the
