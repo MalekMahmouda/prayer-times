@@ -108,6 +108,7 @@ window.renderDhikrLibrary = function renderDhikrLibrary() {
 /* ═══ LOCATIONS MANAGER ═══ */
 window.renderLocations = function renderLocations() {
   const el = $('locsList'); if (!el) return;
+  const L = S.lang === 'ar';
   const activeId = DB3.prefs.activeLoc || '';
   el.innerHTML = DB3.locations.length ? DB3.locations.map((l) => {
     const isActive = l.id === activeId;
@@ -119,8 +120,8 @@ window.renderLocations = function renderLocations() {
       </div>
       <div style="display:flex;gap:6px;flex-shrink:0">
         ${isActive ? '' : `<button class="btn sm" data-loc-use="${l.id}">${S.lang === 'ar' ? 'تنشيط' : 'Use'}</button>`}
-        <button class="icon-btn" data-loc-edit="${l.id}" title="Edit" style="width:30px;height:30px;font-size:13px"><span class="ii">${ICONS.pencil}</span></button>
-        <button class="icon-btn" data-loc-del="${l.id}" title="Delete" style="width:30px;height:30px;font-size:13px"><span class="ii">${ICONS.trash}</span></button>
+        <button class="icon-btn" data-loc-edit="${l.id}" title="${L ? 'تعديل' : 'Edit'}" aria-label="${L ? 'تعديل الموقع المحفوظ' : 'Edit saved location'}" style="width:30px;height:30px;font-size:13px"><span class="ii">${ICONS.pencil}</span></button>
+        <button class="icon-btn" data-loc-del="${l.id}" title="${L ? 'حذف' : 'Delete'}" aria-label="${L ? 'حذف الموقع المحفوظ' : 'Delete saved location'}" style="width:30px;height:30px;font-size:13px"><span class="ii">${ICONS.trash}</span></button>
       </div>
     </div>`;
   }).join('') : `<div class="muted" style="font-size:12.5px;padding:6px 0">${S.lang === 'ar' ? 'لا مواقع محفوظة بعد.' : 'No saved locations yet.'}</div>`;
@@ -142,6 +143,7 @@ function escHtml(s) { return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;
 function activateLocation(id) {
   const loc = DB3.locations.find((l) => l.id === id);
   if (!loc) return;
+  if (typeof invalidateLocationRequests === 'function') invalidateLocationRequests();
   // Explicit user action only — never silent.
   S.lat = loc.latitude; S.lon = loc.longitude; S.city = loc.city; S.country = loc.country;
   DB3.prefs.activeLoc = id; save3();
@@ -183,7 +185,7 @@ const COMMON_TIMEZONES = ['UTC', 'Asia/Riyadh', 'Asia/Dubai', 'Asia/Qatar', 'Asi
 window.addCurrentLocation = function addCurrentLocation() {
   if (S.lat == null) { showToast(t('toast.noCity')); return; }
   const L = S.lang === 'ar';
-  const tzGuess = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+  const tzGuess = resolveTz() || Intl.DateTimeFormat().resolvedOptions().timeZone || '';
   openTextModal({
     title: L ? 'حفظ الموقع' : 'Save location',
     label: L ? 'اسم الموقع:' : 'Location name:',

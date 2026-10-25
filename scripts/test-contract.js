@@ -251,7 +251,7 @@ section('6. netFetch query-key isolation + per-request timeout');
     .replace('NET_TIMEOUT_MS = 12000', 'NET_TIMEOUT_MS = 120'); // fast test timeout
   const files = ['shared/pt-engine.js', 'js/data.js', 'js/platform.js', 'js/compass.js'];
   const bundle = files.map((f) => fs.readFileSync(path.join(ROOT, f), 'utf8')).join('\n;\n') + '\n;\n' + appSrc;
-  const sandboxCode = bundle + '\n;globalThis.__exports = { netFetch, useGPS, resolveTz, nextPrayerInfo, refreshTodaySchedule, msToNextLocationMidnight, fmtAtLoc, revGeo, S, setLoc: (lat, lon) => { S.lat = lat; S.lon = lon; } };';
+  const sandboxCode = bundle + '\n;globalThis.__exports = { netFetch, useGPS, resolveTz, activeLocTz, nextPrayerInfo, refreshTodaySchedule, msToNextLocationMidnight, fmtAtLoc, revGeo, fetchByCity, load, saveLoc, roundKey, _revGeo, S, setLoc: (lat, lon) => { S.lat = lat; S.lon = lon; } };';
   try { new Function(sandboxCode)(); } catch (e) { /* init continues async */ }
   const X = globalThis.__exports || {};
   ok(typeof X.netFetch === 'function', 'renderer sandbox booted (netFetch exposed)');
@@ -260,6 +260,57 @@ section('6. netFetch query-key isolation + per-request timeout');
 
   (async () => {
     await sleep(120); // let init() settle
+
+    // Legacy ptl labels had no coordinate provenance; discard them rather
+    // than display an Egypt locality against Riyadh GPS coordinates.
+    store.set('ptl', JSON.stringify({ lat: 24.7136, lon: 46.6753, city: 'اخطاب', country: 'Egypt' }));
+    X.load();
+    ok(X.S.lat === 24.7136 && X.S.lon === 46.6753 && X.S.city === '' && X.S.country === '' && X.S.locLabelKey === '',
+      'legacy place names without matching coordinate provenance are discarded');
+
+    // Old cache entries could have promoted counties to city names.
+    store.set('ptrevgeo', JSON.stringify({ _version: 1, '24.71,46.68': { city: 'اخطاب', country: 'Egypt', t: Date.now() } }));
+    X._revGeo.cache = null; X._revGeo.lastCall = 0;
+    globalThis.fetch = async () => ({ ok: true, json: async () => ({ address: { county: 'اخطاب', country: 'Egypt' } }) });
+    X.setLoc(24.7136, 46.6753); X.S.city = ''; X.S.country = ''; X.S.locLabelKey = '';
+    await X.revGeo(24.7136, 46.6753);
+    ok(X.S.city === '' && X.S.country === 'Egypt', 'reverse geocoder does not promote a county to the displayed city');
+    ok(JSON.parse(store.get('ptrevgeo'))._version === 2, 'old reverse-geocoder cache schema is invalidated');
+
+    // Fresh high-accuracy GPS; stale callbacks cannot overwrite a newer fix,
+    // and a manual move must not inherit an active saved-location timezone.
+    const gpsRequests = [];
+    X._revGeo.cache = null; X._revGeo.lastCall = 0; store.delete('ptrevgeo');
+    Object.defineProperty(globalThis, 'navigator', { value: {
+      onLine: true,
+      geolocation: { getCurrentPosition: (success, error, options) => gpsRequests.push({ success, error, options }) },
+    }, configurable: true });
+    globalThis.DB3 = {
+      locations: [{ id: 'tokyo', latitude: 35.6762, longitude: 139.6503, timezone: 'Asia/Tokyo' }],
+      prefs: { activeLoc: 'tokyo' },
+    };
+    globalThis.save3 = () => {};
+    X.setLoc(35.6762, 139.6503); X.S.city = 'Tokyo'; X.S.country = 'Japan'; X.S.locLabelKey = X.roundKey(X.S.lat, X.S.lon);
+    ok(X.resolveTz() === 'Asia/Tokyo', 'explicit timezone is honored for the matching saved location');
+    X.useGPS(); X.useGPS();
+    ok(gpsRequests.length === 2 && gpsRequests[1].options.maximumAge === 0
+      && gpsRequests[1].options.enableHighAccuracy === true && gpsRequests[1].options.timeout === 15000,
+    'GPS requests use a fresh high-accuracy fix with a bounded timeout');
+    gpsRequests[0].success({ coords: { latitude: 30.0444, longitude: 31.2357, accuracy: 25 } });
+    gpsRequests[1].success({ coords: { latitude: 24.7136, longitude: 46.6753, accuracy: 25 } });
+    ok(X.S.lat === 24.7136 && X.S.lon === 46.6753 && X.S.city === '' && X.S.country === '',
+      'a new Riyadh GPS fix immediately clears the previous place label');
+    ok(!DB3.prefs.activeLoc && X.resolveTz() === 'Asia/Riyadh',
+      'GPS location change cannot inherit the previous saved timezone');
+
+    // Manual city search has the same timezone/provenance requirements as GPS.
+    globalThis.fetch = async () => ({ ok: true, json: async () => ({ code: 200, data: { latitude: 40.7128, longitude: -74.006 } }) });
+    await X.fetchByCity('New York', 'United States');
+    ok(X.S.lat === 40.7128 && X.S.lon === -74.006 && !DB3.prefs.activeLoc
+      && X.resolveTz() === 'America/New_York', 'manual city search replaces coordinates without inheriting a saved timezone');
+    X.load();
+    ok(X.S.city === 'New York' && X.S.locLabelKey === X.roundKey(40.7128, -74.006),
+      'manually selected city label survives reload with matching coordinate provenance');
 
     // 6a. Different queries → different keys, responses never mixed.
     const calls = [];
@@ -675,10 +726,27 @@ function runArtifactChecks() {
   }
 
   const appSrc = read('js/app.js');
-  ok(appSrc.includes('POOR_ACCURACY_M = 1000'), 'GPS accuracy threshold is a named constant');
-  ok(appSrc.includes('maximumAge: 600000') && appSrc.includes('timeout: 10000'), 'existing GPS maximumAge/timeout preserved');
+  ok(appSrc.includes('acc > 1000'), 'GPS accuracy threshold is enforced');
+  ok(appSrc.includes('maximumAge: 0') && appSrc.includes('enableHighAccuracy: true') && appSrc.includes('timeout: 15000'),
+    'GPS requests use a fresh high-accuracy fix with a bounded timeout');
   ok(appSrc.includes('keeping previous location') && appSrc.includes('GPS accuracy poor'),
     'GPS tiers: keep-previous-with-warning AND accept-with-warning both present');
+  ok(appSrc.includes('d.labelKey === key') && appSrc.includes('S.locLabelKey === key'),
+    'persisted place labels are accepted only with coordinate provenance');
+  ok(appSrc.includes('CACHE_VERSION: 2') && appSrc.includes('address.municipality')
+    && !appSrc.includes('address.county'), 'reverse-geocoder cache is versioned and city labels exclude counties');
+  const engineAt = appSrc.indexOf('const engineOnTime = await engineReady;');
+  const repushAt = appSrc.indexOf('pushCfg();', engineAt);
+  const fallbackAt = appSrc.indexOf('if (!engineOnTime', engineAt);
+  ok(engineAt >= 0 && repushAt > engineAt && repushAt < fallbackAt,
+    'alert scheduler is reconfigured after late timezone lookup loads');
+  ok(html.includes('role="dialog" aria-modal="true" aria-labelledby="locTitle"')
+    && html.includes('for="cityInp"') && html.includes('aria-hidden="true"'),
+    'location picker has dialog semantics and explicitly associated labels');
+  ok(appSrc.includes('مثال: الرياض، القاهرة، لندن…') && appSrc.includes('المواقع المحفوظة')
+    && appSrc.includes('إزاحة تقديرية للإمساك') && html.includes('id="slTestNotifBtn"')
+    && appSrc.includes("if (window.renderLocations) renderLocations();"),
+    'Arabic location copy and saved-place labels refresh with the selected language');
   ok(appSrc.includes("require('tz-lookup')") === false && read('main/main.js').includes("require('tz-lookup')"),
     'desktop main resolves tz offline via tz-lookup');
   ok(read('preload.js').includes('tzLookup'), 'desktop preload exposes tzLookup to the renderer');

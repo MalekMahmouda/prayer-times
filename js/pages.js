@@ -409,19 +409,28 @@ function updateBrowserNotifStatus() {
     : ' · Alerts work only while this page is running; closing it or locking the screen may stop them. Tap Test Adhan to enable sound. Use the native Android app for background alarms.');
 }
 
+function syncSettingsSwitch(id, value) {
+  const el = $(id), on = !!value;
+  el.classList.toggle('on', on);
+  el.setAttribute('role', 'switch');
+  el.setAttribute('aria-checked', String(on));
+}
+
 window.renderSettings = function renderSettings() {
   window.fillSettingsSelects();
   $('setLang').value = S.lang;
   $('setMadhab').value = S.cfg.madhab;
   $('setVol').value = S.cfg.adhanVol != null ? S.cfg.adhanVol : 1;
-  $('tg24').classList.toggle('on', S.cfg.h24);
-  $('tgNotif').classList.toggle('on', S.cfg.notif);
+  syncSettingsSwitch('tg24', S.cfg.h24);
+  syncSettingsSwitch('tgNotif', S.cfg.notif);
   updateAndroidNotifStatus();
-  $('tgBeep').classList.toggle('on', S.cfg.beep);
-  $('tgAdhan').classList.toggle('on', S.cfg.adhan);
-  $('tgOverlay').classList.toggle('on', S.cfg.desktop.overlay);
-  $('tgSww').classList.toggle('on', S.cfg.desktop.startWithWindows);
-  $('tgCtt').classList.toggle('on', S.cfg.desktop.closeToTray);
+  syncSettingsSwitch('tgBeep', S.cfg.beep);
+  syncSettingsSwitch('tgAdhan', S.cfg.adhan);
+  syncSettingsSwitch('tgOverlay', S.cfg.desktop.overlay);
+  syncSettingsSwitch('tgSww', S.cfg.desktop.startWithWindows);
+  syncSettingsSwitch('tgCtt', S.cfg.desktop.closeToTray);
+  syncSettingsSwitch('tgWidget', S.cfg.widget);
+  syncSettingsSwitch('tgMini', S.cfg.mini);
   $('nbVal').textContent = S.cfg.notifMin;
 
   // Offsets
@@ -450,12 +459,12 @@ window.renderSettings = function renderSettings() {
     if (isAndroid) {
       return `<div class="row">
         <span class="lbl">${S.lang === 'ar' ? AR_PRAYER[p] : p}</span>
-        <button class="toggle${on ? ' on' : ''}" data-adp="${p}" title="Adhan enabled"></button>
+        <button class="toggle${on ? ' on' : ''}" data-adp="${p}" role="switch" aria-checked="${on}" aria-label="${S.lang === 'ar' ? `أذان صلاة ${AR_PRAYER[p]}` : `Adhan for ${p}`}"></button>
       </div>`;
     }
     return `<div class="row" style="flex-wrap:wrap">
       <span class="lbl" style="min-width:70px">${S.lang === 'ar' ? AR_PRAYER[p] : p}</span>
-      <button class="toggle${on ? ' on' : ''}" data-adp="${p}" title="Adhan enabled"></button>
+      <button class="toggle${on ? ' on' : ''}" data-adp="${p}" role="switch" aria-checked="${on}" aria-label="${S.lang === 'ar' ? `أذان صلاة ${AR_PRAYER[p]}` : `Adhan for ${p}`}"></button>
       <select class="select" data-prof-rec="${p}" style="max-width:150px;font-size:12px">
         <option value="">${S.lang === 'ar' ? 'المؤذن الافتراضي' : 'Default muadhdhin'}</option>
         ${Object.keys(ADHAN_SOUNDS).map((k) => `<option value="${k}" ${prof.reciter === k ? 'selected' : ''}>${k}</option>`).join('')}
