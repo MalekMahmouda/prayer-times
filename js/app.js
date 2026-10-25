@@ -1240,6 +1240,11 @@ function applyLang() {
 
   // Re-render data views in the new language
   renderAll();
+  // History chips exist in separate desktop and mobile trees; refresh both.
+  if (window.renderHistory) {
+    window.renderHistory('histChips');
+    window.renderHistory('histChipsM');
+  }
   if (window.renderNames && document.getElementById('page-names').classList.contains('active')) renderNames();
   if (window.renderDhikr && document.getElementById('page-dhikr').classList.contains('active')) renderDhikr();
   if (window.renderCalendar && document.getElementById('page-calendar').classList.contains('active')) renderCalendar();
