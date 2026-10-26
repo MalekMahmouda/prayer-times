@@ -235,6 +235,7 @@ section('6. netFetch query-key isolation + per-request timeout');
     setItem: (k, v) => store.set(k, String(v)),
     removeItem: (k) => store.delete(k),
   };
+  const startupGpsRequests = [];
   globalThis.window = globalThis;
   globalThis.document = {
     getElementById: () => dummy, querySelectorAll: () => [], documentElement: dummy,
@@ -242,7 +243,10 @@ section('6. netFetch query-key isolation + per-request timeout');
   };
   globalThis.addEventListener = () => {}; globalThis.removeEventListener = () => {};
   globalThis.localStorage = lsMock;
-  try { Object.defineProperty(globalThis, 'navigator', { value: { onLine: true }, configurable: true }); }
+  try { Object.defineProperty(globalThis, 'navigator', { value: {
+    onLine: true,
+    geolocation: { getCurrentPosition: (...args) => startupGpsRequests.push(args) },
+  }, configurable: true }); }
   catch (e) { globalThis.__nav = { onLine: true }; }
   globalThis.tzLookup = require('tz-lookup');
   globalThis.__ptAdhan = adhan; globalThis.PT_ENGINE = Engine;
@@ -260,6 +264,9 @@ section('6. netFetch query-key isolation + per-request timeout');
 
   (async () => {
     await sleep(120); // let init() settle
+    ok(startupGpsRequests.length === 0, 'empty-storage startup does not query browser geolocation');
+    ok(X.S.lat === 21.3891 && X.S.lon === 39.8579 && X.S.city === 'Makkah',
+      'empty-storage startup uses the announced Makkah fallback');
 
     // Legacy ptl labels had no coordinate provenance; discard them rather
     // than display an Egypt locality against Riyadh GPS coordinates.
@@ -295,6 +302,15 @@ section('6. netFetch query-key isolation + per-request timeout');
       onLine: true,
       geolocation: { getCurrentPosition: (success, error, options) => gpsRequests.push({ success, error, options }) },
     }, configurable: true });
+    store.delete('ptl');
+    X.setLoc(null, null); X.S.city = ''; X.S.country = ''; X.S.locLabelKey = '';
+    X.useGPS();
+    ok(gpsRequests.length === 1, 'explicit GPS selection requests location');
+    gpsRequests[0].success({ coords: { latitude: 31.2, longitude: 31.5, accuracy: 50000 } });
+    ok(X.S.lat === 21.3891 && X.S.lon === 39.8579 && X.S.city === 'Makkah'
+      && !JSON.parse(store.get('ptl')).city.includes('Egypt'),
+      'coarse first GPS fix is rejected instead of saving a wrong-country location');
+    gpsRequests.length = 0;
     globalThis.DB3 = {
       locations: [{ id: 'tokyo', latitude: 35.6762, longitude: 139.6503, timezone: 'Asia/Tokyo' }],
       prefs: { activeLoc: 'tokyo' },
@@ -736,11 +752,15 @@ function runArtifactChecks() {
   }
 
   const appSrc = read('js/app.js');
-  ok(appSrc.includes('acc > 1000'), 'GPS accuracy threshold is enforced');
+  ok(appSrc.includes('acc > GPS_POOR_ACCURACY_M') && appSrc.includes('acc == null'),
+    'GPS fixes with poor or missing accuracy are rejected');
   ok(appSrc.includes('maximumAge: 0') && appSrc.includes('enableHighAccuracy: true') && appSrc.includes('timeout: 15000'),
     'GPS requests use a fresh high-accuracy fix with a bounded timeout');
-  ok(appSrc.includes('keeping previous location') && appSrc.includes('GPS accuracy poor'),
-    'GPS tiers: keep-previous-with-warning AND accept-with-warning both present');
+  ok(appSrc.includes('keeping previous location') && appSrc.includes('GPS accuracy poor')
+    && appSrc.includes('Makkah temporarily'), 'inaccurate fixes keep the prior/default location with a warning');
+  ok(!appSrc.includes('requestCurrentLocation(false, true)')
+    && appSrc.includes('else if (_locationRequestSeq === 0) makkahFallback()'),
+    'fresh startup uses the default and only requests GPS after an explicit action');
   ok(appSrc.includes('d.labelKey === key') && appSrc.includes('S.locLabelKey === key'),
     'persisted place labels are accepted only with coordinate provenance');
   ok(appSrc.includes('CACHE_VERSION: 3') && appSrc.includes('address.municipality')

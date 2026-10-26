@@ -950,6 +950,7 @@ function updateLocNames() {
 let _locModalOpener = null;
 let _locationRequestSeq = 0;
 const GPS_OPTIONS = Object.freeze({ timeout: 15000, maximumAge: 0, enableHighAccuracy: true });
+const GPS_POOR_ACCURACY_M = 1000;
 function openLocModal() {
   const overlay = $('locOverlay');
   if (!overlay.classList.contains('open')) _locModalOpener = document.activeElement;
@@ -982,11 +983,22 @@ function applyGPSPosition(pos, requestId, userInitiated) {
   }
   const acc = Number.isFinite(coords.accuracy) && coords.accuracy >= 0 ? coords.accuracy : null;
   const hadPrevious = S.lat != null && S.lon != null;
-  if (acc != null && acc > 1000 && hadPrevious) {
-    showToast((S.lang === 'ar'
-      ? `دقة GPS ضعيفة (±${Math.round(acc)} م) — تم الاحتفاظ بالموقع السابق`
-      : `GPS accuracy poor (±${Math.round(acc)}m) — keeping previous location`));
-    updateLocNames();
+  // Browser geolocation can fall back to a coarse network/IP estimate. On a
+  // first run there is no known-good location to protect, so never persist a
+  // fix whose reported accuracy is poor or missing (it can resolve to another
+  // country and then look convincing after reverse geocoding).
+  if (acc == null || acc > GPS_POOR_ACCURACY_M) {
+    const accuracyText = acc == null
+      ? (S.lang === 'ar' ? 'دقة GPS غير متاحة' : 'GPS accuracy unavailable')
+      : (S.lang === 'ar' ? `دقة GPS ضعيفة (±${Math.round(acc)} م)` : `GPS accuracy poor (±${Math.round(acc)}m)`);
+    if (hadPrevious) {
+      showToast(S.lang === 'ar' ? `${accuracyText} — تم الاحتفاظ بالموقع السابق` : `${accuracyText} — keeping previous location`);
+      updateLocNames();
+    } else {
+      makkahFallback(S.lang === 'ar'
+        ? `${accuracyText} — تم استخدام مكة مؤقتًا؛ أعد المحاولة أو ابحث عن مدينتك.`
+        : `${accuracyText} — using Makkah temporarily; retry GPS or search for your city.`);
+    }
     if (userInitiated) closeLocModal();
     return false;
   }
@@ -995,9 +1007,6 @@ function applyGPSPosition(pos, requestId, userInitiated) {
   saveLoc(); updateLocNames();
   revGeo(S.lat, S.lon); fetchTimes(S.lat, S.lon); refreshTodaySchedule();
   if (userInitiated) closeLocModal();
-  if (acc != null && acc > 1000) {
-    showToast((S.lang === 'ar' ? `دقة GPS ضعيفة (±${Math.round(acc)} م)` : `GPS accuracy poor (±${Math.round(acc)}m)`));
-  }
   return true;
 }
 function requestCurrentLocation(userInitiated, startup) {
@@ -1492,7 +1501,7 @@ async function init() {
     if (S.locLabelKey !== roundKey(S.lat, S.lon)) { S.city = ''; S.country = ''; revGeo(S.lat, S.lon); }
     fetchTimes(S.lat, S.lon);
   } else if (S.city) { fetchByCity(S.city, S.country); }
-  else if (_locationRequestSeq === 0) requestCurrentLocation(false, true);
+  else if (_locationRequestSeq === 0) makkahFallback();
 
   refreshTodaySchedule();
   startCountdown();
@@ -1577,14 +1586,14 @@ function toggleMiniMode() {
   showToast(S.lang === 'ar' ? (S.cfg.mini ? 'الوضع المصغر' : 'الوضع الكامل') : (S.cfg.mini ? 'Mini mode on' : 'Mini mode off'));
 }
 
-function makkahFallback() {
+function makkahFallback(message) {
   invalidateLocationRequests();
   clearActiveSavedLocation();
   S.lat = 21.3891; S.lon = 39.8579; S.city = 'Makkah'; S.country = 'Saudi Arabia';
   saveLoc(); updateLocNames(); fetchTimes(S.lat, S.lon); refreshTodaySchedule();
   // Honest default: the location chip alone was easy to miss — say why the
   // app is showing Makkah so the user can set their own city.
-  showToast(t('toast.makkahDefault'));
+  showToast(message || t('toast.makkahDefault'));
 }
 
 function scheduleMidnight() {
