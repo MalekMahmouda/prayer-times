@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://malekmahmouda.github.io/prayer-times/sitemap.xml
+Sitemap: https://malekmahmouda.github.io/salahnest/sitemap.xml

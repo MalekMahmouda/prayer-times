@@ -18,10 +18,10 @@
 const PT_RELEASE = {
   version: '1.6.5',
   apk: 'SalahNest-1.6.5.apk',
-  mb: '49.9',
-  available: true,
+  mb: '',
+  available: false,
 };
-const PT_REPO = 'https://github.com/Malekmahmouda/prayer-times';
+const PT_REPO = 'https://github.com/MalekMahmouda/salahnest';
 
 /* ── Stations — where each one actually comes from ────────────────────────
    Both stations the user asked for are the same two feeds everybody publishes,
