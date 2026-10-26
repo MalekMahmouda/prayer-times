@@ -15,7 +15,7 @@ test('visible desktop branding changes without renaming package or Android ident
   assert.equal(pkg.build.productName, 'SalahNest');
   assert.equal(pkg.name, 'prayertimes');
   assert.equal(lock.name, 'prayertimes');
-  assert.equal(pkg.version, '1.6.4');
+  assert.equal(pkg.version, '1.6.5');
   assert.equal(pkg.build.appId, 'com.malek.prayertimes');
   assert.equal(pkg.build.win.artifactName, 'SalahNest-Setup-${version}.${ext}');
   assert.equal(pkg.build.nsis.shortcutName, 'SalahNest');
@@ -82,12 +82,30 @@ test('desktop, widget, Android, web-test, and media-session labels use SalahNest
   ]) assert.match(read(file), /SalahNest/, file);
 });
 
+test('pending Android candidate has localized metadata and no broken APK link', () => {
+  const extras = read('js/extras.js');
+  const data = read('js/data.js');
+  const html = read('prayer-times.html');
+  assert.match(extras, /available: false/);
+  assert.match(extras, /mb: ''/);
+  assert.match(extras, /elBtn\.removeAttribute\('href'\)/);
+  assert.match(extras, /androidHelp\.hidden = !PT_RELEASE\.available/);
+  assert.match(data, /androidPending: 'Android build pending'/);
+  assert.match(data, /androidPending: 'لم يكتمل بناء تطبيق أندرويد'/);
+  assert.match(data, /sizePending: 'Final APK size pending'/);
+  assert.match(data, /sizePending: 'سيُحدَّد حجم APK بعد اكتمال البناء'/);
+  assert.match(html, /id="dlAndroidMeta">Version 1\.6\.5 · Final APK size pending · Android 7\.0\+</);
+  assert.match(html, /id="dlAndroidBtn" aria-disabled="true" tabindex="-1"/);
+  assert.match(html, /id="dlAndroidHelp" hidden/);
+  assert.doesNotMatch(html, /49\.9 MB|SalahNest-1\.6\.5\.apk/);
+});
+
 test('release helper and readmes use the new product name without moving stored data', () => {
   const release = read('scripts/make-release.js');
   assert.match(release, /productName\.replace/);
   assert.match(release, /Manual Test Checklist — \$\{productName\}/);
   assert.match(read('README.md'), /# SalahNest/);
-  assert.match(read('README.md'), /dist\/SalahNest-Setup-1\.6\.4\.exe/);
+  assert.match(read('README.md'), /dist\/SalahNest-Setup-1\.6\.5\.exe/);
   assert.match(read('README.md'), /%APPDATA%\\Prayer Times/);
   assert.match(read('README.ar.md'), /# SalahNest/);
   assert.match(read('README.ar.md'), /%APPDATA%\\Prayer Times/);

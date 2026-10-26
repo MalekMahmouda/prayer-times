@@ -11,14 +11,15 @@
 
 /* ── The release the download cards point at ──────────────────────────────
    Verified against the freshly built artifacts on 2026-10-22:
-     tag v1.6.4 · APK 52,302,731 bytes (49.9 MB) · minSdk 24 = Android 7.0
+     unpublished candidate v1.6.5 · APK size set after build · minSdk 24 = Android 7.0
    WHEN SHIPPING A RELEASE bump version + apk + mb here — the version text, the
    "Latest:" chip and the APK href all read from this object, so nothing else
    needs editing and no card can drift onto a file that does not exist. */
 const PT_RELEASE = {
-  version: '1.6.4',
-  apk: 'Prayer-Times-1.6.4.apk',
-  mb: '49.9',
+  version: '1.6.5',
+  apk: 'SalahNest-1.6.5.apk',
+  mb: '',
+  available: false,
 };
 const PT_REPO = 'https://github.com/Malekmahmouda/prayer-times';
 
@@ -223,13 +224,26 @@ function ptRadioInit() {
 function ptApplyRelease() {
   const elMeta = ptEl('dlAndroidMeta');
   if (elMeta) {
-    elMeta.textContent = t('dl.verPrefix') + PT_RELEASE.version + ' · ' +
-      PT_RELEASE.mb + ' ' + t('dl.unitMB') + ' · ' + t('dl.androidReq');
+    const size = PT_RELEASE.mb ? PT_RELEASE.mb + ' ' + t('dl.unitMB') : t('dl.sizePending');
+    elMeta.textContent = t('dl.verPrefix') + PT_RELEASE.version + ' · ' + size + ' · ' + t('dl.androidReq');
   }
   const elBtn = ptEl('dlAndroidBtn');
-  if (elBtn) elBtn.href = PT_REPO + '/releases/download/v' + PT_RELEASE.version + '/' + PT_RELEASE.apk;
+  if (elBtn && PT_RELEASE.available) {
+    elBtn.href = PT_REPO + '/releases/download/v' + PT_RELEASE.version + '/' + PT_RELEASE.apk;
+    elBtn.removeAttribute('aria-disabled');
+    elBtn.removeAttribute('tabindex');
+  } else if (elBtn) {
+    elBtn.removeAttribute('href');
+    elBtn.setAttribute('aria-disabled', 'true');
+    elBtn.setAttribute('tabindex', '-1');
+  }
   const elTag = ptEl('dlRelTag');
-  if (elTag) elTag.textContent = t('dl.latestPrefix') + 'v' + PT_RELEASE.version;
+  if (elTag) {
+    elTag.hidden = !PT_RELEASE.available;
+    if (PT_RELEASE.available) elTag.textContent = t('dl.latestPrefix') + 'v' + PT_RELEASE.version;
+  }
+  const androidHelp = ptEl('dlAndroidHelp');
+  if (androidHelp) androidHelp.hidden = !PT_RELEASE.available;
 }
 
 /* ═══ i18n — called from applyLang() on every language switch ═══ */
@@ -239,7 +253,7 @@ function applyExtrasLang() {
   set('dlTitle', 'dl.title');
   set('dlLead', 'dl.lead');
   set('dlAndroidT', 'dl.androidT');
-  set('dlAndroidBtnT', 'dl.androidBtn');
+  set('dlAndroidBtnT', PT_RELEASE.available ? 'dl.androidBtn' : 'dl.androidPending');
   set('dlCodeT', 'dl.codeT');
   set('dlCodeBtnT', 'dl.codeBtn');
   set('dlRelT', 'dl.relT');

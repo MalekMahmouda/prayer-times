@@ -45,6 +45,8 @@ Sun/midnight/last-third: `SunnahTimes` on both platforms.
 - Exact alarms: `SCHEDULE_EXACT_ALARM` declared; capability surfaced via `window.ptMobile.exactAlarms`. If revoked (Android 12+), delivery may be batched by the OS; in-app times are unaffected. Settings shows an "Enable exact alarms" button that opens the special-access screen (`LocalNotifications.changeExactNotificationSetting()`).
 - Fire-once semantics come free: each notification has a stable id derived from `prayer|date|kind`, so reschedules never duplicate.
 
+Android's alarm APIs can operate when the app is not running or the device is asleep, but exact-alarm and notification access, power-management behavior, reboots, and manufacturer-specific battery rules affect delivery. A powered-off phone cannot play audio. The scheduled adhan with the app closed or screen locked remains **unverified on real hardware** and is a release gate.
+
 ## Location & timezone
 
 - `ACCESS_COARSE_LOCATION` / `ACCESS_FINE_LOCATION` are declared **only** for the "Automatic location" one-shot fix. Manual city entry and saved locations never need them. Denial is non-fatal (Makkah fallback + manual entry).
@@ -70,18 +72,19 @@ No contacts, SMS, phone, camera, or microphone.
 
 ## Building
 
-Requirements: JDK 21 (Temurin), Android SDK platform 35 + build-tools 35, Node 18+. This project keeps them outside the repo (e.g. `~/.pt-android/`); point `android/local.properties` at the SDK.
+Requirements: JDK 21 (Temurin), Android SDK platform 36 + build-tools 36.0.0, Node 18+. This project keeps them outside the repo (e.g. `~/.pt-android/`); point `android/local.properties` at the SDK.
 
 ```bash
 npm install
 npm run www            # assemble www/ from the renderer (strips desktop bridges)
 npx cap sync android   # copy www + plugin web code into the Android project
 npm run apk            # signed release APK
+npm run aab            # signed Google Play App Bundle
 npm run apk:debug      # debug APK (no signing config needed)
 npm run assets:android # regenerate launcher icons + splash from assets/icon-256.png
 ```
 
-Outputs land in `android/app/build/outputs/apk/` and are copied to `release-apk/` with SHA-256 checksums.
+Gradle writes `android/app/build/outputs/apk/release/app-release.apk` and `android/app/build/outputs/bundle/release/app-release.aab`. The prepared candidate's artifact names and SHA-256 values are recorded in `docs/RELEASE-CHECKLIST.md`.
 
 ### Signing
 
@@ -89,7 +92,7 @@ Outputs land in `android/app/build/outputs/apk/` and are copied to `release-apk/
 
 ## Versioning
 
-`package.json` and `android/app/build.gradle` currently agree on `versionName 1.6.4`; Android uses `versionCode 12`. The version code must increase with every distributed Android update. This audit candidate intentionally keeps the current version and code unchanged; it is not a release.
+`package.json` and `android/app/build.gradle` agree on candidate `versionName 1.6.5`; Android uses `versionCode 13`. This is a local review candidate; no public tag, upload, or release has been made during this review. Increase the Android version code for every distributed update.
 
 ## Verified for the current source candidate
 
@@ -97,13 +100,16 @@ Outputs land in `android/app/build/outputs/apk/` and are copied to `release-apk/
 - `npm audit --omit=dev`: zero production dependency vulnerabilities.
 - `npm run web`: regenerated `dist-web/` and Android `www/` shells.
 - Simulated Chromium: desktop English/Arabic controls, calendar/dhikr/Quran keyboard actions, adhan focus handling, reduced motion, and 390px RTL layout passed.
-- Not verified here: Gradle build/signing, AAB/APK installation, Android merged manifest, GPS/geocoding on a phone, notification/alarm behavior, locked-screen audio, Doze, or reboot recovery.
+- `npm run apk` and `npm run aab` both completed successfully. `apksigner` and `jarsigner` verified the resulting signed APK/AAB, and both certificates match the existing key used for published version 1.6.4.
+- The APK manifest reports package `com.malek.prayertimes`, version `1.6.5` / code `13`, min SDK 24 and target SDK 36. Official standalone BundleTool 1.18.1 validation passed for the signed AAB; its base manifest reports the same package, version and code. Play Console processing remains separate.
+- **Not verified on a real phone:** especially the required scheduled adhan when the app is closed or the screen is locked, plus installation/upgrade, GPS/geocoding, notification and exact-alarm behavior, Doze, reboot recovery and OEM battery restrictions. The local ADB daemon did not start, so no device install/runtime test was performed.
 
 ## Device test checklist (needs a real phone)
 
-- [ ] Install release APK (SmartScreen equivalent: "unknown sources" prompt)
+- [ ] Install release APK ("unknown sources" prompt)
 - [ ] First launch: notification permission explained + granted
 - [ ] GPS location one-shot; denial → manual/saved location works
+- [ ] Scheduled adhan fires with app out of the foreground and screen locked
 - [ ] Notifications fire at prayer time with app killed / phone locked
 - [ ] Pre-alerts at the configured per-prayer minutes
 - [ ] Reboot → notifications still scheduled
@@ -115,8 +121,10 @@ Outputs land in `android/app/build/outputs/apk/` and are copied to `release-apk/
 ## Google Play readiness
 
 - [x] `targetSdkVersion` / `compileSdkVersion` are 36, `minSdkVersion` is 24; application ID is `com.malek.prayertimes`.
-- [ ] Add and test a repeatable Play App Bundle (`bundleRelease`) path; the current `apk` script only builds an APK.
-- [ ] Provide the existing private signing keystore and verify the signed AAB/certificate. The required `keystore/prayertimes.properties` is absent from this checkout; never replace or regenerate an existing signing key.
+- [x] The repeatable `npm run aab` path is guarded by the release-keystore check; the 1.6.5 APK/AAB were built and their signatures verified.
+- [x] The existing certificate matches the published 1.6.4 APK. Private keystore material and `android/local.properties` are intentionally excluded from source archives; provide them locally for future builds and never replace or regenerate the key.
+- [x] Official standalone BundleTool 1.18.1 `validate` passed; the base manifest reports `com.malek.prayertimes`, version `1.6.5`, code `13`.
+- [ ] Complete Play Console processing/review and test on real Android devices, including closed-app/screen-locked scheduled adhan, exact alarms, Doze, notification permissions, reboot restoration and OEM battery management.
 - [ ] Publish a privacy-policy URL and link it both in the Play listing and inside the app; complete Data safety, location/permission, ads, target-audience, content-rating, and app-access declarations.
 - [ ] Prepare the title, short/full descriptions, phone/tablet screenshots, icon, feature graphic, support contact, and localized English/Arabic listing.
 - [ ] Complete Play Console account/app verification, required testing track and tester period where applicable, pre-review checks, and staged rollout.
@@ -124,6 +132,6 @@ Outputs land in `android/app/build/outputs/apk/` and are copied to `release-apk/
 
 ## Windows distribution readiness
 
-- The project has an Electron NSIS installer script, but no Windows installer was built from this candidate.
+- An x64 NSIS installer was built from this candidate as `SalahNest-Setup-1.6.5-unsigned.exe`; it is version 1.6.5 but not Authenticode-signed.
 - Configure a trusted code-signing certificate or distribute through Microsoft Store/MSIX; the current installer configuration is unsigned and can trigger SmartScreen warnings.
 - Test installation, upgrade, uninstall/data retention, notifications, tray/startup behavior, and Windows Defender/SmartScreen on a clean Windows machine.

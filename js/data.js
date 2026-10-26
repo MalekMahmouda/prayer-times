@@ -180,7 +180,8 @@ const T = {
       lead: 'Install it on your phone, read the source, or pick an older release.',
       androidT: 'Android app',
       androidBtn: 'Download for Android',
-      unitMB: 'MB', androidReq: 'Android 7.0+',
+      androidPending: 'Android build pending',
+      unitMB: 'MB', androidReq: 'Android 7.0+', sizePending: 'Final APK size pending',
       codeT: 'Source code',
       codeBtn: 'View on GitHub',
       relT: 'All versions',
@@ -242,10 +243,11 @@ const T = {
       lead: 'ثبّته على هاتفك، أو اطّلع على الكود المصدري، أو اختر إصدارًا أقدم.',
       androidT: 'تطبيق أندرويد',
       androidBtn: 'تحميل لأندرويد',
+      androidPending: 'لم يكتمل بناء تطبيق أندرويد',
       /* “7.0+” in an RTL line throws its “+” to the far left of the run — the
          bidi algorithm reads it as punctuation, not part of the number. Spelled
          out instead, which is also how Arabic release notes say it. */
-      unitMB: 'ميجابايت', androidReq: 'أندرويد 7.0 أو أحدث',
+      unitMB: 'ميجابايت', androidReq: 'أندرويد 7.0 أو أحدث', sizePending: 'سيُحدَّد حجم APK بعد اكتمال البناء',
       codeT: 'الكود المصدري',
       codeBtn: 'عرض على GitHub',
       relT: 'كل الإصدارات',

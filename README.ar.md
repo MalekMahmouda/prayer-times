@@ -4,9 +4,9 @@
 
 🌐 **تطبيق الويب:** https://malekmahmouda.github.io/prayer-times/ — تطبيق ويب قابل للتثبيت (PWA)، يعمل دون اتصال بالكامل بعد أول زيارة.
 
-📥 **التنزيلات:** أحدث [الإصدارات](https://github.com/MalekMahmouda/prayer-times/releases) — مثبّت ويندوز + حزمة أندرويد موقّعة.
+📥 **التنزيلات:** حزم أندرويد الموقّعة في [إصدارات GitHub](https://github.com/MalekMahmouda/prayer-times/releases)؛ مثبّت ويندوز معلّق حتى توقيعه واختباره.
 
-![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Android%20%7C%20Web-blue) ![Electron](https://img.shields.io/badge/Electron-41-47848F) ![Version](https://img.shields.io/badge/version-1.5.0-green)
+![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Android%20%7C%20Web-blue) ![Electron](https://img.shields.io/badge/Electron-41-47848F) ![Version](https://img.shields.io/badge/version-1.6.5-green)
 
 > 🇬🇧 English readme: [README.md](README.md)
 
@@ -58,14 +58,14 @@ npm start
 ### بناء مثبّت ويندوز
 
 ```bash
-npm run package:installer   # → dist/SalahNest-Setup-1.6.4.exe
+npm run package:installer   # → dist/SalahNest-Setup-1.6.5.exe
 npm run release             # → مجلد release/ مع بصمات SHA-256
 ```
 
 ### بناء حزمة أندرويد
 
 ```bash
-npm run apk        # → release-apk/ (تتطلب JDK 17+ و Android SDK)
+npm run apk        # → release-apk/ (تتطلب JDK 21 و Android SDK API 36)
 npm run web        # → dist-web/ (نسخة الويب PWA)
 ```
 
@@ -84,7 +84,7 @@ preload.js          جسر IPC آمن (contextIsolation + sandbox مفعّلان
 js/                 وحدات الواجهة (app, pages, pages3, reader, data, store3, overlay, widget)
 styles/app.css      رموز التصميم، 8 سمات، واجهة زجاجية، خصائص منطقية لـ RTL
 fonts/              خط Amiri Quran للمصحف (يعمل دون اتصال)
-assets/adhans/     ملفات الأذان المرفقة (تعمل بدون إنترنت)
+assets/adhans/      ملفات الأذان المرفقة (تعمل بدون إنترنت)
 data/quran.json     نص القرآن الموثق + الترجمة (مضمّن)
 ```
 

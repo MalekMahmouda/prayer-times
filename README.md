@@ -3,12 +3,9 @@
 A native Windows desktop & Android Islamic companion built with Electron — prayer times, Quran, Dhikr, Qibla, and more, with a fully offline-first core.
 
 > 🇸🇦 العربية: [README.ar.md](README.ar.md)
-
 🌐 **Web app:** https://malekmahmouda.github.io/prayer-times/ — installable PWA, works fully offline after the first visit.
-
-📥 **Downloads:** latest [releases](https://github.com/MalekMahmouda/prayer-times/releases) — Windows installer + signed Android APK.
-
-![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Android%20%7C%20Web-blue) ![Electron](https://img.shields.io/badge/Electron-41-47848F) ![Version](https://img.shields.io/badge/version-1.6.4-green)
+📥 **Downloads:** signed Android APKs are published in [GitHub Releases](https://github.com/MalekMahmouda/prayer-times/releases); the Windows installer is held until it is code-signed and tested.
+![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Android%20%7C%20Web-blue) ![Electron](https://img.shields.io/badge/Electron-41-47848F) ![Version](https://img.shields.io/badge/version-1.6.5-green)
 
 ## Features
 
@@ -53,7 +50,7 @@ npm start
 ### Build the Windows installer
 
 ```bash
-npm run package:installer   # → dist/SalahNest-Setup-1.6.4.exe
+npm run package:installer   # → dist/SalahNest-Setup-1.6.5.exe
 npm run release             # → release/ folder with SHA-256 checksums
 ```
 

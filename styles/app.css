@@ -256,6 +256,8 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:14px 0}
 .btn{padding:10px 18px;border-radius:12px;font-size:13.5px;font-weight:var(--fw-semibold);background:var(--surface2);color:var(--text);border:1px solid var(--border);transition:all var(--dur) var(--ease);display:inline-flex;align-items:center;gap:7px}
 .btn:hover{border-color:var(--primary);color:var(--primary);transform:translateY(-1px);box-shadow:var(--shadow-sm)}
 .btn:active{transform:translateY(0) scale(.97);transition-duration:80ms}
+#dlAndroidBtn[aria-disabled="true"]{opacity:.58;cursor:not-allowed;pointer-events:none}
+#dlAndroidHelp[hidden]{display:none!important}
 .btn.primary{background:var(--grad);color:var(--on-primary);border-color:transparent;box-shadow:var(--shadow-sm)}
 .btn.primary:hover{color:var(--on-primary);filter:brightness(1.12)}
 .btn.sm{padding:6px 13px;font-size:12.5px;border-radius:10px}

@@ -942,6 +942,8 @@ function runArtifactChecks() {
   const gradleVersionCode = parseInt((gradleSrc.match(/versionCode (\d+)/) || [])[1] || '0', 10);
   ok(gradleSrc.includes('verifyReleaseKeystore') && gradleVersionCode > 0,
     `keystore guard active; Android versionCode is a positive integer (${gradleVersionCode})`);
+  ok(gradleSrc.includes("'bundleRelease'") && pkgJson.scripts.aab.includes('bundleRelease'),
+    'release keystore guard covers the Play AAB build path');
   ok(gradleVersionName === pkgJson.version,
     `Android versionName (${gradleVersionName}) mirrors package.json (${pkgJson.version})`);
   ok(Object.keys(pkgJson.dependencies).join(',') === 'adhan,tz-lookup', 'runtime deps = adhan + tz-lookup only (capacitor moved to dev)');
