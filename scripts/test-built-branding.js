@@ -12,6 +12,15 @@ test('generated Pages document carries the approved browser and social title', (
   assert.match(html, /<title>SalahNest \| Prayer Times/);
   assert.match(html, /og:site_name" content="SalahNest/);
   assert.match(html, /id="sbTitle">SalahNest</);
+  assert.match(html, /href="https:\/\/malekmahmouda\.github\.io\/salahnest\/"/);
+  assert.match(html, /og:image" content="https:\/\/malekmahmouda\.github\.io\/salahnest\/assets\/social-preview\.png/);
+  assert.match(html, /assets\/salahnest-mark\.png/);
+  assert.equal(fs.existsSync(path.join(root, 'dist-web/assets/social-preview.png')), true);
+  assert.equal(fs.existsSync(path.join(root, 'dist-web/assets/salahnest-mark.png')), true);
+  assert.equal(fs.existsSync(path.join(root, 'dist-web/.nojekyll')), true);
+  assert.equal(fs.existsSync(path.join(root, 'dist-web/google4d2e2a5dfbddfa49.html')), true);
+  assert.equal(fs.readFileSync(path.join(root, 'dist-web/.nojekyll')).length, 0);
+  assert.deepEqual(fs.readFileSync(path.join(root, 'dist-web/google4d2e2a5dfbddfa49.html')), fs.readFileSync(path.join(root, 'google4d2e2a5dfbddfa49.html')));
 });
 
 test('generated PWA installation metadata carries the approved name', () => {
@@ -27,6 +36,10 @@ test('generated Android web shell carries SalahNest in the title and app UI', ()
   const data = read('www/js/data.js');
   assert.match(html, /<title>SalahNest \| Prayer Times/);
   assert.match(html, /id="sbTitle">SalahNest</);
+  assert.match(html, /assets\/salahnest-mark\.png/);
+  assert.equal(fs.existsSync(path.join(root, 'www/assets/salahnest-mark.png')), true);
+  assert.equal(fs.existsSync(path.join(root, 'www/.nojekyll')), true);
+  assert.deepEqual(fs.readFileSync(path.join(root, 'www/google4d2e2a5dfbddfa49.html')), fs.readFileSync(path.join(root, 'google4d2e2a5dfbddfa49.html')));
   assert.match(data, /appName: 'SalahNest'/);
   assert.match(data, /title: 'حمّل تطبيق SalahNest'/);
 });

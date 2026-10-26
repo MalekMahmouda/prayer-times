@@ -21,7 +21,7 @@ const PT_RELEASE = {
   mb: '',
   available: false,
 };
-const PT_REPO = 'https://github.com/Malekmahmouda/prayer-times';
+const PT_REPO = 'https://github.com/MalekMahmouda/salahnest';
 
 /* ── Stations — where each one actually comes from ────────────────────────
    Both stations the user asked for are the same two feeds everybody publishes,

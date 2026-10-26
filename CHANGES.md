@@ -57,8 +57,8 @@ sidebar (and a tile in the mobile More sheet).
 | Item | Action | Destination |
 | --- | --- | --- |
 | Android app | Download for Android (primary) | `releases/download/v1.5.0/Prayer-Times-1.5.0-android.apk` |
-| Source code | View on GitHub (secondary) | `github.com/MalekMahmouda/prayer-times` |
-| All versions | View all releases (secondary) | `github.com/MalekMahmouda/prayer-times/releases` |
+| Source code | View on GitHub (secondary) | `github.com/MalekMahmouda/salahnest` |
+| All versions | View all releases (secondary) | `github.com/MalekMahmouda/salahnest/releases` |
 
 - **Verified, not invented.** The APK is a real asset of the published `v1.5.0`
   release: 51,986,418 bytes (49.6 MB), `minSdkVersion 24` (Android 7.0+).

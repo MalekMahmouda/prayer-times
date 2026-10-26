@@ -2,7 +2,7 @@
 
 /**
  * Generates the Android splash screens ( Capacitor reads drawable-/drawable-port-/
- * drawable-land-* splash.png ) from assets/icon-256.png:
+ * drawable-land-* splash.png ) from assets/salahnest-mark.png:
  *   dark Islamic background + centered icon at 30% of the min edge.
  * Run: npm run assets:android
  */
@@ -13,7 +13,8 @@ const { PNG } = require('pngjs');
 
 const ROOT = path.join(__dirname, '..');
 const RES = path.join(ROOT, 'android', 'app', 'src', 'main', 'res');
-const SRC = path.join(ROOT, 'assets', 'icon-256.png');
+const ANDROID_ASSETS = path.join(ROOT, 'android-assets');
+const SRC = path.join(ROOT, 'assets', 'salahnest-mark.png');
 const BG = { r: 13, g: 22, b: 22 };
 
 const src = PNG.sync.read(fs.readFileSync(SRC));
@@ -55,4 +56,7 @@ for (const [dpi, [pw, ph]] of Object.entries(PORTRAIT)) {
   // landscape: swap dimensions
   fs.writeFileSync(path.join(ldir, 'splash.png'), compose(ph, pw));
 }
+fs.mkdirSync(ANDROID_ASSETS, { recursive: true });
+fs.writeFileSync(path.join(ANDROID_ASSETS, 'splash.png'), compose(2732, 2732));
+fs.writeFileSync(path.join(RES, 'drawable', 'splash.png'), compose(1024, 1024));
 console.log('splash screens generated (portrait + landscape, 5 densities)');

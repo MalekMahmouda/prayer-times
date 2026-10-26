@@ -7,6 +7,7 @@
  *   www/js/*.js           ← app.js, pages.js, pages3.js, reader.js, store3.js, data.js, adhan-bundle.js
  *   www/data/quran.json   ← bundled Quran dataset
  *   www/icons/icon-*.png  ← app icons for the webapp
+ *   www/assets/*          ← SalahNest mark and social preview
  *
  * All rewrites apply to the index.html copy only — the desktop renderer is untouched.
  */
@@ -58,6 +59,14 @@ for (const f of fs.readdirSync(path.join(ROOT, 'assets', 'adhans'))) {
 }
 for (const icon of fs.readdirSync(path.join(ROOT, 'assets'))) {
   if (icon.startsWith('icon-')) cp(path.join(ROOT, 'assets', icon), path.join(WWW, 'icons', icon));
+}
+for (const file of ['salahnest-mark.png', 'social-preview.png']) {
+  const src = path.join(ROOT, 'assets', file);
+  if (fs.existsSync(src)) cp(src, path.join(WWW, 'assets', file));
+}
+for (const file of ['.nojekyll', 'google4d2e2a5dfbddfa49.html']) {
+  const src = path.join(ROOT, file);
+  if (fs.existsSync(src)) cp(src, path.join(WWW, file));
 }
 
 // ── 3. index.html: copy + rewrites ──

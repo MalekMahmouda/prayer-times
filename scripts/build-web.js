@@ -16,7 +16,7 @@ const { execSync } = require('child_process');
 // Canonical public URL — every SEO hint below points at it. Keep in sync with
 // the gh-pages remote (scripts/build-web.js is the ONLY deploy pipeline).
 const SITE_URL = 'https://malekmahmouda.github.io';
-const SITE_PATH = '/prayer-times/';
+const SITE_PATH = '/salahnest/';
 const SITE = SITE_URL + SITE_PATH;
 const SITE_TITLE = 'SalahNest | Prayer Times — أوقات الصلاة، مسبحة، قرآن، قبلة، تقويم هجري';
 const SITE_DESC = 'Free offline prayer times app: accurate Muslim prayer times with adhan notifications, Qibla compass, full Quran reader with mushaf verses, electronic tasbih (dhikr counter), Hijri calendar, and 99 Names of Allah. Works with no account — install or use right in the browser.';
@@ -42,14 +42,14 @@ html = html.replace(
 <meta property="og:url" content="${SITE}">
 <meta property="og:title" content="${SITE_TITLE}">
 <meta property="og:description" content="${SITE_DESC}">
-<meta property="og:image" content="${SITE}icons/icon-256.png">
+<meta property="og:image" content="${SITE}assets/social-preview.png">
 <meta property="og:locale" content="en_US">
 <meta property="og:locale:alternate" content="ar_AR">
 <meta property="og:site_name" content="SalahNest">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="${SITE_TITLE}">
 <meta name="twitter:description" content="${SITE_DESC}">
-<meta name="twitter:image" content="${SITE}icons/icon-256.png">
+<meta name="twitter:image" content="${SITE}assets/social-preview.png">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#f7f6f0">
 <meta name="mobile-web-app-capable" content="yes">
@@ -130,6 +130,7 @@ const SHELL = [
   'js/reader.js', 'js/store3.js', 'js/data.js', 'js/platform.js', 'js/adhan-bundle.js',
   'js/pt-engine.js', 'js/compass.js', 'js/stats.js', 'js/extras.js',
   'data/quran.json', 'manifest.webmanifest',
+  'assets/salahnest-mark.png', 'assets/social-preview.png',
   ...fs.readdirSync(path.join(ROOT, 'assets', 'adhans')).filter((f) => f.endsWith('.mp3')).map((f) => `adhans/${f}`),
   ...fs.readdirSync(path.join(ROOT, 'fonts')).filter((f) => f.endsWith('.woff2')).map((f) => `fonts/${f}`),
   ...fs.readdirSync(path.join(ROOT, 'assets')).filter((f) => /^icon-(16|32|48|64|128|192|256|512)\.png$/.test(f)).map((f) => `icons/${f}`),

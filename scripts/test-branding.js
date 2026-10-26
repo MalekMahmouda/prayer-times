@@ -56,14 +56,24 @@ test('English and Arabic app dictionaries use the same approved brand', () => {
   assert.match(data, /title: 'حمّل تطبيق SalahNest'/);
 });
 
-test('PWA metadata uses SalahNest while the existing Pages hostname and path stay fixed', () => {
+test('PWA metadata uses SalahNest at the approved new Pages hostname and path', () => {
   const build = read('scripts/build-web.js');
   assert.match(build, /const SITE_URL = 'https:\/\/malekmahmouda\.github\.io'/);
-  assert.match(build, /const SITE_PATH = '\/prayer-times\/'/);
+  assert.match(build, /const SITE_PATH = '\/salahnest\/'/);
   assert.match(build, /const SITE_TITLE = 'SalahNest \| Prayer Times/);
   assert.match(build, /og:site_name" content="SalahNest/);
+  assert.match(build, /assets\/social-preview\.png/);
   assert.match(build, /name: 'SalahNest — Islamic Companion'/);
   assert.match(build, /short_name: 'SalahNest'/);
+});
+
+test('shared app brand surface and current GitHub links use the new mark and repository slug', () => {
+  const html = read('prayer-times.html');
+  assert.match(html, /assets\/salahnest-mark\.png/);
+  assert.match(html, /https:\/\/github\.com\/MalekMahmouda\/salahnest/);
+  assert.match(read('js/extras.js'), /https:\/\/github\.com\/MalekMahmouda\/salahnest/);
+  assert.match(read('README.md'), /malekmahmouda\.github\.io\/salahnest\//);
+  assert.match(read('README.ar.md'), /malekmahmouda\.github\.io\/salahnest\//);
 });
 
 test('Electron pins existing user data before opening the JSON store', () => {

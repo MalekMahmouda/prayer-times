@@ -1,10 +1,12 @@
 # SalahNest · أوقات الصلاة
 
+<p align="center"><img src="assets/salahnest-mark.png" alt="شعار SalahNest" width="120"></p>
+
 رفيق إسلامي مكتبي (ويندوز) ومحمول (أندرويد) — أوقات الصلاة، القرآن، الأذكار، القبلة، والمزيد، بجوهر يعمل دون اتصال بالإنترنت.
 
-🌐 **تطبيق الويب:** https://malekmahmouda.github.io/prayer-times/ — تطبيق ويب قابل للتثبيت (PWA)، يعمل دون اتصال بالكامل بعد أول زيارة.
+🌐 **تطبيق الويب:** https://malekmahmouda.github.io/salahnest/ — تطبيق ويب قابل للتثبيت (PWA)، يعمل دون اتصال بالكامل بعد أول زيارة.
 
-📥 **التنزيلات:** حزم أندرويد الموقّعة في [إصدارات GitHub](https://github.com/MalekMahmouda/prayer-times/releases)؛ مثبّت ويندوز معلّق حتى توقيعه واختباره.
+📥 **التنزيلات:** حزم أندرويد الموقّعة في [إصدارات GitHub](https://github.com/MalekMahmouda/salahnest/releases)؛ مثبّت ويندوز معلّق حتى توقيعه واختباره.
 
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Android%20%7C%20Web-blue) ![Electron](https://img.shields.io/badge/Electron-41-47848F) ![Version](https://img.shields.io/badge/version-1.6.5-green)
 

@@ -5,7 +5,7 @@
  *   android/app/src/main/res/mipmap-<dpi>/ic_launcher.png + ic_launcher_round.png
  *   plus adaptive-icon foreground layers (108dp grid → 432px at xxxhdpi).
  *
- * Everything renders from assets/icon-256.png via pngjs nearest-neighbor
+ * Everything renders from assets/salahnest-mark.png via pngjs nearest-neighbor
  * scaling onto a solid dark background (Islamic theme #0d1616).
  * Run: npm run assets:android
  */
@@ -16,7 +16,7 @@ const { PNG } = require('pngjs');
 
 const ROOT = path.join(__dirname, '..');
 const RES = path.join(ROOT, 'android', 'app', 'src', 'main', 'res');
-const SRC = path.join(ROOT, 'assets', 'icon-256.png');
+const SRC = path.join(ROOT, 'assets', 'salahnest-mark.png');
 const BG = { r: 13, g: 22, b: 22 }; // Islamic theme background #0d1616
 
 const DENSITIES = { mdpi: 48, hdpi: 72, xhdpi: 96, xxhdpi: 144, xxxhdpi: 192 };
@@ -57,7 +57,7 @@ function renderCanvas(size, mode) {
     for (let y = 0; y < size; y++) {
       for (let x = 0; x < size; x++) {
         const dx = x + 0.5 - cx, dy = y + 0.5 - cy;
-        if (Math.sqrt(dx * dx + dy * dy) > r) png.data[(size * y + x) << 2 + 3] = 0;
+        if (Math.sqrt(dx * dx + dy * dy) > r) png.data[(size * y + x) * 4 + 3] = 0;
       }
     }
   }

@@ -1,25 +1,27 @@
-# SalahNest 1.6.5 — Release Readiness (Review Candidate)
+# SalahNest 1.6.5 — Branding and URL Migration Review
 
-## Status
+## Current status
 
-This local candidate is based on public `main` commit `e8d649563f2dfa5cee859ae923aa944c5ea81987` plus the unreleased source-review commits. The visible brand is **SalahNest**; app version is `1.6.5`, Android version code is `13`, and the package ID remains `com.malek.prayertimes`. This note records the review state before any public push, tag, upload, Play submission, or Pages deployment.
+This is a local, unpublished review candidate based on source commit `bfd3aea9bf51436374628582c2ca09f3aefd4f88`; the separate Pages build candidate starts from `d88ddd34cde6dcf9739ef987bc16c13ba370e620`. The visible name is **SalahNest**, the proposed repository is `MalekMahmouda/salahnest`, and the proposed Pages URL is `https://malekmahmouda.github.io/salahnest/`. Public `main` (`e8d649563f2dfa5cee859ae923aa944c5ea81987`), public `gh-pages` (`c45f29d00ee139f952fa05867e138c72eba509c8`) and release `v1.6.4` have not been changed.
 
-The signed APK and signed Play App Bundle were built locally. **The Android build is not release-ready:** the required behavior—playing the adhan while the app is closed or the phone screen is locked—has not been tested on a real phone. Do not claim that behavior is proven or publish the Android build until the device checks below pass. A phone that is fully powered off cannot play audio; after reboot, the app must restore alarms once Android starts it.
+The Android package/application ID remains `com.malek.prayertimes`; the Windows user-data folder remains `%APPDATA%\\Prayer Times`; and no signing key was copied or changed. The prior 1.6.5 APK/AAB and the owner's earlier successful closed-app/locked-screen Adhan phone test predate this logo integration. They do not validate a newly branded APK/AAB.
 
-## Verified candidate artifacts
+## Verified in this candidate
 
-- Automated tests passed: **447 total** — 74 scheduler, 299 contract, 7 motion, 46 alert, 8 UI-accessibility, 3 location-date, and 10 branding/download-card checks. The web/PWA and Android web-shell builds completed.
-- `npm audit --omit=dev` reported **zero production dependency vulnerabilities**. A full lockfile audit reported 14 development/install-tree findings (4 moderate, 9 high, 1 critical); review/update the development toolchain before distributing the Windows/Electron build. No dependency changes were made during this review.
-- `SalahNest-1.6.5.apk` is signed and passed the earlier `apksigner` check. Its package is `com.malek.prayertimes`, version `1.6.5`, code `13`, minimum SDK 24 and target SDK 36. SHA-256: `d3b9a54a1114f30a74116bbff5678a64821a3f25634ac07710f6c7ad4e6c9789` (52,339,937 bytes).
-- `SalahNest-1.6.5.aab` is signed and its signature was verified during the build. Official standalone BundleTool 1.18.1 `validate` passed; its base manifest reports package `com.malek.prayertimes`, version `1.6.5`, code `13`. SHA-256: `a03679d78a10fd4719d7d5e553df43de8bacfa515d22222c198e827221c5c5f3` (51,364,947 bytes). Play Console processing and review remain separate.
-- `SalahNest-Setup-1.6.5-unsigned.exe` is **not Authenticode-signed** and has not had an install/upgrade test. SHA-256: `7e82d583ec5e1d0ca6dcd03a09581fb8d6717b5d25fb7c52a8070ca5c7c90832` (121,852,257 bytes). Hold it from public distribution until signed with a trusted certificate and tested.
-- The existing source archive is not tied to an exact final Git commit. Regenerate the public source archive from the reviewed final commit; do not publish the existing `SalahNest-Source-Candidate-1.6.5-Android-Built.zip` as though it were commit-provenanced.
+- `npm test` passed all 448 checks: 74 scheduler, 299 contract, 7 motion, 46 alert, 8 UI-accessibility, 3 location-date, and 11 product-brand checks.
+- `npm run web` completed. Three generated-branding checks passed. `scripts/check-dist.js` passed for the available runtime assets; its asar-list section was skipped because `tmp/asar-list.txt` was not generated, and its synced Android-public section was skipped because `cap sync` was not run.
+- A Chromium smoke test served the built PWA locally under `/salahnest/`: HTTP 200, the mark loaded (1024 px source), the canonical URL and manifest link were correct, and there were no console errors or failed requests.
+- `.nojekyll` is still empty and `google4d2e2a5dfbddfa49.html` is byte-identical to the existing Pages candidate. Their SHA-256 values are respectively `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` and `47eb6e50441605a4dc27dffbb9a38dfddcabaa3ba9ad687a2d688fe5b5edf030`.
+- Android launcher, adaptive, splash, website, and PWA source assets were regenerated from the shared transparent mark. **No Android SDK, Gradle, `apksigner`, APK, or AAB build was run.** The icon changes are not yet present in a new Android package.
+- Electron packaging produced the `dist/win-unpacked` app directory, but the NSIS installer step stopped because Wine is unavailable (`spawn wine ENOENT`). The incomplete installer stub was discarded. The existing Windows installer remains unsigned and not install-tested; this candidate has no verified installer.
+- The prior dependency audit recorded zero production vulnerabilities and 14 development/install-tree findings (4 moderate, 9 high, 1 critical); no dependencies were added or changed here.
 
-## Remaining gates
+## Before any release
 
-1. **Real Android device:** test the adhan with the app not in the foreground, with the screen locked, and in Doze/battery saver; grant and revoke notification and exact-alarm access; test timezone changes, reboot restoration, and at least one target OEM's battery-management behavior. Android can defer or suppress delivery if users deny notifications/exact alarms or restrict background activity.
-2. **Google Play:** complete the privacy-policy URL and in-app link, Data safety, location/permission, ads, target-audience, content-rating and app-access declarations; prepare and review the English/Arabic listing assets; complete applicable account verification, testing, review and rollout steps.
-3. **Windows:** if a Windows installer is in scope, obtain a trusted code-signing certificate, sign the installer, then test clean install, upgrade, uninstall/data retention, notifications, tray/startup behavior and SmartScreen.
-4. **Website:** update the download filename, version and size only after a public APK release link exists. Preserve the existing Pages URL, `.nojekyll` file and Google verification file.
+1. Review and approve the exact logo preview, changed-file list, and final source/Pages payload. Do not push, rename the live repository, tag, upload, release, or deploy before that approval.
+2. A fresh explicit approval is required before any Android SDK or Gradle use for this logo build. Do not accept the 2019 SDK license again or accept any additional legal terms. If authorized later, build with the existing signing key, then test the changed APK on a real device—especially Adhan while the app is backgrounded and the phone is locked—before distribution.
+3. Rebuild the Windows installer in a suitable environment. Keep it unsigned unless a trusted signing certificate is supplied; install/upgrade/uninstall testing and Windows notification/tray checks remain outstanding.
+4. Plan the old Pages address separately. A GitHub repository rename changes the project-site URL; the old Pages URL does not automatically redirect. Keep a legacy site/repository or prepare a separately reviewed redirect before changing the live repository name.
+5. After approval and publication, verify the new Pages URL, `.nojekyll`, Google ownership file, release links, and PWA installation/update behavior from the public site.
 
-Nothing in this preparation has been pushed, tagged, uploaded, submitted to Play, or deployed. Public action requires the owner's review and approval of the exact payload.
+The work remains local and unpublished. No public repository, release, package, or Pages site was changed.

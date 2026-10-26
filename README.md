@@ -1,10 +1,12 @@
 # SalahNest · Prayer Times · أوقات الصلاة
 
+<p align="center"><img src="assets/salahnest-mark.png" alt="SalahNest logo" width="120"></p>
+
 A native Windows desktop & Android Islamic companion built with Electron — prayer times, Quran, Dhikr, Qibla, and more, with a fully offline-first core.
 
 > 🇸🇦 العربية: [README.ar.md](README.ar.md)
-🌐 **Web app:** https://malekmahmouda.github.io/prayer-times/ — installable PWA, works fully offline after the first visit.
-📥 **Downloads:** signed Android APKs are published in [GitHub Releases](https://github.com/MalekMahmouda/prayer-times/releases); the Windows installer is held until it is code-signed and tested.
+🌐 **Web app:** https://malekmahmouda.github.io/salahnest/ — installable PWA, works fully offline after the first visit.
+📥 **Downloads:** signed Android APKs are published in [GitHub Releases](https://github.com/MalekMahmouda/salahnest/releases); the Windows installer is held until it is code-signed and tested.
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Android%20%7C%20Web-blue) ![Electron](https://img.shields.io/badge/Electron-41-47848F) ![Version](https://img.shields.io/badge/version-1.6.5-green)
 
 ## Features
