@@ -275,7 +275,17 @@ section('6. netFetch query-key isolation + per-request timeout');
     X.setLoc(24.7136, 46.6753); X.S.city = ''; X.S.country = ''; X.S.locLabelKey = '';
     await X.revGeo(24.7136, 46.6753);
     ok(X.S.city === '' && X.S.country === 'Egypt', 'reverse geocoder does not promote a county to the displayed city');
-    ok(JSON.parse(store.get('ptrevgeo'))._version === 2, 'old reverse-geocoder cache schema is invalidated');
+    ok(JSON.parse(store.get('ptrevgeo'))._version === 3, 'old reverse-geocoder cache schema is invalidated');
+
+    // A stale v2 cache can retain an incorrect Egypt locality for Riyadh
+    // coordinates; GPS lookup must discard it and accept a fresh result.
+    store.set('ptrevgeo', JSON.stringify({ _version: 2, '24.71,46.68': { city: 'اخطاب', country: 'Egypt', t: Date.now() } }));
+    X._revGeo.cache = null; X._revGeo.lastCall = 0;
+    globalThis.fetch = async () => ({ ok: true, json: async () => ({ address: { city: 'Riyadh', country: 'Saudi Arabia' } }) });
+    X.setLoc(24.7136, 46.6753); X.S.city = ''; X.S.country = ''; X.S.locLabelKey = '';
+    await X.revGeo(24.7136, 46.6753);
+    ok(X.S.city === 'Riyadh' && X.S.country === 'Saudi Arabia', 'Riyadh reverse geocoding replaces a stale cached Egypt label');
+    ok(JSON.parse(store.get('ptrevgeo'))._version === 3, 'v2 reverse-geocoder data is replaced by the current cache schema');
 
     // Fresh high-accuracy GPS; stale callbacks cannot overwrite a newer fix,
     // and a manual move must not inherit an active saved-location timezone.
@@ -733,7 +743,7 @@ function runArtifactChecks() {
     'GPS tiers: keep-previous-with-warning AND accept-with-warning both present');
   ok(appSrc.includes('d.labelKey === key') && appSrc.includes('S.locLabelKey === key'),
     'persisted place labels are accepted only with coordinate provenance');
-  ok(appSrc.includes('CACHE_VERSION: 2') && appSrc.includes('address.municipality')
+  ok(appSrc.includes('CACHE_VERSION: 3') && appSrc.includes('address.municipality')
     && !appSrc.includes('address.county'), 'reverse-geocoder cache is versioned and city labels exclude counties');
   const engineAt = appSrc.indexOf('const engineOnTime = await engineReady;');
   const repushAt = appSrc.indexOf('pushCfg();', engineAt);

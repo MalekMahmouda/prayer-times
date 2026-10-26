@@ -1022,7 +1022,7 @@ function useGPS() { requestCurrentLocation(true, false); }
    coordinates → { city, country } with a TTL; throttle between requests;
    skip when the rounded coordinates already match the current location. */
 const _revGeo = { cache: null, lastCall: 0, inflight: null };
-const REV_GEO = { TTL_MS: 7 * 24 * 3600 * 1000, MIN_GAP_MS: 2000, ROUND_DP: 2, CACHE_VERSION: 2 };
+const REV_GEO = { TTL_MS: 7 * 24 * 3600 * 1000, MIN_GAP_MS: 2000, ROUND_DP: 2, CACHE_VERSION: 3 };
 function revGeoCache() {
   if (_revGeo.cache) return _revGeo.cache;
   try {
