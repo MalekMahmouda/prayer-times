@@ -150,17 +150,14 @@ button{cursor:pointer;border:none;background:none}
 ::-webkit-scrollbar-thumb:hover{background:var(--text-muted);background-clip:padding-box}
 ::selection{background:var(--primary-soft)}
 a{color:var(--primary)}
-/* Reduced motion = a gentler equivalent, not a blanket kill (Apple §14).
-   Movement (transform / keyframes / smooth scroll) is neutralised, but short
-   opacity + colour fades survive so state changes still read as feedback
-   instead of snapping. */
+/* Reduced motion removes transitions and movement instead of leaving subtle
+   fades for users who explicitly request that motion be minimized. */
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{
     animation-duration:.01ms !important;animation-iteration-count:1 !important;
-    transition-property:opacity,color,background-color,border-color,box-shadow,fill,stroke !important;
-    transition-duration:.15s !important;
+    transition-property:none !important;transition-duration:0s !important;transition-delay:0s !important;
+    scroll-behavior:auto !important;
   }
-  html{scroll-behavior:auto}
   .page.active{animation:none}
 }
 /* Translucency is a preference too: swap the glass layers for solid ones. */
@@ -259,6 +256,8 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:14px 0}
 .btn{padding:10px 18px;border-radius:12px;font-size:13.5px;font-weight:var(--fw-semibold);background:var(--surface2);color:var(--text);border:1px solid var(--border);transition:all var(--dur) var(--ease);display:inline-flex;align-items:center;gap:7px}
 .btn:hover{border-color:var(--primary);color:var(--primary);transform:translateY(-1px);box-shadow:var(--shadow-sm)}
 .btn:active{transform:translateY(0) scale(.97);transition-duration:80ms}
+#dlAndroidBtn[aria-disabled="true"]{opacity:.58;cursor:not-allowed;pointer-events:none}
+#dlAndroidHelp[hidden]{display:none!important}
 .btn.primary{background:var(--grad);color:var(--on-primary);border-color:transparent;box-shadow:var(--shadow-sm)}
 .btn.primary:hover{color:var(--on-primary);filter:brightness(1.12)}
 .btn.sm{padding:6px 13px;font-size:12.5px;border-radius:10px}
@@ -550,6 +549,7 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:14px 0}
 .chip.active{background:var(--grad);color:var(--on-primary);border-color:transparent;box-shadow:var(--shadow-sm)}
 .dhikr-stage{display:flex;flex-direction:column;align-items:center;gap:16px;padding:26px 0 12px}
 .dhikr-ring{width:236px;height:236px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;user-select:none;-webkit-tap-highlight-color:transparent}
+.dhikr-ring:focus-visible{outline:3px solid var(--primary);outline-offset:5px;border-radius:50%}
 .dhikr-ring:active .inner{transform:scale(.96)}
 .dhikr-ring svg{position:absolute;inset:0;transform:rotate(-90deg)}
 .dhikr-ring .circle-bg{fill:none;stroke:var(--border);stroke-width:9}

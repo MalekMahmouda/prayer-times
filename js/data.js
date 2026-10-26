@@ -144,7 +144,7 @@ const HMA = ['محرم','صفر','ربيع الأول','ربيع الثاني','
 /* ═══ I18N ═══ */
 const T = {
   en: {
-    appName: 'Prayer Times', sub: 'Islamic Companion',
+    appName: 'SalahNest', sub: 'Islamic Companion',
     nav: { prayers: 'Prayers', calendar: 'Calendar', qibla: 'Qibla', quran: 'Quran', names: '99 Names', dhikr: 'Dhikr', stats: 'Stats', downloads: 'Download', settings: 'Settings' },
     more: 'More', language: 'Language', location: 'Location',
     nextPrayer: 'Next Prayer', startsIn: 'Starts in', today: 'Today',
@@ -161,7 +161,7 @@ const T = {
     qibla: { title: 'Qibla Direction', from: 'from', distance: 'Distance to Kaaba', km: 'km', yourCoords: 'Your coordinates', kaabaCoords: 'Kaaba coordinates', how: 'How to use', howText: 'The needle points toward the Qibla relative to your device. Turn until the needle points to the top of the dial — the number shown is the Qibla bearing from North.', live: 'Live compass — turn until the needle points to the top of the dial', aligned: 'Aligned — you are facing the Qibla ✓', calibrate: 'Compass unreliable — move the phone in a ∞ figure to calibrate', noSensor: 'No compass data yet — showing static bearing', static: 'Static bearing — this device has no compass', denied: 'Compass permission denied — showing static bearing', turn: 'Turn' },
     quran: { search: 'Search surah by name or number…', meccan: 'Meccan', medinan: 'Medinan', verses: 'verses', noResults: 'No surahs found.', reciter: 'Reciter', loading: 'Could not load audio. Check connection.' },
     names: { search: 'Search by name or meaning…', day: 'Name of the Day', all: 'All 99 Names', dhikr: 'Dhikr', noResults: 'No names found.', source: 'Asma Allah al-Husna' },
-    dhikr: { title: 'Dhikr Counter', target: 'Target', custom: 'Custom', reset: 'Reset', daily: 'Today', total: 'All time', tapHint: 'Tap the counter or press Space', done: 'Target reached — Alhamdulillah!' },
+    dhikr: { title: 'Dhikr Counter', target: 'Target', custom: 'Custom', reset: 'Reset', daily: 'Today', total: 'All time', count: 'Count dhikr', tapHint: 'Tap the counter or press Space', done: 'Target reached — Alhamdulillah!' },
     set: {
       title: 'Settings', general: 'General', language: 'Language', theme: 'Theme', h24: '24-Hour Format',
       calc: 'Prayer Calculation', method: 'Method', madhab: 'Asr school', madhabS: 'Asr shadow-length school — applies to every method', shafi: 'Shafi (standard)', hanafi: 'Hanafi',
@@ -176,11 +176,12 @@ const T = {
     toast: { locSet: 'Location updated!', locFail: 'City not found. Try again.', noCity: 'Please enter a city', gpsDenied: 'Location denied. Set manually.', gpsNo: 'Geolocation not supported', gpsFail: 'Location unavailable — set your city manually', switchedEn: 'Switched to English', switchedAr: 'تم التبديل للعربية', testIn3: 'Test notification in 3s…', deskOnly: 'Desktop mode only', adhanPlay: 'Playing adhan preview…', adhanOverlay: 'Playing adhan — fullscreen overlay', adhanFail: 'Could not play the adhan preview', makkahDefault: 'No location set yet — showing Makkah by default. Set your city from Location.' },
     /* Downloads + Quran Radio (added with the GitHub/downloads section). */
     dl: {
-      title: 'Get Prayer Times',
+      title: 'Get SalahNest',
       lead: 'Install it on your phone, read the source, or pick an older release.',
       androidT: 'Android app',
       androidBtn: 'Download for Android',
-      unitMB: 'MB', androidReq: 'Android 7.0+',
+      androidPending: 'Android build pending',
+      unitMB: 'MB', androidReq: 'Android 7.0+', sizePending: 'Final APK size pending',
       codeT: 'Source code',
       codeBtn: 'View on GitHub',
       relT: 'All versions',
@@ -207,7 +208,7 @@ const T = {
     dh: { subhan: 'SubhanAllah', subhanAr: 'سُبْحَانَ اللَّه', alhamd: 'Alhamdulillah', alhamdAr: 'الْحَمْدُ لِلَّه', akbar: 'Allahu Akbar', akbarAr: 'اللَّهُ أَكْبَر', tahlil: 'La ilaha illa Allah', tahlilAr: 'لَا إِلَٰهَ إِلَّا اللَّه', istighfar: 'Astaghfirullah', istighfarAr: 'أَسْتَغْفِرُ اللَّه', salawat: 'Salawat', salawatAr: 'صَلَّى اللَّهُ عَلَيْهِ وَسَلَّمَ' },
   },
   ar: {
-    appName: 'أوقات الصلاة', sub: 'رفيق إسلامي',
+    appName: 'SalahNest', sub: 'رفيق إسلامي',
     nav: { prayers: 'الصلوات', calendar: 'التقويم', qibla: 'القبلة', quran: 'القرآن', names: 'أسماء الله', dhikr: 'الذكر', stats: 'الإحصاءات', downloads: 'تحميل التطبيق', settings: 'الإعدادات' },
     more: 'المزيد', language: 'اللغة', location: 'الموقع',
     nextPrayer: 'الصلاة القادمة', startsIn: 'تبدأ بعد', today: 'اليوم',
@@ -224,7 +225,7 @@ const T = {
     qibla: { title: 'اتجاه القبلة', from: 'من', distance: 'المسافة إلى الكعبة', km: 'كم', yourCoords: 'إحداثياتك', kaabaCoords: 'إحداثيات الكعبة', how: 'كيفية الاستخدام', howText: 'يشير المؤشر إلى اتجاه القبلة بالنسبة لاتجاه جهازك. أدر الهاتف حتى يشير المؤشر إلى أعلى القرص — الدرجة المعروضة هي اتجاه القبلة من الشمال.', live: 'بوصلة حية — أدر الهاتف حتى يشير المؤشر إلى أعلى القرص', aligned: 'تم الاستقامة — أنت متجه نحو القبلة ✓', calibrate: 'البوصلة غير مستقرة — حرّك الهاتف على شكل ∞ للمعايرة', noSensor: 'لا توجد بيانات بوصلة بعد — يتم عرض الاتجاه الثابت', static: 'اتجاه ثابت — هذا الجهاز لا يحتوي بوصلة', denied: 'تم رفض إذن البوصلة — يتم عرض الاتجاه الثابت', turn: 'أدر حتى' },
     quran: { search: 'ابحث عن سورة بالاسم أو الرقم…', meccan: 'مكية', medinan: 'مدنية', verses: 'آية', noResults: 'لا توجد نتائج.', reciter: 'القارئ', loading: 'تعذر تحميل الصوت. تحقق من الاتصال.' },
     names: { search: 'ابحث عن الاسم أو المعنى…', day: 'اسم اليوم', all: 'أسماء الله الحسنى', dhikr: 'الذكر', noResults: 'لا توجد نتائج.', source: 'أسماء الله الحسنى' },
-    dhikr: { title: 'مسبحة إلكترونية', target: 'الهدف', custom: 'مخصص', reset: 'تصفير', daily: 'اليوم', total: 'الإجمالي', tapHint: 'اضغط على العداد أو مفتاح المسافة', done: 'اكتمل الهدف — الحمد لله!' },
+    dhikr: { title: 'مسبحة إلكترونية', target: 'الهدف', custom: 'مخصص', reset: 'تصفير', daily: 'اليوم', total: 'الإجمالي', count: 'عدّ الذكر', tapHint: 'اضغط على العداد أو مفتاح المسافة', done: 'اكتمل الهدف — الحمد لله!' },
     set: {
       title: 'الإعدادات', general: 'عام', language: 'اللغة', theme: 'المظهر', h24: 'صيغة 24 ساعة',
       calc: 'طريقة الحساب', method: 'الطريقة', madhab: 'مذهب العصر', madhabS: 'تُستخدم في طريقة أمريكا الشمالية والطريقة المخصصة', shafi: 'شافعي (القياسي)', hanafi: 'حنفي',
@@ -238,14 +239,15 @@ const T = {
     },
     toast: { locSet: 'تم تحديث الموقع!', locFail: 'لم يتم العثور على المدينة. حاول مجدداً.', noCity: 'الرجاء إدخال مدينة', gpsDenied: 'تم رفض الموقع. حدد يدوياً.', gpsNo: 'تحديد الموقع غير مدعوم', gpsFail: 'تعذر تحديد الموقع — حدد مدينتك يدوياً', switchedEn: 'Switched to English', switchedAr: 'تم التبديل للعربية', testIn3: 'تنبيه تجريبي بعد ٣ ثوان…', deskOnly: 'يعمل في وضع سطح المكتب فقط', adhanPlay: 'تجربة الأذان…', adhanOverlay: 'تشغيل الأذان — شاشة كاملة', adhanFail: 'تعذر تشغيل معاينة الأذان', makkahDefault: 'لم يتم تحديد موقع بعد — تُعرض مكة افتراضياً. حدد مدينتك من صفحة الموقع.' },
     dl: {
-      title: 'حمّل تطبيق أوقات الصلاة',
+      title: 'حمّل تطبيق SalahNest',
       lead: 'ثبّته على هاتفك، أو اطّلع على الكود المصدري، أو اختر إصدارًا أقدم.',
       androidT: 'تطبيق أندرويد',
       androidBtn: 'تحميل لأندرويد',
+      androidPending: 'لم يكتمل بناء تطبيق أندرويد',
       /* “7.0+” in an RTL line throws its “+” to the far left of the run — the
          bidi algorithm reads it as punctuation, not part of the number. Spelled
          out instead, which is also how Arabic release notes say it. */
-      unitMB: 'ميجابايت', androidReq: 'أندرويد 7.0 أو أحدث',
+      unitMB: 'ميجابايت', androidReq: 'أندرويد 7.0 أو أحدث', sizePending: 'سيُحدَّد حجم APK بعد اكتمال البناء',
       codeT: 'الكود المصدري',
       codeBtn: 'عرض على GitHub',
       relT: 'كل الإصدارات',

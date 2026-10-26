@@ -142,7 +142,7 @@ window.quranOpenReader = function quranOpenReader(surahN, ayahN) {
   // Continuous flow: inline ayahs, each ending in a medallion
   html += `<div class="mushaf-flow" dir="rtl">`;
   html += sur.ayahs.map((ay) => `
-    <span class="ayah-inline${bookmarks.has(ay.n) ? ' marked' : ''}" id="ayah-${sur.n}-${ay.n}" data-s="${sur.n}" data-a="${ay.n}">${ay.ar}<span class="ayah-medal" aria-label="${ay.n}">${arNum(ay.n)}</span></span>${prefs.tr ? '' : ' '}`).join('');
+    <span class="ayah-inline${bookmarks.has(ay.n) ? ' marked' : ''}" id="ayah-${sur.n}-${ay.n}" data-s="${sur.n}" data-a="${ay.n}" role="button" tabindex="0">${ay.ar}<span class="ayah-medal" aria-label="${ay.n}">${arNum(ay.n)}</span></span>${prefs.tr ? '' : ' '}`).join('');
   html += `</div>`;
 
   // Translation blocks (optional, inserted after the flow)
@@ -163,6 +163,12 @@ window.quranOpenReader = function quranOpenReader(surahN, ayahN) {
     el.addEventListener('click', (e) => {
       e.stopPropagation();
       openVpop(+el.dataset.s, +el.dataset.a, e.clientX, e.clientY);
+    });
+    el.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      e.preventDefault(); e.stopPropagation();
+      const rect = el.getBoundingClientRect();
+      openVpop(+el.dataset.s, +el.dataset.a, rect.left + rect.width / 2, rect.top + rect.height / 2);
     });
   });
 
@@ -194,18 +200,21 @@ window.renderBookmarks = function renderBookmarks() {
     const sur = QURAN_DATA ? QURAN_DATA.surahs[m.surah - 1] : SURAHS[m.surah - 1];
     const ay = QURAN_DATA && sur.ayahs ? sur.ayahs[m.ayah - 1] : null;
     return `<div class="bm-item">
-      <div class="bmm" data-open="${m.surah}:${m.ayah}">
+      <div class="bmm" data-open="${m.surah}:${m.ayah}" role="button" tabindex="0" aria-label="${S.lang === 'ar' ? 'فتح العلامة المرجعية' : 'Open bookmark'}: ${S.lang === 'ar' ? sur.ar : sur.en} ${m.ayah}">
         <div class="bm-meta">${S.lang === 'ar' ? sur.ar : sur.en} · ${m.surah}:${m.ayah} ${m.note ? '<span class="ii">' + ICONS.pencil + '</span>' : ''}</div>
         ${ay ? `<div class="bm-txt">${ay.ar.slice(0, 90)}…</div>` : ''}
         ${m.note ? `<div class="bm-note">${escHtml(m.note)}</div>` : ''}
       </div>
-      <button class="icon-btn" data-bmdel="${m.surah}:${m.ayah}" style="width:30px;height:30px;font-size:13px" title="Remove"><span class="ii">${ICONS.trash}</span></button>
+      <button class="icon-btn" data-bmdel="${m.surah}:${m.ayah}" style="width:30px;height:30px;font-size:13px" title="${S.lang === 'ar' ? 'إزالة العلامة المرجعية' : 'Remove bookmark'}" aria-label="${S.lang === 'ar' ? 'إزالة العلامة المرجعية' : 'Remove bookmark'}"><span class="ii">${ICONS.trash}</span></button>
     </div>`;
   }).join('') : `<div class="muted" style="padding:16px;text-align:center">${S.lang === 'ar' ? 'لا علامات مرجعية بعد — افتح وضع القراءة واحفظ آية.' : 'No bookmarks yet — open Read mode and bookmark an ayah.'}</div>`;
 
   el.querySelectorAll('[data-open]').forEach((n) => (n.onclick = () => {
     const [s, a] = n.dataset.open.split(':').map(Number);
     window.quranOpenReader(s, a);
+  }));
+  el.querySelectorAll('[data-open]').forEach((n) => (n.onkeydown = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); n.click(); }
   }));
   el.querySelectorAll('[data-bmdel]').forEach((b) => (b.onclick = (e) => {
     e.stopPropagation();
@@ -259,7 +268,7 @@ function quranSearch() {
   }
   el.innerHTML = hits.length
     ? `<div class="muted" style="font-size:11.5px;margin-bottom:8px">${hits.length} ${S.lang === 'ar' ? 'نتيجة (أول 60)' : 'results (first 60 shown)'}</div>` + hits.map((h) => `
-      <div class="qs-hit" data-open="${h.sur.n}:${h.ay.n}">
+      <div class="qs-hit" data-open="${h.sur.n}:${h.ay.n}" role="button" tabindex="0" aria-label="${S.lang === 'ar' ? 'افتح الآية' : 'Open verse'}: ${S.lang === 'ar' ? h.sur.ar : h.sur.en} ${h.ay.n}">
         <div class="qsh-meta">${S.lang === 'ar' ? h.sur.ar : h.sur.en} · ${h.sur.n}:${h.ay.n}</div>
         <div class="qsh-ar" dir="rtl">${h.ay.ar}</div>
         <div class="qsh-en">${escHtml(h.ay.en)}</div>
@@ -268,5 +277,8 @@ function quranSearch() {
   el.querySelectorAll('[data-open]').forEach((n) => (n.onclick = () => {
     const [s, a] = n.dataset.open.split(':').map(Number);
     window.quranOpenReader(s, a);
+  }));
+  el.querySelectorAll('[data-open]').forEach((n) => (n.onkeydown = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); n.click(); }
   }));
 }

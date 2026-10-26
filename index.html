@@ -10,7 +10,8 @@
      remote ever matched: Test Adhan CDN, Quran audio AND Arabic web fonts were
      all silently blocked (media-load 'URL safety check'). Explicit https:
      matches on both http(s) pages and file:// pages. -->
-<title>Prayer Times | أوقات الصلاة — مسبحة، قرآن، قبلة، تقويم هجري</title>
+<title>SalahNest | Prayer Times — أوقات الصلاة، مسبحة، قرآن، قبلة، تقويم هجري</title>
+<script src="js/early-locale.js"></script>
 <link rel="stylesheet" href="styles/app.css">
 <link rel="stylesheet" href="styles/motion.css">
 <link rel="stylesheet" href="styles/fonts.css">
@@ -20,14 +21,14 @@
 <link rel="canonical" href="https://malekmahmouda.github.io/prayer-times/">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://malekmahmouda.github.io/prayer-times/">
-<meta property="og:title" content="Prayer Times | أوقات الصلاة — مسبحة، قرآن، قبلة، تقويم هجري">
+<meta property="og:title" content="SalahNest | Prayer Times — أوقات الصلاة، مسبحة، قرآن، قبلة، تقويم هجري">
 <meta property="og:description" content="Free offline prayer times app: accurate Muslim prayer times with adhan notifications, Qibla compass, full Quran reader with mushaf verses, electronic tasbih (dhikr counter), Hijri calendar, and 99 Names of Allah. Works with no account — install or use right in the browser.">
 <meta property="og:image" content="https://malekmahmouda.github.io/prayer-times/icons/icon-256.png">
 <meta property="og:locale" content="en_US">
 <meta property="og:locale:alternate" content="ar_AR">
-<meta property="og:site_name" content="Prayer Times">
+<meta property="og:site_name" content="SalahNest">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Prayer Times | أوقات الصلاة — مسبحة، قرآن، قبلة، تقويم هجري">
+<meta name="twitter:title" content="SalahNest | Prayer Times — أوقات الصلاة، مسبحة، قرآن، قبلة، تقويم هجري">
 <meta name="twitter:description" content="Free offline prayer times app: accurate Muslim prayer times with adhan notifications, Qibla compass, full Quran reader with mushaf verses, electronic tasbih (dhikr counter), Hijri calendar, and 99 Names of Allah. Works with no account — install or use right in the browser.">
 <meta name="twitter:image" content="https://malekmahmouda.github.io/prayer-times/icons/icon-256.png">
 <link rel="manifest" href="manifest.webmanifest">
@@ -48,7 +49,7 @@
   <!-- ══ SIDEBAR ══ -->
   <aside class="sb">
     <div class="sb-logo">
-      <div class="sb-logo-title"><span class="lg" data-icon="mosque"></span><span class="t" id="sbTitle">Prayer Times</span></div>
+      <div class="sb-logo-title"><span class="lg" data-icon="mosque"></span><span class="t" id="sbTitle">SalahNest</span></div>
       <div class="sb-sub sb-logo-sub" id="sbSub">Islamic Companion</div>
     </div>
     <nav class="sb-nav">
@@ -64,7 +65,7 @@
       <button class="nav-item" data-page="settings"><span class="ni" data-icon="sliders"></span><span class="t">Settings</span></button>
     </nav>
     <div class="sb-foot">
-      <div class="lbl">Theme</div>
+      <div class="lbl" id="sbThemeLbl">Theme</div>
       <div class="swatches" id="sbSwatches"></div>
     </div>
   </aside>
@@ -80,7 +81,7 @@
       <span class="tb-spacer"></span>
       <span class="badge-off" id="offBadge">Offline</span>
       <button class="icon-btn" id="langBtn" title="Language / اللغة"><span data-icon="globe"></span></button>
-      <button class="icon-btn nav-jump" data-page="settings" title="Settings"><span data-icon="sliders"></span></button>
+      <button class="icon-btn nav-jump" id="navSettingsJump" data-page="settings" title="Settings"><span data-icon="sliders"></span></button>
     </header>
 
     <main class="content" id="content">
@@ -361,12 +362,12 @@
            a block buried under Stats: the three destinations are the only
            things a first-time visitor is looking for, so they get room, a clear
            heading, and nothing competing beside them. Every href points at the
-           real v1.6.4 release; js/extras.js owns the version/size strings so
+           unpublished v1.6.5 candidate; js/extras.js owns the version/size strings so
            they cannot drift onto a file that does not exist. -->
       <section class="page" id="page-downloads">
         <div class="dl-page">
           <header class="dl-head">
-            <h2 class="dl-title" id="dlTitle" tabindex="-1">Get Prayer Times</h2>
+            <h2 class="dl-title" id="dlTitle" tabindex="-1">Get SalahNest</h2>
             <p class="dl-lead" id="dlLead">Install it on your phone, read the source, or pick an older release.</p>
           </header>
 
@@ -380,10 +381,10 @@
               </span>
               <span class="dlb-txt">
                 <span class="dlb-name" id="dlAndroidT">Android app</span>
-                <span class="dlb-meta" id="dlAndroidMeta">Version 1.6.4 · 49.9 MB · Android 7.0+</span>
+                <span class="dlb-meta" id="dlAndroidMeta">Version 1.6.5 · Final APK size pending · Android 7.0+</span>
               </span>
-              <a class="btn primary dlb-btn" id="dlAndroidBtn" href="https://github.com/MalekMahmouda/prayer-times/releases/download/v1.6.4/Prayer-Times-1.6.4.apk" rel="noopener noreferrer" target="_blank">
-                <svg class="dl-btni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="M7.5 10.5 12 15l4.5-4.5"/><path d="M5 20h14"/></svg><span id="dlAndroidBtnT">Download for Android</span>
+              <a class="btn dlb-btn" id="dlAndroidBtn" aria-disabled="true" tabindex="-1">
+                <svg class="dl-btni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="M7.5 10.5 12 15l4.5-4.5"/><path d="M5 20h14"/></svg><span id="dlAndroidBtnT">Android build pending</span>
               </a>
             </li>
             <li class="dlb-item">
@@ -408,7 +409,7 @@
               </span>
               <span class="dlb-txt">
                 <span class="dlb-name" id="dlRelT">All versions</span>
-                <span class="dlb-meta" id="dlRelTag">Latest: v1.6.4</span>
+                <span class="dlb-meta" id="dlRelTag">Latest: v1.6.5</span>
               </span>
               <a class="btn dlb-btn" id="dlRelBtn" href="https://github.com/malekmahmouda/prayer-times/releases" rel="noopener noreferrer" target="_blank">
                 <svg class="dl-btni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7 12 12l8.7-5"/><path d="M12 22V12"/></svg><span id="dlRelBtnT">View all releases</span>
@@ -424,7 +425,7 @@
           <!-- The two questions a visitor actually has after seeing the list:
                "what happens when I tap this" and "do I even need a download?". -->
           <div class="dl-help">
-            <section class="dl-help-card">
+            <section class="dl-help-card" id="dlAndroidHelp" hidden>
               <h3 class="dl-help-t" id="dlAndT">Installing on Android</h3>
               <ol class="dl-steps">
                 <li id="dlAnd1">Tap “Download for Android” — the APK comes straight from the GitHub release.</li>
@@ -447,7 +448,7 @@
         <div id="dhikrLibList" style="margin-bottom:18px"></div>
         <div class="card" style="display:flex;flex-direction:column;align-items:center">
           <div class="dhikr-stage">
-            <div class="dhikr-ring" id="dhikrRing" title="Tap to count">
+            <button class="dhikr-ring" id="dhikrRing" type="button" aria-describedby="dhikrHint" aria-label="Count dhikr">
               <svg viewBox="0 0 230 230" width="230" height="230">
                 <circle class="circle-bg" cx="115" cy="115" r="106"></circle>
                 <circle class="circle-fg" id="ringFg" cx="115" cy="115" r="106" stroke-dasharray="666" stroke-dashoffset="666"></circle>
@@ -457,7 +458,7 @@
                 <div class="dhikr-word" id="dhikrWord">—</div>
                 <div class="dhikr-target" id="dhikrTargetLbl">—</div>
               </div>
-            </div>
+            </button>
             <div class="stepper" style="margin-top:4px">
               <button id="dhMinus">−</button>
               <div class="val" id="dhVal">0</div>
@@ -544,7 +545,7 @@
             <div class="row"><span class="lbl" id="slTestNotif">Test Notification</span>               <button class="btn sm" id="btnTestNotif"><span data-icon="bell"></span> <span id="slTestNotifBtn">Test</span></button></div>
             <div class="note" id="dataNote">All data is stored locally on this device. No account, no analytics.</div>
             <div class="note" id="creditsNote">Quran text: Tanzil (quran-uthmani) · Translation: Saheeh International · Adhan recordings: courtesy of AlAdhan.com · Prayer engine: adhan-js</div>
-            <div class="note" style="border-top:none;padding-top:6px" id="aboutLine">Prayer Times</div>
+            <div class="note" style="border-top:none;padding-top:6px" id="aboutLine">SalahNest</div>
           </div>
 
           <div class="card set-card">             <div class="card-h"><span data-icon="pin"></span><span id="shLocs">Saved Locations</span></div>
@@ -582,7 +583,7 @@
             <div class="card-h"><span data-icon="info"></span> <span id="shAbout">About</span></div>
             <div class="about-dua" id="aboutDua" dir="rtl">يرجى الدعاء ليا ولوالدي</div>
             <div class="about-dev" id="aboutDev" dir="ltr">Developed by Malek Mahmoud</div>
-            <div class="note" id="aboutVersion">Prayer Times</div>
+            <div class="note" id="aboutVersion">SalahNest</div>
           </div>
 
           <footer class="site-foot" id="siteFoot">
@@ -694,7 +695,7 @@
 </div>
 
 <!-- ══ FULL-SCREEN AZAN (mobile Test Adhan + foreground prayer time) ══ -->
-<div class="azan-screen" id="azanOverlay" role="dialog" aria-modal="true" aria-labelledby="azanArName" aria-hidden="true">
+<div class="azan-screen" id="azanOverlay" role="dialog" aria-modal="true" aria-labelledby="azanArName" aria-hidden="true" tabindex="-1">
   <div class="azan-inner">
     <div class="azan-city" id="azanCity">—</div>
     <div class="azan-ar" id="azanArName">الفجر</div>

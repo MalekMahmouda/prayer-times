@@ -57,10 +57,11 @@ window.renderCalendar = function renderCalendar() {
     const date = new Date(CAL.y, CAL.m, d);
     const isToday = date.toDateString() === new Date().toDateString();
     const isSel = CAL.sel === d;
-    html += `<div class="cal-cell${isToday ? ' today' : ''}${isSel ? ' sel' : ''}" data-d="${d}">
+    const dateLabel = fmtDate(date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    html += `<button type="button" class="cal-cell${isToday ? ' today' : ''}${isSel ? ' sel' : ''}" data-d="${d}" aria-label="${dateLabel}" aria-pressed="${isSel}"${isToday ? ' aria-current="date"' : ''}>
       <div class="dg">${d}</div>
       <div class="hj">${hijriDayNum(date)}</div>
-    </div>`;
+    </button>`;
   }
   $('calGrid').innerHTML = html;
   $('calGrid').querySelectorAll('.cal-cell[data-d]').forEach((el) => {
@@ -290,6 +291,8 @@ window.renderDhikr = function renderDhikr() {
   const word = S.lang === 'ar' ? preset.ar : preset.en;
   $('dhikrWord').textContent = word;
   $('dhikrCount').textContent = dh.count;
+  const ring = $('dhikrRing');
+  if (ring) ring.setAttribute('aria-label', `${t('dhikr.count')}, ${S.lang === 'ar' ? 'العدد الحالي' : 'current count'} ${dh.count}`);
   $('dhikrTargetLbl').textContent = `${t('dhikr.target')}: ${dh.target}`;
   $('dhVal').textContent = dh.count;
   $('dhTargetSel').value = [33, 100, 300].includes(+dh.target) ? String(dh.target) : 'custom';
@@ -571,7 +574,7 @@ function wireSettings() {
       }).catch(() => showToast(S.lang === 'ar' ? 'تعذر اختبار الإشعارات' : 'Notification test failed'));
     } else if (window.PTWebAlerts) {
       window.PTWebAlerts.requestPermission().then(async (p) => {
-        if (p === 'granted') await window.PTWebAlerts.notify('Prayer Time', S.lang === 'ar' ? 'إشعار تجريبي' : 'Test notification', 'pt-test');
+        if (p === 'granted') await window.PTWebAlerts.notify('SalahNest', S.lang === 'ar' ? 'إشعار تجريبي' : 'Test notification', 'pt-test');
         else showToast(S.lang === 'ar' ? 'الإشعارات غير مسموحة — تحقق من إعدادات المتصفح' : 'Notifications not allowed — check browser settings');
         updateBrowserNotifStatus();
       });
@@ -627,8 +630,10 @@ function wireSettings() {
   $('dhCustom').onchange = applyCustomTarget;
   $('dhCustom').onkeydown = (e) => { if (e.key === 'Enter') applyCustomTarget(); };
   document.addEventListener('keydown', (e) => {
-    if (e.code === 'Space' && document.getElementById('page-dhikr').classList.contains('active')
-      && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'SELECT') {
+    const target = e.target;
+    const interactive = target && typeof target.closest === 'function'
+      && target.closest('button,a,input,select,textarea,[contenteditable="true"]');
+    if (e.code === 'Space' && document.getElementById('page-dhikr').classList.contains('active') && !interactive) {
       e.preventDefault(); dhikrCount();
     }
   });

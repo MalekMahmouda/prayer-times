@@ -655,6 +655,24 @@ function netFetch(url) {
   return p;
 }
 
+function locationDateKey(date, timeZone) {
+  const at = date instanceof Date ? date : new Date(date == null ? Date.now() : date);
+  const tz = timeZone == null ? resolveTz() : timeZone;
+  const engine = (typeof window !== 'undefined') ? window.PT_ENGINE : null;
+  if (tz && engine && typeof engine.zonedToday === 'function') {
+    try { return engine.zonedToday(tz, at).key; } catch (e) { /* use Intl fallback */ }
+  }
+  if (tz && typeof Intl !== 'undefined') {
+    try {
+      const parts = {};
+      new Intl.DateTimeFormat('en-US', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' })
+        .formatToParts(at).forEach((p) => { parts[p.type] = p.value; });
+      if (parts.year && parts.month && parts.day) return `${parts.year}-${parts.month}-${parts.day}`;
+    } catch (e) { /* invalid or unsupported timezone — use device date */ }
+  }
+  return localDateKey(at);
+}
+
 async function fetchTimes(lat, lon) {
   // Any platform with the local engine: it is the single display source — no
   // AlAdhan API timings may overwrite them, so what you see is what fires.
@@ -663,8 +681,8 @@ async function fetchTimes(lat, lon) {
     await refreshTodaySchedule();
     return;
   }
-  const n = new Date();
-  const url = `https://api.aladhan.com/v1/timings/${pad2(n.getDate())}-${pad2(n.getMonth() + 1)}-${n.getFullYear()}?latitude=${lat}&longitude=${lon}&method=${S.cfg.method}`;
+  const [year, month, day] = locationDateKey(new Date(), resolveTz()).split('-');
+  const url = `https://api.aladhan.com/v1/timings/${day}-${month}-${year}?latitude=${lat}&longitude=${lon}&method=${S.cfg.method}`;
   try {
     const r = await netFetch(url);
     const d = await r.json();
@@ -1115,6 +1133,7 @@ function playAdhanBrowser(prayer) {
 const AZAN_AR = { Fajr: 'الفجر', Dhuhr: 'الظهر', Asr: 'العصر', Maghrib: 'المغرب', Isha: 'العشاء', Test: 'الأذان' };
 let _azanOpen = false;
 let _azanClockTimer = null;
+let _azanOpener = null;
 function _azanTick() {
   const el = $('azanClock'); if (!el) return;
   const d = new Date();
@@ -1123,6 +1142,7 @@ function _azanTick() {
 }
 function showAzanScreen(prayer) {
   const el = $('azanOverlay'); if (!el) return;
+  if (!_azanOpen) _azanOpener = document.activeElement;
   const key = AZAN_AR[prayer] ? prayer : 'Test';
   $('azanArName').textContent = AZAN_AR[key];
   $('azanEnName').textContent = key === 'Test' ? t('azan.playing') : key;
@@ -1134,6 +1154,8 @@ function showAzanScreen(prayer) {
   el.setAttribute('aria-hidden', 'false');
   el.classList.add('open');
   _azanOpen = true;
+  const stop = $('azanStop');
+  if (stop) stop.focus(); else el.focus();
 }
 function hideAzanScreen(stopAudio) {
   const el = $('azanOverlay'); if (!el) return;
@@ -1142,6 +1164,8 @@ function hideAzanScreen(stopAudio) {
   _azanOpen = false;
   if (_azanClockTimer) { clearInterval(_azanClockTimer); _azanClockTimer = null; }
   if (stopAudio) { const a = $('adhanAudio'); if (a) { try { a.pause(); } catch (e) { /* ignore */ } } }
+  const opener = _azanOpener; _azanOpener = null;
+  if (opener && opener !== document.body && opener.isConnected && typeof opener.focus === 'function') opener.focus();
 }
 /* True while the full-screen azan is showing — the Android back-button chain
    (www-build/entry.js) and the foreground notification hook consult this. */
@@ -1188,6 +1212,26 @@ function applyLang() {
   $('tbLoc').setAttribute('aria-label', S.lang === 'ar' ? 'تغيير الموقع' : 'Change location');
   document.documentElement.lang = S.lang;
   document.documentElement.dir = S.lang === 'ar' ? 'rtl' : 'ltr';
+  const iconButtonLabels = {
+    langBtn: S.lang === 'ar' ? 'تغيير اللغة' : 'Change language',
+    histPrev: S.lang === 'ar' ? 'اليوم السابق' : 'Previous day',
+    histNext: S.lang === 'ar' ? 'اليوم التالي' : 'Next day',
+    calPrev: t('cal.prev'), calNext: t('cal.nextM'),
+    rdBack: S.lang === 'ar' ? 'العودة إلى القائمة' : 'Back to list',
+    rdPrev: S.lang === 'ar' ? 'السورة السابقة' : 'Previous surah',
+    rdNext: S.lang === 'ar' ? 'السورة التالية' : 'Next surah',
+    rdFontMinus: S.lang === 'ar' ? 'تصغير النص' : 'Smaller text',
+    rdFontPlus: S.lang === 'ar' ? 'تكبير النص' : 'Larger text',
+    rdLine: S.lang === 'ar' ? 'تباعد الأسطر' : 'Line spacing',
+    rdTr: S.lang === 'ar' ? 'الترجمة' : 'Translation',
+    rdDark: S.lang === 'ar' ? 'الوضع الليلي' : 'Night mode',
+    plStop: t('azan.stop'),
+  };
+  Object.entries(iconButtonLabels).forEach(([id, label]) => {
+    const button = $(id); if (button) { button.title = label; button.setAttribute('aria-label', label); }
+  });
+  const navJump = $('navSettingsJump');
+  if (navJump) { navJump.title = t('nav.settings'); navJump.setAttribute('aria-label', t('nav.settings')); }
 
   // Sidebar + bottom nav
   document.getElementById('sbTitle').textContent = t('appName');
@@ -1258,6 +1302,11 @@ function applyLang() {
   $('slMethod').textContent = t('set.method');
   $('slMadhab').textContent = t('set.madhab');
   $('slMadhabS').textContent = t('set.madhabS');
+  const madhabSelect = $('setMadhab');
+  if (madhabSelect) {
+    if (madhabSelect.options[0]) madhabSelect.options[0].textContent = t('set.shafi');
+    if (madhabSelect.options[1]) madhabSelect.options[1].textContent = t('set.hanafi');
+  }
   $('slAdjust').textContent = t('set.adjust');
   $('slNotif').textContent = t('set.notif');
   $('slNotifS').textContent = t('set.notifS');
@@ -1305,6 +1354,7 @@ function applyLang() {
   $('btnCancelLoc').textContent = t('set.cancel');
 
   $('setTheme') && ($('setTheme').value = S.cfg.theme);
+  const sidebarTheme = $('sbThemeLbl'); if (sidebarTheme) sidebarTheme.textContent = t('set.theme');
 
   // Text modal
   const tmOk = $('txtModalOk'); if (tmOk) tmOk.textContent = S.lang === 'ar' ? 'موافق' : 'OK';
@@ -1383,6 +1433,19 @@ async function init() {
   $('btnCancelLoc').onclick = closeLocModal;
   $('locOverlay').addEventListener('click', (e) => { if (e.target === $('locOverlay')) closeLocModal(); });
   document.addEventListener('keydown', (e) => {
+    if (_azanOpen) {
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); hideAzanScreen(true); return; }
+      if (e.key === 'Tab') {
+        const dialog = $('azanOverlay');
+        const items = [...dialog.querySelectorAll('button:not([disabled]),[tabindex]:not([tabindex="-1"])')];
+        if (!items.length) { e.preventDefault(); dialog.focus(); return; }
+        const first = items[0], last = items[items.length - 1];
+        if (!dialog.contains(document.activeElement)) { e.preventDefault(); (e.shiftKey ? last : first).focus(); }
+        else if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+      return;
+    }
     const overlay = $('locOverlay');
     if (!overlay.classList.contains('open') || $('txtModal').classList.contains('open')) return;
     if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeLocModal(); return; }

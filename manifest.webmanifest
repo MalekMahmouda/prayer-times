@@ -1,7 +1,7 @@
 {
-  "name": "Prayer Times — Islamic Companion",
-  "short_name": "Prayer Times",
-  "description": "Prayer times, Quran, Qibla, Dhikr and more — offline, private, no account.",
+  "name": "SalahNest — Islamic Companion",
+  "short_name": "SalahNest",
+  "description": "SalahNest: prayer times, Quran, Qibla, Dhikr and more — offline, private, no account.",
   "lang": "en",
   "dir": "ltr",
   "start_url": "./index.html",
