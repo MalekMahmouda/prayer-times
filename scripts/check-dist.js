@@ -192,6 +192,30 @@ if (!exists('dist-web/manifest.webmanifest')) {
   } catch (e) { fail('dist-web manifest is invalid JSON: ' + e.message); }
 }
 
+console.log('— 6. Web error page —');
+if (!exists('dist-web/manifest.webmanifest')) {
+  console.log('  – dist-web not built (npm run web) — skipped');
+} else {
+  const errorPage = path.join(ROOT, 'dist-web', '404.html');
+  if (!fs.existsSync(errorPage)) {
+    fail('dist-web/404.html missing');
+  } else {
+    const html = fs.readFileSync(errorPage, 'utf8');
+    /<title>Page not found \| SalahNest<\/title>/i.test(html)
+      ? pass('branded 404 title present')
+      : fail('dist-web/404.html has no branded title');
+    /<h1\b[^>]*>We couldn’t find that page\.<\/h1>/i.test(html)
+      ? pass('404 page has a clear main heading')
+      : fail('dist-web/404.html has no expected main heading');
+    /<meta\s+name="robots"\s+content="noindex,follow"\s*\/?\s*>/i.test(html)
+      ? pass('404 page is marked noindex')
+      : fail('dist-web/404.html should be marked noindex');
+    /<a\s+href="https:\/\/malekmahmouda\.github\.io\/salahnest\/"[^>]*>Return to SalahNest<\/a>/i.test(html)
+      ? pass('404 page links back to the canonical app URL')
+      : fail('dist-web/404.html has no link back to the canonical app URL');
+  }
+}
+
 console.log('');
 if (problems) {
   console.error(`${problems} problem(s) found — build artifacts incomplete`);

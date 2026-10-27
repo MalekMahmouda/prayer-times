@@ -121,6 +121,45 @@ ${
 </urlset>
 `);
 
+// ── 4c. Branded Pages error document ──
+// GitHub Pages serves this file with HTTP 404 for missing paths. Keep it
+// standalone so broken routes remain helpful even when app assets are absent.
+const notFoundHtml = `<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,follow">
+  <meta name="description" content="That SalahNest page could not be found. Return to the prayer times app.">
+  <link rel="icon" type="image/png" href="${SITE}icons/icon-256.png">
+  <title>Page not found | SalahNest</title>
+  <style>
+    :root{color-scheme:light; font-family:system-ui,-apple-system,"Segoe UI",sans-serif; color:#243e35; background:#f7f6f0}
+    *{box-sizing:border-box}
+    body{min-height:100vh; margin:0; display:grid; place-items:center; padding:24px}
+    main{width:min(100%,520px); padding:clamp(28px,7vw,52px); border:1px solid #dedfd4; border-radius:24px; background:#fffefa; box-shadow:0 12px 30px rgba(29,55,43,.07)}
+    .brand{margin:0 0 24px; color:#245d4d; font-size:.82rem; font-weight:750; letter-spacing:.12em; text-transform:uppercase}
+    .code{margin:0; color:#8f6208; font-size:.8rem; font-weight:700; letter-spacing:.14em}
+    h1{margin:10px 0 12px; font-size:clamp(2rem,7vw,3rem); line-height:1.08; letter-spacing:-.04em}
+    p{color:#606d64; line-height:1.65}
+    a{display:inline-flex; margin-top:12px; padding:12px 18px; border-radius:12px; background:#245d4d; color:#fff; font-weight:700; text-decoration:none}
+    a:focus-visible{outline:3px solid #8f6208; outline-offset:3px}
+    a:hover{background:#1b493c}
+  </style>
+</head>
+<body>
+  <main aria-labelledby="error-title">
+    <p class="brand">SalahNest</p>
+    <p class="code">404 · PAGE NOT FOUND</p>
+    <h1 id="error-title">We couldn’t find that page.</h1>
+    <p>The address may be incorrect, or the page may have moved. Your prayer times and app data are unchanged.</p>
+    <a href="${SITE}">Return to SalahNest</a>
+  </main>
+</body>
+</html>
+`;
+fs.writeFileSync(path.join(DIST, '404.html'), notFoundHtml);
+
 // ── 5. sw.js — offline app shell (cache key changes every build) ──
 const CACHE = 'pt-cache-' + new Date().toISOString().replace(/\D/g, '').slice(0, 14);
 const SHELL = [
