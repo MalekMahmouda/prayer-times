@@ -167,7 +167,7 @@ window.renderSurahList = function renderSurahList() {
     s.ar.includes($('qrSearch').value.trim()) || s.en.toLowerCase().includes(q) || s.tr.toLowerCase().includes(q) || String(s.n) === q);
   $('surahList').innerHTML = list.length ? list.map((s) => {
     const gi = SURAHS.indexOf(s);
-    return `<div class="surah-item${gi === qrIdx ? ' playing' : ''}" data-idx="${gi}">
+    return `<div class="surah-item${gi === qrIdx && qrPlaying ? ' playing' : ''}" data-idx="${gi}" role="button" tabindex="0" aria-label="${S.lang === 'ar' ? 'قراءة سورة' : 'Read surah'} ${S.lang === 'ar' ? s.ar : s.en}">
       <div class="num">${s.n}</div>
       <div class="meta"><div class="ar">${s.ar}</div><div class="en">${s.en} · ${s.tr}</div></div>
       <div class="side"><span class="tag ${s.t === 'M' ? 'mc' : 'md'}">${s.t === 'M' ? t('quran.meccan') : t('quran.medinan')}</span>
@@ -175,7 +175,14 @@ window.renderSurahList = function renderSurahList() {
     </div>`;
   }).join('') : `<div class="muted" style="padding:20px;text-align:center">${t('quran.noResults')}</div>`;
   $('surahList').querySelectorAll('.surah-item').forEach((el) => {
-    el.onclick = () => qrLoadAndPlay(+el.dataset.idx);
+    const openForReading = () => {
+      const surah = SURAHS[+el.dataset.idx];
+      if (!surah || !window.quranOpenReader) return;
+      window.quranOpenReader(surah.n);
+      if (QURAN_DATA && window.switchQTab) window.switchQTab('read');
+    };
+    el.onclick = openForReading;
+    el.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openForReading(); } };
   });
 };
 

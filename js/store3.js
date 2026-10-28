@@ -186,14 +186,22 @@ function historyGet(db, dateKey) {
   return { Fajr: '', Dhuhr: '', Asr: '', Maghrib: '', Isha: '', ...(rec || {}) };
 }
 
+function historySet(db, dateKey, prayer, state) {
+  if (!P3.Prayer.includes(prayer) || !isDateKey(dateKey) || !HISTORY_STATES.includes(state)) return false;
+  const rec = historyGet(db, dateKey);
+  if (state === '') delete rec[prayer]; else rec[prayer] = state;
+  const compact = Object.fromEntries(P3.Prayer.filter((p) => rec[p]).map((p) => [p, rec[p]]));
+  if (Object.keys(compact).length === 0) delete db.history[dateKey]; else db.history[dateKey] = compact;
+  return true;
+}
+
 /** Cycle one prayer's state; returns next state. Never called automatically. */
 function historyCycle(db, dateKey, prayer) {
   if (!P3.Prayer.includes(prayer) || !isDateKey(dateKey)) return null;
   const rec = historyGet(db, dateKey);
   const idx = HISTORY_STATES.indexOf(rec[prayer] === undefined ? '' : rec[prayer]);
   const next = HISTORY_STATES[(idx + 1) % HISTORY_STATES.length];
-  if (next === '') delete rec[prayer]; else rec[prayer] = next;
-  if (Object.keys(rec).length === 0) delete db.history[dateKey]; else db.history[dateKey] = rec;
+  historySet(db, dateKey, prayer, next);
   return next;
 }
 
@@ -245,6 +253,6 @@ function streaks(db) {
 window.Store3 = {
   KEY: PT3_KEY, VERSION: PT3_VERSION, PRAYERS: P3.Prayer,
   load: pt3Load, save: pt3Save, merge: pt3Merge,
-  historyGet, historyCycle, HISTORY_STATES,
+  historyGet, historySet, historyCycle, HISTORY_STATES,
   statsForRange, streaks,
 };

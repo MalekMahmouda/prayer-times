@@ -18,37 +18,67 @@ const HIST_META = {
   missed: { icon: '', lbl: { en: 'Missed', ar: 'فائتة' }, cls: 'hs-missed' },
 };
 let histDate = dateKeyOf(new Date());
+let histUndo = null;
 
-window.renderHistory = function renderHistory(elId) {
-  const chips = $(elId || 'histChips'); if (!chips) return;
-  const rec = Store3.historyGet(DB3, histDate);
-  const d = new Date(histDate + 'T12:00:00');
-  chips.innerHTML = PRAYERS.map((p) => {
-    const st = rec[p] || '';
-    const m = HIST_META[st];
-    return `<button class="hchip ${m.cls}${st === 'done' ? ' hs-on' : ''}" data-p="${p}"
-      title="${S.lang === 'ar' ? m.lbl.ar : m.lbl.en}" aria-label="${p}: ${S.lang === 'ar' ? m.lbl.ar : m.lbl.en}">
-      <span class="hi" aria-hidden="true"></span>
-      <span class="hn">${S.lang === 'ar' ? AR_PRAYER[p] : p}</span>
-      <span class="hs">${S.lang === 'ar' ? m.lbl.ar : m.lbl.en}</span>
-    </button>`;
-  }).join('');
-  chips.querySelectorAll('.hchip').forEach((b) => {
-    b.onclick = () => {
-      const p = b.dataset.p;
-      Store3.historyCycle(DB3, histDate, p);
-      save3(); renderHistory(elId); renderStatsIfVisible();
-      // Satisfying cycle: the re-rendered chip gets one spring (motion.css) —
-      // its state dot pops with it, the colour ring comes from the existing
-      // border/box-shadow transition.
-      const ref = chips.querySelector(`[data-p="${p}"]`);
-      const M = window.PTMotion;
-      if (ref && M) {
-        ref.classList.add('pop');
-        ref.addEventListener('animationend', () => ref.classList.remove('pop'), { once: true });
-      }
-    };
+function updateHistoryControls() {
+  ['histDate', 'histDateM'].forEach((id) => { const el = $(id); if (el) el.value = histDate; });
+  ['histUndo', 'histUndoM'].forEach((id) => {
+    const el = $(id); if (!el) return;
+    el.hidden = !histUndo;
+    if (histUndo) {
+      const prayerName = S.lang === 'ar' ? AR_PRAYER[histUndo.prayer] : histUndo.prayer;
+      el.textContent = t('hist.undo');
+      el.setAttribute('aria-label', `${t('hist.undoLabel')} ${prayerName}`);
+      el.onclick = () => undoHistory(id === 'histUndoM' ? 'histChipsM' : 'histChips');
+    }
   });
+}
+
+function undoHistory(viewId) {
+  if (!histUndo) return;
+  const action = histUndo;
+  Store3.historySet(DB3, action.date, action.prayer, action.before);
+  histUndo = null;
+  save3(); renderHistory(); renderStatsIfVisible();
+  const focusRef = $(viewId || 'histChips')?.querySelector(`[data-p="${action.prayer}"]`);
+  if (focusRef && typeof focusRef.focus === 'function') focusRef.focus({ preventScroll: true });
+}
+
+window.renderHistory = function renderHistory() {
+  const rec = Store3.historyGet(DB3, histDate);
+  ['histChips', 'histChipsM'].forEach((id) => {
+    const chips = $(id); if (!chips) return;
+    chips.innerHTML = PRAYERS.map((p) => {
+      const st = rec[p] || '';
+      const m = HIST_META[st];
+      return `<button class="hchip ${m.cls}${st === 'done' ? ' hs-on' : ''}" data-p="${p}" aria-pressed="${st !== ''}"
+        title="${S.lang === 'ar' ? m.lbl.ar : m.lbl.en}" aria-label="${S.lang === 'ar' ? AR_PRAYER[p] : p}: ${S.lang === 'ar' ? m.lbl.ar : m.lbl.en}">
+        <span class="hi" aria-hidden="true"></span>
+        <span class="hn">${S.lang === 'ar' ? AR_PRAYER[p] : p}</span>
+        <span class="hs">${S.lang === 'ar' ? m.lbl.ar : m.lbl.en}</span>
+      </button>`;
+    }).join('');
+    chips.querySelectorAll('.hchip').forEach((b) => {
+      b.onclick = () => {
+        const p = b.dataset.p;
+        const viewId = chips.id;
+        const before = Store3.historyGet(DB3, histDate)[p] || '';
+        const after = Store3.historyCycle(DB3, histDate, p);
+        if (after == null) return;
+        histUndo = { date: histDate, prayer: p, before, after };
+        save3(); renderHistory(); renderStatsIfVisible();
+        const focusRef = $(viewId)?.querySelector(`[data-p="${p}"]`);
+        if (focusRef && typeof focusRef.focus === 'function') focusRef.focus({ preventScroll: true });
+        const M = window.PTMotion;
+        document.querySelectorAll(`.hchip[data-p="${p}"]`).forEach((ref) => {
+          if (!M) return;
+          ref.classList.add('pop');
+          ref.addEventListener('animationend', () => ref.classList.remove('pop'), { once: true });
+        });
+      };
+    });
+  });
+  updateHistoryControls();
 };
 
 function histShift(days) {
@@ -477,35 +507,45 @@ function applyBackup(v) {
 
 /* ═══ THEME BUILDER ═══ */
 const TB_TOKENS = [
-  ['bg', 'Background'], ['surface', 'Surface'], ['primary', 'Primary'], ['text', 'Text'],
-  ['border', 'Border'], ['accent', 'Accent (gold)'],
-  ['hFajr', 'Fajr hue'], ['hDhuhr', 'Dhuhr hue'], ['hAsr', 'Asr hue'], ['hMaghrib', 'Maghrib hue'], ['hIsha', 'Isha hue'],
+  ['bg', 'set.tbBackground', '--bg'], ['surface', 'set.tbSurface', '--surface'], ['primary', 'set.tbPrimary', '--primary'], ['text', 'set.tbText', '--text'],
+  ['border', 'set.tbBorder', '--border'], ['accent', 'set.tbAccent', '--gold'],
+  ['hFajr', 'set.tbFajr', '--h-fajr'], ['hDhuhr', 'set.tbDhuhr', '--h-dhuhr'], ['hAsr', 'set.tbAsr', '--h-asr'], ['hMaghrib', 'set.tbMaghrib', '--h-maghrib'], ['hIsha', 'set.tbIsha', '--h-isha'],
 ];
 let tbDraft = null;
 
+function activeThemeTokens() {
+  const custom = DB3.customThemes.find((c) => c.id === S.cfg.theme);
+  const css = getComputedStyle(document.body);
+  return Object.fromEntries(TB_TOKENS.map(([key, , cssVar]) => {
+    const value = (custom && custom.tokens[key]) || css.getPropertyValue(cssVar).trim();
+    return [key, /^#[0-9a-f]{6}$/i.test(value) ? value : '#1a6e4f'];
+  }));
+}
+
 window.renderThemeBuilder = function renderThemeBuilder() {
   const body = $('themeBuilderBody'); if (!body) return;
+  if (!tbDraft) tbDraft = activeThemeTokens();
   const customs = DB3.customThemes;
   body.innerHTML = `
-    <div class="row"><span class="lbl">${S.lang === 'ar' ? 'قوالبك' : 'Your themes'}</span>
+    <div class="row"><span class="lbl">${t('set.tbYourThemes')}</span>
       <select class="select" id="tbPick"><option value="">—</option>${customs.map((c) => `<option value="${c.id}">${escHtml(c.name)}</option>`).join('')}</select></div>
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:8px 0">
-      ${TB_TOKENS.map(([k, lbl]) => `<label style="font-size:9.5px;color:var(--text-muted);text-align:center" title="${lbl}">
-        <input type="color" data-tb="${k}" value="${(tbDraft && tbDraft[k]) || '#1a6e4f'}" style="width:100%;height:26px;border:none;background:none;cursor:pointer;padding:0">
-        ${lbl.split(' ')[0]}</label>`).join('')}
+      ${TB_TOKENS.map(([k, labelKey]) => `<label style="font-size:9.5px;color:var(--text-muted);text-align:center" title="${escHtml(t(labelKey))}">
+        <input type="color" data-tb="${k}" aria-label="${escHtml(t(labelKey))}" value="${tbDraft[k]}" style="width:100%;height:26px;border:none;background:none;cursor:pointer;padding:0">
+        ${escHtml(t(labelKey))}</label>`).join('')}
     </div>
     <div style="display:flex;gap:7px;flex-wrap:wrap">
-      <button class="btn sm" id="tbApply">${S.lang === 'ar' ? 'معاينة' : 'Preview'}</button>
-      <button class="btn sm" id="tbSave">${S.lang === 'ar' ? 'حفظ' : 'Save'}</button>
-      <button class="btn sm" id="tbDelete">${S.lang === 'ar' ? 'حذف' : 'Delete'}</button>
-      <button class="btn sm" id="tbReset">${S.lang === 'ar' ? 'استعادة' : 'Reset'}</button>
+      <button class="btn sm" id="tbApply">${t('set.tbPreview')}</button>
+      <button class="btn sm" id="tbSave">${t('set.tbSave')}</button>
+      <button class="btn sm" id="tbDelete">${t('set.tbDelete')}</button>
+      <button class="btn sm" id="tbReset">${t('set.tbReset')}</button>
     </div>
-    <div class="note">${S.lang === 'ar' ? 'القوالب المدمجة محمية — قوالبك تُحفظ منفصلة.' : 'Built-in themes are immutable — customs are stored separately.'}</div>`;
+    <div class="note">${t('set.tbImmutable')}</div>`;
 
   body.querySelectorAll('[data-tb]').forEach((inp) => (inp.oninput = () => { tbDraft = tbDraft || {}; tbDraft[inp.dataset.tb] = inp.value; }));
-  $('tbApply').onclick = () => { if (!tbDraft) return showToast('Pick colors first'); applyCustomThemeDraft(); };
+  $('tbApply').onclick = () => { if (!tbDraft) return showToast(t('set.tbPickColors')); applyCustomThemeDraft(); };
   $('tbSave').onclick = () => {
-    if (!tbDraft) return showToast('Pick colors first');
+    if (!tbDraft) return showToast(t('set.tbPickColors'));
     const L = S.lang === 'ar';
     openTextModal({
       title: L ? 'حفظ القالب' : 'Save theme',
@@ -520,7 +560,7 @@ window.renderThemeBuilder = function renderThemeBuilder() {
     });
   };
   $('tbDelete').onclick = () => {
-    const id = $('tbPick').value; if (!id) return showToast('Pick a theme');
+    const id = $('tbPick').value; if (!id) return showToast(t('set.tbPickTheme'));
     const wasActive = S.cfg.theme === id;
     DB3.customThemes = DB3.customThemes.filter((c) => c.id !== id);
     save3(); renderThemeBuilder(); refreshThemeUI();
@@ -528,10 +568,13 @@ window.renderThemeBuilder = function renderThemeBuilder() {
   };
   $('tbPick').onchange = (e) => {
     const c = DB3.customThemes.find((x) => x.id === e.target.value);
-    tbDraft = c ? { ...c.tokens } : null;
+    tbDraft = c ? { ...activeThemeTokens(), ...c.tokens } : activeThemeTokens();
     renderThemeBuilder();
   };
-  $('tbReset').onclick = () => { tbDraft = null; renderThemeBuilder(); if (S.cfg.theme.startsWith('custom-')) { applyTheme('islamic'); saveCfg(); } };
+  $('tbReset').onclick = () => {
+    if (S.cfg.theme.startsWith('custom-')) { applyTheme('islamic'); saveCfg(); }
+    tbDraft = activeThemeTokens(); renderThemeBuilder();
+  };
 };
 
 function applyCustomThemeDraft() {
@@ -550,6 +593,7 @@ function clearCustomThemeOverrides() {
 (function () {
   const orig = window.applyTheme;
   window.applyTheme = function (id) {
+    if (id !== S.cfg.theme) tbDraft = null;
     clearCustomThemeOverrides();
     // custom theme support: inject tokens when a custom theme is active
     const custom = id && id.startsWith('custom-') ? (typeof DB3 !== 'undefined' && DB3 ? DB3.customThemes.find((c) => c.id === id) : null) : null;
@@ -562,6 +606,7 @@ function clearCustomThemeOverrides() {
       return;
     }
     orig(id);
+    if ($('page-settings') && $('page-settings').classList.contains('active')) { tbDraft = activeThemeTokens(); renderThemeBuilder(); }
   };
   function root_set(k, v) { document.body.style.setProperty(k, v); }
 })();
@@ -587,10 +632,12 @@ window.renderKeysList = function renderKeysList() {
 /* ═══ INIT (called at the end of pages3.js — DOM is ready) ═══ */
 window.initPhase3 = function initPhase3() {
   renderHistory(); renderDhikrLibrary(); renderLocations(); renderDailyCard(); renderRamadan();
-  $('histPrev').onclick = () => histShift(-1);
-  $('histNext').onclick = () => histShift(1);
-  $('histTodayBtn').onclick = histToday;
-  $('histDate').onchange = (e) => { if (e.target.value) { histDate = e.target.value; renderHistory(); } };
+  ['histPrev', 'histPrevM'].forEach((id) => { const el = $(id); if (el) el.onclick = () => histShift(-1); });
+  ['histNext', 'histNextM'].forEach((id) => { const el = $(id); if (el) el.onclick = () => histShift(1); });
+  ['histTodayBtn', 'histTodayBtnM'].forEach((id) => { const el = $(id); if (el) el.onclick = histToday; });
+  ['histDate', 'histDateM'].forEach((id) => {
+    const el = $(id); if (el) el.onchange = (e) => { if (e.target.value) { histDate = e.target.value; renderHistory(); } };
+  });
   $('btnAddLoc').onclick = window.addCurrentLocation;
   $('btnExport').onclick = window.exportBackup;
   $('btnImport').onclick = () => $('importFile').click();
@@ -601,8 +648,8 @@ window.initPhase3 = function initPhase3() {
   const about = $('aboutLine');
   if (about) {
     const fallback = 'SalahNest';
-    if (window.Plat) {
-      window.Plat.getVersion().then((v) => { about.textContent = v ? `SalahNest v${v} · data stored locally` : fallback; }).catch(() => { about.textContent = fallback; });
+      if (window.Plat) {
+      window.Plat.getVersion().then((v) => { about.textContent = v ? `SalahNest v${v} · ${t('set.localData')}` : fallback; }).catch(() => { about.textContent = fallback; });
     } else about.textContent = fallback;
   }
 };

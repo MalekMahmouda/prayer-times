@@ -90,7 +90,15 @@
         <div class="sec-lbl" id="lblHistM">Prayer Record</div>
         <div class="card">
           <div style="font-size:11.5px;color:var(--text-muted);margin-bottom:10px" id="histHintM">Tap a prayer to cycle: Not recorded → Completed → Missed</div>
+          <div style="font-size:11.5px;color:var(--text-muted);margin-bottom:10px" id="histHintM">Tap a prayer to cycle its status. Undo reverses your last change.</div>
+          <div class="history-controls" id="histControlsM" role="group">
+            <button class="icon-btn" id="histPrevM" type="button" title="Previous day">‹</button>
+            <input type="date" id="histDateM" class="inp">
+            <button class="icon-btn" id="histNextM" type="button" title="Next day">›</button>
+            <button class="btn sm" id="histTodayBtnM" type="button">Today</button>
+          </div>
           <div id="histChipsM" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+          <button class="btn sm history-undo" id="histUndoM" type="button" hidden>Undo</button>
         </div>
       </section>
 
@@ -134,16 +142,15 @@
         <!-- Prayer history -->
         <div class="sec-lbl" style="margin-top:18px" id="lblHist">Prayer Record</div>
         <div class="card" id="histCard">
-          <div class="row" style="padding:0 0 10px">
-            <div style="display:flex;align-items:center;gap:8px">
-              <button class="icon-btn" id="histPrev" title="Previous day">‹</button>
+          <div class="history-controls" id="histControls" role="group">
+              <button class="icon-btn" id="histPrev" type="button" title="Previous day">‹</button>
               <input type="date" id="histDate" class="inp" style="width:160px;padding:6px 10px">
-              <button class="icon-btn" id="histNext" title="Next day">›</button>
-            </div>
+              <button class="icon-btn" id="histNext" type="button" title="Next day">›</button>
             <button class="btn sm" id="histTodayBtn">Today</button>
           </div>
-          <div style="font-size:11.5px;color:var(--text-muted);margin-bottom:10px" id="histHint">Tap a prayer to cycle: Not recorded → Completed → Missed</div>
+          <div style="font-size:11.5px;color:var(--text-muted);margin-bottom:10px" id="histHint">Tap a prayer to cycle its status. Undo reverses your last change.</div>
           <div id="histChips" style="display:flex;gap:9px;flex-wrap:wrap"></div>
+          <button class="btn sm history-undo" id="histUndo" type="button" hidden>Undo</button>
         </div>
       </section>
 
