@@ -3,7 +3,7 @@
   <!-- Prayer Times — the whole app is this one URL (#/… routes are fragments) -->
   <url>
     <loc>https://malekmahmouda.github.io/salahnest/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>

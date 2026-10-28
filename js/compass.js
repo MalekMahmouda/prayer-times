@@ -64,6 +64,7 @@
     source: null,         // 'native' | 'web'
     sensor: null,         // human-readable sensor label for the debug line
     denied: false,        // iOS permission explicitly denied
+    unsupported: false,   // neither native nor web orientation is available
     webType: null,        // 'deviceorientationabsolute' | 'deviceorientation'
     fallbackType: null,   // opened after 3s of silence on the primary channel
     sensorTimer: null,
@@ -127,6 +128,7 @@
     }
     state.lastRaw = adjusted;
     state.heading = adjusted;
+    state.unsupported = false;
     state.lastAcceptedAt = now;
     // Alignment (v1.5): shortest angular difference, so 359↔1 wraps
     // correctly. ONE buzz on ENTERING the aligned state; leaving re-arms.
@@ -179,6 +181,13 @@
     status.classList.toggle('warn', !!warn);
   }
 
+  function renderGuidance() {
+    const help = $('qHelp');
+    if (!help) return;
+    const key = state.heading != null ? 'qibla.howLive' : (state.denied ? 'qibla.howDenied' : 'qibla.howStatic');
+    help.textContent = t(key);
+  }
+
   function isUnreliable() {
     if (state.heading == null) return true;
     if (Date.now() - state.lastAcceptedAt > STALE_MS) return true;
@@ -226,12 +235,13 @@
     const dialWrap = needle && needle.closest ? needle.closest('.compass') : null;
     if (dialWrap) dialWrap.classList.toggle('aligned', state.aligned && !isUnreliable());
     if (state.heading == null) {
-      renderStatus(state.denied ? 'qibla.denied' : 'qibla.noSensor', state.denied);
+      renderStatus(state.denied ? 'qibla.denied' : (state.unsupported ? 'qibla.static' : 'qibla.noSensor'), state.denied);
     } else if (state.aligned && !isUnreliable()) {
       renderStatus('qibla.aligned', false);
     } else {
       renderStatus('qibla.live', isUnreliable());
     }
+    renderGuidance();
     state.lastRender = now;
   }
 
@@ -347,6 +357,7 @@
       state.heading = null;
       state.lastRaw = null;
       state.denied = false;
+      state.unsupported = false;
       state.sensor = null;
       state.aligned = false;   // haptic re-arms on every visit
       state.contAngle = null;  // needle re-seeds without spinning
@@ -354,8 +365,8 @@
       (async () => {
         const ok = (await startNative()) || startWeb(epoch);
         if (state.active && !ok) {
-          // Desktop / unsupported browser: static bearing, honestly labeled.
-          renderStatus('qibla.static', false);
+          // No orientation source exists: report a static geographic bearing.
+          state.unsupported = true;
         } else {
           startWatchdog();
         }
@@ -369,6 +380,7 @@
       state.heading = null;
       state.jitter = 0;
       state.denied = false;
+      state.unsupported = false;
       state.sensor = null;
       state.aligned = false;
       state.contAngle = null;
@@ -392,6 +404,8 @@
         state.source = null;
       }
     },
+    // Repaint localized guidance after a language switch without restarting sensors.
+    refresh() { if (state.active) render(); else renderGuidance(); },
     // Phase 8: honest debug readout (also drives the contract tests via snapshot).
     debug(on) { setDebug(on); },
     // Machine-readable mirror of the debug line, for tests and diagnostics.
@@ -403,6 +417,7 @@
         turn: state.heading == null ? null : signedTurn(b, state.heading),
         aligned: state.aligned,
         sensor: sensorLabel(),
+        mode: state.heading != null ? 'live' : (state.denied ? 'denied' : (state.unsupported ? 'static' : 'pending')),
         screenAngle: screenAngle(),
         unreliable: isUnreliable(),
       };

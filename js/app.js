@@ -294,8 +294,7 @@ window.addEventListener('DOMContentLoaded', () => {
 /* ═══ MOBILE UI (Android / narrow viewport): dedicated home + 5-tab nav + More sheet ═══ */
 let mWired = false;
 function initMobileUI() {
-  const isAndroid = !!(window.Capacitor && window.Capacitor.isNativePlatform());
-  if (isAndroid) document.querySelectorAll('.only-desktop').forEach((el) => { el.style.display = 'none'; });
+  if (!IS_DESKTOP) document.querySelectorAll('.only-desktop').forEach((el) => { el.hidden = true; });
   if (!mWired) {
     mWired = true;
     const wire = (id, fn) => { const el = $(id); if (el) el.onclick = fn; };
@@ -319,9 +318,13 @@ function initMobileUI() {
 function applyMMode(on) {
   const was = document.body.classList.contains('m-mode');
   if (on === was) return;
+  const current = (document.querySelector('.page.active') || {}).id || 'page-prayers';
+  let page = current.replace(/^page-/, '');
   document.body.classList.toggle('m-mode', on);
   if (on) buildMSwatches();
-  gotoPage('prayers');
+  if (on && page === 'prayers') page = 'mhome';
+  else if (!on && page === 'mhome') page = 'prayers';
+  gotoPage(page);
 }
 
 function moreSheetOpen() { const sh = $('mMoreSheet'); return !!(sh && sh.classList.contains('open')); }
@@ -340,12 +343,20 @@ function buildMSwatches() {
   THEMES.forEach((th) => {
     const b = document.createElement('button');
     b.className = 'sw' + (th.id === S.cfg.theme ? ' active' : '');
-    b.dataset.theme = th.id; b.style.background = th.color; b.title = S.lang === 'ar' ? th.ar : th.en;
+    b.dataset.theme = th.id; b.title = S.lang === 'ar' ? th.ar : th.en;
     b.setAttribute('aria-label', b.title);
     b.setAttribute('aria-pressed', String(th.id === S.cfg.theme));
+    const dot = document.createElement('span'); dot.className = 'sw-dot'; dot.style.background = themePreview(th);
+    dot.setAttribute('aria-hidden', 'true'); b.appendChild(dot);
     b.onclick = (e) => { PTMotion.themeChange(() => { applyTheme(th.id); saveCfg(); buildSwatches(); buildMSwatches(); }, e); };
     wrap.appendChild(b);
   });
+}
+
+function themePreview(th) {
+  const colors = Array.isArray(th.preview) && th.preview.length ? th.preview : [th.color];
+  const stops = colors.map((color, i) => `${color} ${Math.round(i * 100 / colors.length)}% ${Math.round((i + 1) * 100 / colors.length)}%`);
+  return `linear-gradient(135deg, ${stops.join(', ')})`;
 }
 
 /* ── mHome renderers (dedicated mobile home screen) ── */
@@ -537,11 +548,11 @@ function buildSwatches() {
     // sheet covers content.
     if (wrap.closest('.sb-foot')) {
       b.style.background = 'none';
-      const dot = document.createElement('span'); dot.className = 'sw-dot'; dot.style.background = th.color;
+      const dot = document.createElement('span'); dot.className = 'sw-dot'; dot.style.background = themePreview(th);
       const lbl = document.createElement('span'); lbl.className = 'sw-lbl'; lbl.textContent = S.lang === 'ar' ? th.ar : th.en;
       b.appendChild(dot); b.appendChild(lbl);
     } else {
-      b.style.background = th.color;
+      b.style.background = themePreview(th);
       b.title = S.lang === 'ar' ? th.ar : th.en;
     }
     b.onclick = (e) => { PTMotion.themeChange(() => { applyTheme(th.id); saveCfg(); }, e); };
@@ -1223,8 +1234,8 @@ function applyLang() {
   document.documentElement.dir = S.lang === 'ar' ? 'rtl' : 'ltr';
   const iconButtonLabels = {
     langBtn: S.lang === 'ar' ? 'تغيير اللغة' : 'Change language',
-    histPrev: S.lang === 'ar' ? 'اليوم السابق' : 'Previous day',
-    histNext: S.lang === 'ar' ? 'اليوم التالي' : 'Next day',
+    histPrev: t('hist.prev'), histNext: t('hist.next'),
+    histPrevM: t('hist.prev'), histNextM: t('hist.next'),
     calPrev: t('cal.prev'), calNext: t('cal.nextM'),
     rdBack: S.lang === 'ar' ? 'العودة إلى القائمة' : 'Back to list',
     rdPrev: S.lang === 'ar' ? 'السورة السابقة' : 'Previous surah',
@@ -1264,6 +1275,8 @@ function applyLang() {
   const mTheme = $('mThemeLbl'); if (mTheme) mTheme.textContent = t('set.theme');
   const mHistHint = $('histHintM'); if (mHistHint) mHistHint.textContent = t('hist.hint');
   const mHistLbl = $('lblHistM'); if (mHistLbl) mHistLbl.textContent = t('hist.title');
+  const histHint = $('histHint'); if (histHint) histHint.textContent = t('hist.hint');
+  ['histControls', 'histControlsM'].forEach((id) => { const el = $(id); if (el) el.setAttribute('aria-label', t('hist.date')); });
 
   // Topbar
   $('offBadge').textContent = t('offline');
@@ -1282,6 +1295,7 @@ function applyLang() {
   $('lblKc').textContent = t('qibla.kaabaCoords');
   $('lblHtu').textContent = t('qibla.how');
   $('qHelp').textContent = t('qibla.howText');
+  if (window.PTCompass && window.PTCompass.refresh) window.PTCompass.refresh();
 
   // Quran
   $('qrSearch').placeholder = t('quran.search');
@@ -1302,6 +1316,17 @@ function applyLang() {
   $('shNotif').textContent = t('set.notif');
   $('shAdhan').textContent = t('set.adhanSec');
   $('shDesktop').textContent = t('set.desktop');
+  $('shData').textContent = t('set.data');
+  $('slExport').textContent = t('set.export');
+  $('slImport').textContent = t('set.import');
+  $('backupNote').textContent = t('set.backupNote');
+  $('shThemeBuilder').textContent = t('set.themeBuilder');
+  $('shKeys').textContent = t('set.shortcuts');
+  $('shWidget').textContent = t('set.widgetTitle');
+  $('slWidget').textContent = t('set.widget');
+  $('slWidgetS').textContent = t('set.widgetS');
+  $('slMini').textContent = t('set.mini');
+  $('slMiniS').textContent = t('set.miniS');
   $('shLocation').textContent = t('set.location');
   $('shLocs').textContent = S.lang === 'ar' ? 'المواقع المحفوظة' : 'Saved Locations';
   $('slAddLoc').textContent = S.lang === 'ar' ? 'حفظ الموقع الحالي' : 'Save current as location';
@@ -1338,8 +1363,15 @@ function applyLang() {
   $('slCttS').textContent = t('set.cttS');
   $('slTestNotif').textContent = t('set.testNotif');
   $('slTestNotifBtn').textContent = S.lang === 'ar' ? 'اختبار' : 'Test';
+  ['histTodayBtn', 'histTodayBtnM'].forEach((id) => { const el = $(id); if (el) { el.textContent = t('hist.today'); el.setAttribute('aria-label', t('hist.today')); } });
+  ['histDate', 'histDateM'].forEach((id) => { const el = $(id); if (el) el.setAttribute('aria-label', t('hist.date')); });
   $('dataNote').textContent = t('set.dataNote');
   $('creditsNote').textContent = t('set.credits');
+  const aboutLine = $('aboutLine');
+  if (aboutLine && typeof aboutLine.textContent === 'string') {
+    const version = aboutLine.textContent.match(/^SalahNest v([^\s·]+)/);
+    if (version) aboutLine.textContent = `SalahNest v${version[1]} · ${t('set.localData')}`;
+  }
   // About card + full-screen Azan labels (both languages)
   const shAbout = $('shAbout'); if (shAbout) shAbout.textContent = t('set.about');
   const aboutDev = $('aboutDev'); if (aboutDev) aboutDev.textContent = t('set.developer');
@@ -1377,8 +1409,7 @@ function applyLang() {
   renderAll();
   // History chips exist in separate desktop and mobile trees; refresh both.
   if (window.renderHistory) {
-    window.renderHistory('histChips');
-    window.renderHistory('histChipsM');
+    window.renderHistory();
   }
   if (window.renderNames && document.getElementById('page-names').classList.contains('active')) renderNames();
   if (window.renderDhikr && document.getElementById('page-dhikr').classList.contains('active')) renderDhikr();
